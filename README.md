@@ -10,6 +10,8 @@ a ledger, so each verdict can be audited.
 Team PiedPiper, neatHack 2026. Build log: [`hackathon.md`](hackathon.md). Full technical guide:
 [`HOW_IT_WORKS.md`](HOW_IT_WORKS.md). Spec: [`PRD.md`](PRD.md). Demo script: [`DEMO.md`](DEMO.md).
 
+> **Picking this up?** Start with [`HANDOVER.md`](HANDOVER.md): current state, setup, key IDs and the Monday plan.
+
 ## The problem
 
 Agent quality can degrade quietly over many commits: a prompt tweak here, a "make it faster" refactor

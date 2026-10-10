@@ -1,0 +1,15 @@
+<pasted_content id="4096">
+Thanks. origin/main has moved again (aa5d682): bench v1 scored 6/6, accuracy counts only scorable runs, the read-only ledger is an in-memory migrated copy, and finished.py uses baseline.measure. Run `git fetch && git merge origin/main`, then the tests.
+
+Next task (free): M7 docs. Write README.md: what Culprit is, the problem, setup (both repos, .env keys: Anthropic → Sonnet 5.5, else OpenRouter → GLM 5.3), how to run, how each of neatlogs / Entire / cfo.ai is used, the honesty note about deliberately planted bugs (PRD §9.2, including that a, d and e turned out invisible to the suite and how we verified that), and limitations. Use only numbers that are in evidence/ files (RUNS.md, bench-v1.md, strength.md). Then write DEMO.md following PRD §17, with the exact commands and the real run IDs from evidence/RUNS.md. Leave placeholders marked TODO for numbers that don't exist yet (localise/fix on hist/b and the v2 bench), since the main session is producing those. Commit on feat/v2-efficiency when done; I review and push.
+</pasted_content id="4096">
+
+---
+
+<task-notification>
+<task-id>b4mvjxml3</task-id>
+<tool-use-id>toolu_01Wt5LsC5XnkvhSiav8cjicx</tool-use-id>
+<output-file>/private/tmp/claude-501/-Volumes-DevSSD-Projects-piedpiper-neathacks/4e2fbf44-3f5c-4d2c-bb07-fa6d2222b531/tasks/b4mvjxml3.output</output-file>
+<status>completed</status>
+<summary>Background command "Run test suite after merge" completed (exit code 0)</summary>
+</task-notification>

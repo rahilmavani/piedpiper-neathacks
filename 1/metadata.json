@@ -1,0 +1,58 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4JYK9V9RE9YKV0YCNYB48E8",
+  "session_id": "5b66e0be-717f-4e41-bfac-fc130aacec23",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-10T13:03:55.971462Z",
+  "branch": "feat/bench",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "HOW_IT_WORKS.md",
+    "hackathon.md",
+    "src/culprit/cli.py",
+    "src/culprit/finished.py",
+    "src/culprit/fix.py",
+    "src/culprit/localise.py",
+    "src/culprit/sandbox.py",
+    "tests/fixtures/make_victim.py",
+    "tests/test_fix.py",
+    "tests/test_localise.py"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-opus-5-5",
+  "turn_id": "2b2834846700",
+  "checkpoint_transcript_start": 568,
+  "transcript_lines_at_start": 568,
+  "compact_transcript_start": 75,
+  "token_usage": {
+    "input_tokens": 38,
+    "cache_creation_tokens": 52582,
+    "cache_read_tokens": 5856840,
+    "output_tokens": 40542,
+    "api_call_count": 19
+  },
+  "session_metrics": {
+    "turn_count": 1
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-10T13:03:55.926419Z",
+    "agent_lines": 0,
+    "agent_removed": 0,
+    "human_added": 1441,
+    "human_modified": 34,
+    "human_removed": 0,
+    "total_committed": 1441,
+    "total_lines_changed": 1475,
+    "agent_percentage": 0,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}

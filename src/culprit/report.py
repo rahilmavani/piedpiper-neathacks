@@ -17,6 +17,7 @@ from jinja2 import Environment
 from culprit import gitops, reuse
 from culprit.costs import RunCosts, run_costs
 from culprit.ledger import Ledger, TaskRun
+from culprit.orchestrator import is_bisect_kind
 from culprit.stats import fisher_one_sided, wilson
 
 DIFF_MAX_LINES = 400
@@ -158,7 +159,9 @@ def collect(ledger: Ledger, run_id: str) -> Report:
     timeline: list[CommitEval] = []
     by_commit: dict[str, list] = {}
     for s in steps:
-        if not s["kind"].startswith("baseline"):
+        # Only bisect and resample steps: the Localiser's reverts and the Fixer's verification also
+        # run at the culprit and head commits, and would otherwise be mixed into those rows.
+        if is_bisect_kind(s["kind"]):
             by_commit.setdefault(s["commit_sha"], []).append(s)
     discriminating: list[str] = []
     for sha, commit_steps in by_commit.items():  # dict order = step order = test order

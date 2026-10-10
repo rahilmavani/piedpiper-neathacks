@@ -138,3 +138,27 @@ def test_export_costs_csv(finished):
 
     bad = CliRunner().invoke(app, ["export-costs", "--format", "xlsx", "--db", str(db)])
     assert bad.exit_code == 2
+
+
+def test_timeline_ignores_localise_and_fix_steps(finished):
+    """Localiser reverts run at the culprit commit and verification at the ends; neither is a bisect row."""
+    from culprit import report
+    from culprit.ledger import TaskRun
+
+    db, ids, culprit_sha = finished
+    ledger = Ledger(db)
+    run = ledger.get_run(ids[0])
+    before = report.collect(ledger, ids[0])
+    culprit_row = next(c for c in before.timeline if c.sha == culprit_sha)
+
+    for kind, sha in (("localise:h1", culprit_sha), ("verify:heldout", run["good_sha"]), ("fix:1", run["bad_sha"])):
+        step = ledger.open_step(ids[0], kind, sha)
+        for rep in range(3):
+            ledger.record_task_run(step, TaskRun("t01", rep, True, 0.001, 1.0, 1, 1, None))
+        ledger.close_step(step, "done", decision="GOOD", n=3, passes=3)
+
+    after = report.collect(ledger, ids[0])
+    assert [c.sha for c in after.timeline] == [c.sha for c in before.timeline]
+    row = next(c for c in after.timeline if c.sha == culprit_sha)
+    assert row.decision == culprit_row.decision == "BAD"
+    assert [r.kind for r in row.rounds] == [r.kind for r in culprit_row.rounds]

@@ -88,22 +88,26 @@ def build(path: Path, commits: int, breaks_at: int, unbuildable_at: int | None, 
 
     notes = path / "NOTES.md"
     for n in range(1, commits + 1):
-        if n == breaks_at:
-            (pkg / "agent.py").write_text(AGENT.format(p=0.05))
-            commit(path, "speed up tool handling")
-        elif noisy_from is not None and n == noisy_from:
-            (pkg / "agent.py").write_text(AGENT.format(p=noisy_pass))
-            commit(path, "tune tool timeouts")
-        elif unbuildable_at is not None and n == unbuildable_at:
+        # The dependency pin and the agent's pass rate are independent files, so every change due at
+        # commit n is applied; one never displaces another (e.g. the pin revert and a noisy commit).
+        changes = []
+        if unbuildable_at is not None and n == unbuildable_at:
             (path / "pyproject.toml").write_text(PYPROJECT.format(deps='"requests==99.99.99"'))
-            commit(path, "pin requests")
+            changes.append("pin requests")
         elif unbuildable_at is not None and n == unbuildable_at + 1:
             (path / "pyproject.toml").write_text(PYPROJECT.format(deps=""))
-            commit(path, "revert requests pin")
-        else:
+            changes.append("revert requests pin")
+        if n == breaks_at:
+            (pkg / "agent.py").write_text(AGENT.format(p=0.05))
+            changes.append("speed up tool handling")
+        elif noisy_from is not None and n == noisy_from:
+            (pkg / "agent.py").write_text(AGENT.format(p=noisy_pass))
+            changes.append("tune tool timeouts")
+        if not changes:
             with notes.open("a") as f:
                 f.write(f"- maintenance note {n}\n")
-            commit(path, f"docs: maintenance note {n}")
+            changes.append(f"docs: maintenance note {n}")
+        commit(path, "; ".join(changes))
     return path
 
 

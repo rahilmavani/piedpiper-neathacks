@@ -144,6 +144,9 @@ Planned (from `PRD.md`); move items to "used" as they are integrated.
   - Sequence rules exist (`trace_rules`, config `trace-rules.v1`, rows with quantifiers and a `relation`), and the project has one from a suggestion, but create and update don't accept that type. So "failed result followed by `issue_refund`" can't be authored from the CLI. Details in BLOCKERS.md.
 - **Finding worth posting:** neatlogs can store trace-level sequence rules (`trace_rules`), but its public API only creates per-span rules, so "this happened, then that" can only arrive through its own suggestions.
 
+- **Done: `culprit fix` can't over-claim the intended gain.** Each verification now prints the median latency per run at good, at bad and with the fix, plus the named metric at all three. If the commit never beat good on that metric (by more than the tolerance), it adds a note that the gain gate passes trivially. Both are stored in the `fix` artifact. Prompted by the real hero fix: the "make it faster" commit left the median latency at good 7086 ms vs bad 7138 ms. 137 tests pass.
+- **Finding worth posting:** "keeps the intended gain" is only a claim if the culprit commit delivered that gain. Ours, a "make it faster" change by a coding agent, didn't measurably speed anything up, and only comparing against the good baseline shows that.
+
 ## Demo
 
 - *Pending.* No demo URL yet.

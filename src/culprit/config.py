@@ -18,7 +18,8 @@ class Config:
     repo: str
     good_ref: str
     bad_ref: str
-    suite: str = "evals"
+    suite: str = "evals"  # directory at `suite_ref` in the victim, or a directory on disk (see culprit.suite)
+    suite_ref: str = "main"
     k: int = 3
     z: float = 1.96
     budget_usd: float = 3.00
@@ -29,6 +30,13 @@ class Config:
     task_timeout_s: int = 300
     eval_module: str = "refunddesk.eval"
     task_ids: tuple[str, ...] = field(default_factory=tuple)
+
+    @property
+    def suite_target(self) -> str:
+        """Where the victim reads its suite, relative to the worktree root."""
+        from culprit.suite import is_path_suite
+
+        return "evals" if is_path_suite(self.suite) else self.suite
 
     def to_json(self) -> str:
         return json.dumps(asdict(self), sort_keys=True)

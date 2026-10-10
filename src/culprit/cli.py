@@ -21,14 +21,16 @@ def run(
     good: str = typer.Option(..., help="Known-good ref"),
     bad: str = typer.Option(..., help="Known-bad ref"),
     repo: Path = typer.Option(PROJECT_ROOT.parent / "refunddesk", help="Victim repo (only worktrees are created)"),
-    suite: str = typer.Option("evals", help="Suite directory inside the victim repo"),
+    suite: str = typer.Option("evals", help="Suite directory in the victim (taken at --suite-ref), "
+                              "or a directory on disk (absolute or containing '/')"),
+    suite_ref: str = typer.Option("main", help="Victim ref whose suite judges every commit"),
     k: int = typer.Option(3, help="Repetitions per task"),
     budget_usd: float = typer.Option(3.00, help="Hard cost cap for this run"),
     db: Path = typer.Option(DEFAULT_DB, help="Ledger path"),
     workers: int = typer.Option(4, help="Parallel victim task runs"),
 ) -> None:
     """Find the commit between GOOD and BAD that broke the agent."""
-    cfg = Config(repo=str(repo.resolve()), good_ref=good, bad_ref=bad, suite=suite, k=k, budget_usd=budget_usd)
+    cfg = Config(repo=str(repo.resolve()), good_ref=good, bad_ref=bad, suite=suite, suite_ref=suite_ref, k=k, budget_usd=budget_usd)
     orch = Orchestrator(Ledger(db), cfg, log=typer.echo, workers=workers)
     run_id = orch.start()
     typer.echo(f"run_id {run_id}")

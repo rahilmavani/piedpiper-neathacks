@@ -7,7 +7,7 @@ SDK `neatlogs` 1.4.26 (Python 3.12), CLI `neatlogs-cli` 0.2.0. SDK Doctor `--loc
 
 - **Process init:** one `neatlogs.init(workflow_name="culprit", tracer_provider=...)` per CLI process (`culprit.cli:main`), followed by flush and shutdown in a `finally`.
 - **Run root:** each run is one WORKFLOW root, `culprit_run`, whose `session_id` is the Culprit `run_id`. The read API cannot filter on custom metadata, so use `traces list --session <run_id>`.
-- **Child spans:** CHAIN `evaluate_commit:<kind>` per evaluated commit. TOOL spans: `git_rev_list`, `discover_tasks`, `git_worktree_add`, `uv_sync_locked`, `victim_eval_run` (one per task × repetition), `select_discriminating_tasks`, `decision_rule` and `entire_checkpoint_explain`.
+- **Child spans:** CHAIN `evaluate_commit:<kind>` per evaluated commit. TOOL spans: `git_rev_list`, `pin_suite`, `discover_tasks`, `git_worktree_add`, `uv_sync_locked`, `victim_eval_run` (one per task × repetition), `select_discriminating_tasks`, `decision_rule` and `entire_checkpoint_explain`.
 - **LLM calls:** captured only through `neatlogs.wrap(client)` in `culprit.llm`, each under the AGENT span of the stage that made it.
 - **`run_id` / `commit_sha`:** a span processor stamps both as attributes on every span. Both are also written into every Culprit span's JSON input, because the read API returns no custom attributes and the input is the only place readback can verify them.
 - **Errors:** a span that sees an exception records it and sets status `ERROR` (`trace()` alone leaves it `OK`). The run is also marked `error` in the ledger.

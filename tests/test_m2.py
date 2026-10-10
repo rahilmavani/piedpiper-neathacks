@@ -20,8 +20,9 @@ def mods(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     import culprit.config
     import culprit.orchestrator
     import culprit.sandbox
+    import culprit.suite
 
-    for mod in (culprit.config, culprit.sandbox, culprit.orchestrator):
+    for mod in (culprit.config, culprit.sandbox, culprit.suite, culprit.orchestrator):
         importlib.reload(mod)
     return culprit.orchestrator, culprit.config
 

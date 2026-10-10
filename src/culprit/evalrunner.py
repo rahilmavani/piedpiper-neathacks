@@ -28,8 +28,8 @@ def victim_env(repo: Path) -> dict[str, str]:
     return env
 
 
-def discover_tasks(worktree: Path, suite: str) -> list[str]:
-    suite_dir = worktree / suite
+def discover_tasks(suite_dir: Path) -> list[str]:
+    """Task ids are the file stems directly in the suite directory (subdirectories such as heldout/ excluded)."""
     if not suite_dir.is_dir():
         raise FileNotFoundError(f"suite directory {suite_dir} not found")
     return sorted(

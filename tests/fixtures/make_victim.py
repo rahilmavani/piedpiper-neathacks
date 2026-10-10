@@ -32,6 +32,7 @@ FRAGILE_PASS = {p}
 EVAL = '''\
 """Fake eval runner with the same interface as the real one; each run costs a nominal $0.001."""
 import argparse, json, random, time
+from pathlib import Path
 
 from refunddesk import agent
 
@@ -43,6 +44,10 @@ def main() -> None:
     p.add_argument("--task", required=True)
     p.add_argument("--seed", type=int, default=0)
     a = p.parse_args()
+    if not (Path("evals") / f"{{a.task}}.json").exists():  # like the real load_task
+        print(json.dumps({{"passed": False, "cost": 0.0, "latency_ms": 0.0, "tokens": None, "trace_id": None,
+                          "error": f"FileNotFoundError: no task named {{a.task!r}}"}}))
+        return
     rng = random.Random(f"{{a.task}}:{{a.seed}}")
     p_pass = agent.FRAGILE_PASS if a.task in FRAGILE else 0.95
     started = time.monotonic()
@@ -66,7 +71,7 @@ def commit(repo: Path, msg: str) -> None:
 
 
 def build(path: Path, commits: int, breaks_at: int, unbuildable_at: int | None, noisy_from: int | None = None,
-          noisy_pass: float = 0.75) -> Path:
+          noisy_pass: float = 0.75, late_task: bool = False) -> Path:
     path.mkdir(parents=True, exist_ok=False)
     sh(path, "git", "init", "-q", "-b", "main")
     sh(path, "git", "config", "user.email", "fixture@example.invalid")
@@ -103,6 +108,9 @@ def build(path: Path, commits: int, breaks_at: int, unbuildable_at: int | None, 
         elif noisy_from is not None and n == noisy_from:
             (pkg / "agent.py").write_text(AGENT.format(p=noisy_pass))
             changes.append("tune tool timeouts")
+        if late_task and n == commits:
+            (evals / "t11.json").write_text('{"message": "refund the second order"}\n')
+            changes.append("evals: add t11")
         if not changes:
             with notes.open("a") as f:
                 f.write(f"- maintenance note {n}\n")
@@ -119,8 +127,9 @@ def main() -> None:
     p.add_argument("--unbuildable-at", type=int, default=7)
     p.add_argument("--noisy-from", type=int, default=None)
     p.add_argument("--noisy-pass", type=float, default=0.75)
+    p.add_argument("--late-task", action="store_true", help="add task t11 only on the last commit")
     a = p.parse_args()
-    print(build(a.path, a.commits, a.breaks_at, a.unbuildable_at, a.noisy_from, a.noisy_pass))
+    print(build(a.path, a.commits, a.breaks_at, a.unbuildable_at, a.noisy_from, a.noisy_pass, a.late_task))
 
 
 if __name__ == "__main__":

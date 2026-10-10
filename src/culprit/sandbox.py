@@ -36,10 +36,12 @@ def add_worktree(repo: Path, sha: str, label: str = "") -> Path:
     path = worktree_path(sha, label)
     if path.exists():
         head = subprocess.run(["git", "-C", str(path), "rev-parse", "HEAD"], capture_output=True, text=True)
-        status = subprocess.run(["git", "-C", str(path), "status", "--porcelain", "--untracked-files=no"],
-                                capture_output=True, text=True)
-        if head.returncode == 0 and head.stdout.strip() == sha and not status.stdout.strip():
-            return path
+        if head.returncode == 0 and head.stdout.strip() == sha:
+            # Undo the pinned suite copied in last time; ignored files such as .venv survive.
+            reset = subprocess.run(["git", "-C", str(path), "reset", "-q", "--hard", sha], capture_output=True)
+            clean = subprocess.run(["git", "-C", str(path), "clean", "-q", "-fd"], capture_output=True)
+            if reset.returncode == 0 and clean.returncode == 0:
+                return path
         remove_worktree(repo, path)
     path.parent.mkdir(parents=True, exist_ok=True)
     git(repo, "worktree", "add", "--detach", "--force", str(path), sha)

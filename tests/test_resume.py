@@ -17,8 +17,9 @@ def env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     import culprit.config
     import culprit.orchestrator
     import culprit.sandbox
+    import culprit.suite
 
-    for mod in (culprit.config, culprit.sandbox, culprit.orchestrator):
+    for mod in (culprit.config, culprit.sandbox, culprit.suite, culprit.orchestrator):
         importlib.reload(mod)
     repo = build(tmp_path / "victim", commits=14, breaks_at=10, unbuildable_at=7)
     return repo, tmp_path / "state" / "ledger.sqlite", culprit.orchestrator, culprit.config

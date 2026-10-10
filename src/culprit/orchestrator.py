@@ -14,7 +14,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, replace
 from pathlib import Path
 
-from culprit import gitops, sandbox, tracing
+from culprit import gitops, sandbox, suite, tracing
 from culprit.bisect import BisectResult, Verdict, bisect, bounds
 from culprit.config import Config
 from culprit.entire import commit_intent
@@ -85,6 +85,7 @@ class Orchestrator:
         self.log = log
         self.workers = workers
         self.env = victim_env(self.repo)
+        self.pinned: suite.PinnedSuite | None = None
 
     # one commit ---------------------------------------------------------------
     def evaluate(self, run_id: str, kind: str, sha: str, tasks: list[str], reps: range) -> StepResult:
@@ -103,6 +104,8 @@ class Orchestrator:
         todo = [(t, r) for t in tasks for r in reps if (t, r) not in done]
         if todo:
             worktree = self._worktree(sha)
+            assert self.pinned is not None, "suite must be pinned before evaluating"
+            suite.install_into(self.pinned, worktree, self.cfg.suite_target)
             with tracing.span("uv_sync_locked", "TOOL", input={"worktree": worktree.name}) as sp:
                 installed = sandbox.install(worktree, self.cfg.eval_module, self.cfg.install_timeout_s)
                 sp.output({"ok": installed.ok, "log_tail": installed.log[-1500:]})
@@ -225,10 +228,25 @@ class Orchestrator:
             sp.output({"status": outcome.status, "summary": outcome.summary})
             return outcome
 
+    def _pin_suite(self, run_id: str) -> suite.PinnedSuite:
+        """First run: snapshot the suite and record it. Resume: rebuild the recorded snapshot."""
+        row = self.ledger.get_run(run_id)
+        with tracing.span("pin_suite", "TOOL", input={"suite": self.cfg.suite, "suite_ref": self.cfg.suite_ref,
+                                                      "recorded": row["suite_sha"]}) as sp:
+            if row["suite_sha"]:
+                pinned = suite.restore(self.repo, row["suite_source"], row["suite_sha"])
+            else:
+                pinned = suite.pin(self.repo, self.cfg.suite, self.cfg.suite_ref)
+                self.ledger.set_suite(run_id, pinned.source, pinned.sha)
+            sp.output({"source": pinned.source, "sha": pinned.sha})
+        self.log(f"  suite pinned: {pinned.source} @ {pinned.sha[:12]}")
+        return pinned
+
     def _ensure_tasks(self, run_id: str, good: str) -> list[str]:
         if not self.cfg.task_ids:
+            assert self.pinned is not None
             with tracing.span("discover_tasks", "TOOL", commit_sha=good, input={"suite": self.cfg.suite}) as sp:
-                tasks = discover_tasks(self._worktree(good), self.cfg.suite)
+                tasks = discover_tasks(self.pinned.path)
                 sp.output({"tasks": tasks})
             self.cfg = replace(self.cfg, task_ids=tuple(tasks))
             self.ledger.update_config(run_id, suite_hash(tasks), self.cfg.to_json())
@@ -249,6 +267,7 @@ class Orchestrator:
     def _bisect(self, run_id: str, good: str, bad: str, candidates: list[str],
                 tested: list[tuple[str, Verdict]]) -> Outcome:
         cfg, repo = self.cfg, self.repo
+        self.pinned = self._pin_suite(run_id)
         tasks = self._ensure_tasks(run_id, good)
         self.log(f"run {run_id}: {len(candidates)} commits in {cfg.good_ref}..{cfg.bad_ref}, "
                  f"{len(tasks)} tasks × {cfg.k}")

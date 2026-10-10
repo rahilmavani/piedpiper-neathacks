@@ -11,21 +11,24 @@ To refresh the measured inputs from the ledger:
 uv run culprit export-costs --format csv --out business/runs.csv   # per run: cost, victim runs, wall time
 ```
 
-## 1. Measured
+## 1. Measured (real victim, 10 Oct; sources `evidence/RUNS.md`, `business/runs.csv`)
 
 | Input | Value | Source |
 |---|---|---|
-| Real bisect, `hist/b`, GLM 5.3 victim (v1) | 240 victim runs, **$0.60**, 12.5 min | run `ff50e3620fdd` (hackathon.md) |
-| … of which baseline / bisect | 156 / 84 runs | same run |
-| Cost per victim run, GLM 5.3 | $0.0025 | $0.60 / 240 |
+| Bisect `hist/b`, GLM 5.3 victim, **v1** | 240 victim runs, **$0.60**, 12.5 min | run `ff50e3620fdd` |
+| Bisect `hist/b`, GLM 5.3 victim, **v2** (staged) | **164 victim runs, $0.46**, 8 min | run `978624283c27` |
+| All 6 scenarios, v1 → v2 | 1,140 → 588 victim runs, **$2.70 → $1.51** (avg $0.45 → $0.25 per bisect) | `evidence/bench-v1.md`, `bench-v2.md` |
+| Localise (hunk) on `hist/b` | 84 victim runs + 3 model calls, **$0.20** | `business/runs.csv` |
+| Fix + verify on `hist/b` | 132 victim runs + 2 model calls, **$0.33** | `business/runs.csv` |
+| Full investigation on `hist/b` (bisect v1 + localise + fix) | 456 victim runs, **$1.13**, of which Culprit's own model calls $0.063 | `business/runs.csv` |
+| Cost per victim run, GLM 5.3 | **$0.0024** ($2.6957 / 1,140) | `evidence/bench-v1.json` |
 | Cost per victim run, Claude Sonnet 5.5 | $0.0163 | RefundDesk baseline, 78 runs for $1.27, at $2/$10 per MTok |
-| Culprit's own LLM cost per bisect | $0 | no Culprit LLM stage runs in `culprit run` yet |
-| v1 → v2 victim runs per bisect, fixture | −16% (staging alone), −34% (good end reused), −47% (both ends reused) | `evidence/v2-efficiency-fixture.md` |
+| Accuracy | 6/6 in both v1 and v2 | `culprit bench` |
 
 ## 2. Projected (cost of goods per bisect)
 
-The v2 run counts are a projection for `hist/b` (see `evidence/v2-efficiency-fixture.md`): 164 runs
-with a staged baseline, 124 when the good end is reused. Compute is an **assumption** of $0.04 per
+The v2 count for `hist/b` is now **measured** (164 runs, run `978624283c27`). The 124-run figure with
+the good end reused is still a projection. Compute is an **assumption** of $0.04 per
 bisect: one 4-vCPU runner at about $0.17/hour for about 12.5 minutes.
 
 | Victim model | v1 (240 runs) | v2 (164 runs) | v2 + good reused (124 runs) |
@@ -87,8 +90,5 @@ This is the scenario where v2's efficiency matters most: on Sonnet it roughly do
 
 ## 4. Still to measure
 
-- A real v2 run on `hist/b`, to replace the projected 164 runs with a measured number.
-- The other five branches (`hist/a`, `c`–`f`), to get an average bisect cost rather than one run.
-- Runs per bisect with Culprit's own LLM stages (localiser, fixer, verifier) once they're built.
-- Fixed monthly costs and the expected bisects per repo per month. Both are needed before cfo.ai's
-  runway and break-even figures mean anything.
+- Baseline reuse on the real victim (the 124-run case). On our ledger it would copy v1's baselines, so it wasn't a fair test.
+- Real usage: bisects per repo per month (the 10 and 30 above are assumptions).

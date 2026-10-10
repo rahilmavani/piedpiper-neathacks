@@ -28,7 +28,18 @@ Planned (from `PRD.md`); move items to "used" as they are integrated.
 - **Done (Prompt C, in progress):** Culprit core slice: SQLite ledger (idempotent writes), worktree sandbox with `uv sync --locked`, eval runner, deterministic bisect with `git bisect skip` semantics, and resume by memoised replay. Tested against a throwaway fixture victim (`tests/fixtures/make_victim.py`, no LLM): culprit found in ~2.5 s, with the unbuildable midpoint commit SKIPped. 25 unit tests pass.
 - **Moment worth screenshotting:** the first fixture run, where the midpoint commit failed `uv sync --locked` and was skipped, its neighbour was tested, and the bisect still landed on the breaking commit.
 - **Decision:** the leakage filter ignores `main`, `master` and `HEAD` as ref names because they carry no benchmark information and would strip ordinary prose. In the commit-message+diff fallback, only the message is filtered, because the diff is code, not Entire text.
-- **Planned:** neatlogs integration of Culprit, and the hour-1 gates against the real victim once `refunddesk` has checkpointed commits (it currently has one commit with no checkpoint).
+- **Done:** neatlogs integration of Culprit (details in `docs/neatlogs.md`). Every run is one `culprit` WORKFLOW trace with session = run_id, and git, worktree, install, victim-run, decision and Entire steps are TOOL spans. `culprit verify-trace` reads a run back through the CLI and audits it.
+  - Fixture bisect trace `3e8d50b4584b831185c65a33007c7533`: finalized, 151 spans, all parented, counts match the ledger.
+  - Error trace `af423d7e5c1796cf4c7600dd29cc636b`: failing span and root are ERROR.
+  - LLM capture check `ffdf497989747bf30856935f187e6013`: LLM span under AGENT, tokens match.
+  - Overall status: PARTIAL. Victim traces and the Culprit LLM stages don't exist yet.
+- **Failures fixed:**
+  - `neatlogs.trace()` left spans `OK` when an exception passed through, so the first error trace read back as healthy. Fixed by recording the exception and setting ERROR explicitly.
+  - Inside `uv run`, `neatlogs` resolved to the Python SDK's script instead of the CLI. Readback now looks up the CLI binary explicitly.
+- **Finding worth posting:** the neatlogs read API returns no custom span attributes, so "is run_id on every span?" can't be verified from attributes alone. We also put the run context into each span's input JSON so the audit can prove it.
+- **Open question:** neatlogs priced a `claude-sonnet-5-5` call at $3/$15 per MTok, versus the $2/$10 list price Culprit uses. Both numbers are kept; to be raised with neatlogs.
+- **Moment worth screenshotting:** `culprit verify-trace` printing PASS with span counts that match the ledger exactly.
+- **Waiting on:** hour-1 gates against the real victim. `refunddesk` has no checkpointed commits and no `hist/b` yet, so M1's exit (finding R1 end to end) is blocked on Prompt R / R1.
 
 ## Demo
 

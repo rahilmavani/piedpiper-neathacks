@@ -1,0 +1,57 @@
+<pasted_content id="cab8">
+You're continuing development of Culprit (team PiedPiper, neatHack 2026). Read HOW_IT_WORKS.md and hackathon.md first; they describe the current state accurately. PROMPTS.md has the answer key.
+
+## Ground rules (important)
+- Another session is running paid Culprit runs from /Volumes/DevSSD/Projects/piedpiper-neathacks. Each branch run starts a new process that loads code from that folder. Do NOT edit, check out branches, run uv sync, or touch .culprit/ in that folder.
+- Work ONLY in a separate git worktree. Create it first:
+    git -C /Volumes/DevSSD/Projects/piedpiper-neathacks worktree add /Volumes/DevSSD/Projects/piedpiper-neathacks-dev -b feat/bench fix/decision-gates
+    cp /Volumes/DevSSD/Projects/piedpiper-neathacks/.env /Volumes/DevSSD/Projects/piedpiper-neathacks-dev/
+  Then do all work in /Volumes/DevSSD/Projects/piedpiper-neathacks-dev (it gets its own .culprit/ ledger).
+- Never modify the RefundDesk repo (/Volumes/DevSSD/Projects/piedpiper-neathacks-refunddesk). Only read it, and only create worktrees from it. Never write the answer key, branch-to-scenario mapping, or words like scenario/regression/culprit/seed into anything in that repo.
+- No paid runs (anything that calls a model or the victim on RefundDesk) without asking me first. Build and test on the free fixture (tests/fixtures/make_victim.py).
+- Commit only when I say so. Don't push.
+
+## Current state (branch fix/decision-gates, commit 3c75be9)
+- Bisect core is built and tested (68 tests): suite pinning, skip, Wilson rule plus resampling, a one-sided Fisher regression gate (alpha 0.05), retries for infrastructure errors (infra_error status), budget caps, resume with SHAs pinned per run, neatlogs tracing plus verify-trace, and Entire intent with the leakage filter.
+- Provider: Anthropic (claude-sonnet-5-5) if ANTHROPIC_API_KEY is set, else OpenRouter z-ai/glm-5.3. This machine has only the OpenRouter key, so GLM is used. Culprit records the victim model per run (Config.victim_provider/victim_model) and passes it to every victim commit.
+- First real run: ff50e3620fdd on origin/hist/b with GLM. It found 397c427 (95% Wilson), skipped 22a37db, 240 runs, $0.60, 12.5 min, verify-trace PASS.
+- Runs on hist/a, c, d, e, f are in progress in the other session. Results will be logged in hackathon.md.
+- RefundDesk clone: /Volumes/DevSSD/Projects/piedpiper-neathacks-refunddesk (only origin/hist/* refs locally, no local hist/* branches). CULPRIT_VICTIM_REPO in .env points at it.
+- The entire CLI isn't installed yet, so intent falls back to the commit message and diff.
+
+## Your task: M3, `culprit bench` (PRD §10, §13; PROMPTS.md Prompt G step 1 and Prompt C M3)
+1. bench/scenarios.yaml: one entry per branch, with good ref good-v1.0 and bad ref origin/hist/<x>.
+2. bench/ground_truth.json: per branch, the culprit SHA, the responsible hunk (file plus line range, from `git show <sha>` in the RefundDesk clone), and the intended-gain metric (latency / tokens / cost). The culprit SHAs, from HOW_IT_WORKS.md §5.2:
+   a c4f2401, b 397c427, c acf3b7d, d 441058e, e 8ae122d, f 1777d44 (resolve to full SHAs).
+   Uninstallable commits: hist/b 22a37db, hist/f 2ad118e.
+3. `culprit bench --scenarios bench/scenarios.yaml --tag v1|v2`: runs each scenario through the existing Orchestrator (sequentially), then scores each against ground truth: culprit correct (or correctly "no_regression" when the bug isn't visible), victim runs used, cost, wall time, and status. It writes evidence/bench-<tag>.md with a table plus run IDs and neatlogs trace IDs. Ground truth must never reach any LLM or Entire text (leakage guard: pass only SHAs).
+4. Also support scoring EXISTING runs from the ledger (e.g. `culprit bench --score-runs <run_id>...` or by matching good/bad SHAs), so the runs already made don't need repeating.
+5. Tests on the fixture: scoring logic, the yaml/json loaders, and an end-to-end bench on 2 fixture scenarios.
+6. Update HOW_IT_WORKS.md (§14, §15) and add a hackathon.md entry. Then tell me what's done and ask before committing.
+</pasted_content id="cab8">
+
+---
+
+<pasted_content id="cab8">
+Good work. Answers:
+
+1. Commit: yes, commit on feat/bench. Don't push.
+
+2. Scoring the other session's runs: reading that ledger read-only is fine, but only AFTER I tell you the hist/a, c, d, e, f loop has finished. Don't open it while runs are writing.
+
+3. Decisions:
+- no_regression_unverified, excluded from accuracy: agreed. But never set the "visible on this model" flag from Culprit's own baseline for that same run; that would be circular, with Culprit grading itself. Visibility must come from a separate measurement: a strength check (PROMPTS.md Prompt G step 4) with its own runs, recorded in bench/strength.md along with its run IDs. Until then, leave the flag as unmeasured for a, c, d, e, f.
+- Intended gain null for a and e: fine.
+- SHAs instead of branch names in run logs: fine. Show the scenario label only in the bench report, never in the run.
+- Fixture traces going to neatlogs: please stop that. Tests should never export traces. Add a conftest.py autouse fixture that unsets NEATLOGS_API_KEY (and keeps tracing disabled) for every test, then re-run the suite and commit that too.
+
+4. Next, while you wait (free work only): start M5, the Localiser (PRD §8.3). Split the culprit diff into hunks, reverse-apply single hunks in a worktree, and re-test the discriminating tasks. Build and test it on the fixture only, and include the LLM ranking step behind llm.structured with a fake in tests. No paid runs. Ask me before committing.
+</pasted_content id="cab8">
+
+---
+
+After the conftest fix, build M5 as separate modules with their own commands, e.g. `culprit localise <run_id>` and `culprit fix <run_id>`, that read a finished run from the ledger. Keep edits to orchestrator.py minimal. Another session is building other features in parallel. Commit on feat/bench when each piece passes its tests; the main session reviews and pushes.
+
+---
+
+update in your worktree:  git merge origin/main

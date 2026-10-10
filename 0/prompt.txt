@@ -1,0 +1,254 @@
+session2 output: 
+
+<pasted_content id="809e">
+scripts/demo_replay.sh is done and committed on feat/bench as 4f24c2a (not pushed). I haven't run it on the real hero run, because that ledger lives in the main folder. I tested it on a recorded fake-victim story, and all 141 tests pass.
+
+Running it: scripts/demo_replay.sh with no arguments replays ff50e3620fdd. DEMO_PAUSE sets the pause between stages (default 2 s), and CULPRIT_DB points it at a different ledger.
+
+What it shows, in three stages:
+1. culprit report: the verdict, the baselines and regression gate, the bisect timeline, skipped commits and the start of the intent.
+2. culprit localise --replay: the verdict for each hunk revert, then the responsible hunk.
+3. culprit fix --replay: each attempt's gates and the verified fix, with the good/bad/fix median latencies.
+
+It ends with replayed from the ledger: 0 new victim runs, 0 new model calls, $0, and exits non-zero if either count changed.
+
+Why it costs nothing and touches no network:
+- Ledger: it copies your ledger (an SQLite backup) into a temp directory and replays from the copy. The real ledger is only read, so it's safe while other runs are writing.
+- Keys: it sets the Anthropic, OpenRouter and neatlogs keys to empty values, because the CLI loads .env and would otherwise put them back. With no neatlogs key, no traces are exported.
+- Network guard: uv runs offline, and a new file, scripts/no_network/sitecustomize.py, makes any internet connection or DNS lookup in the culprit process fail loudly. It's a guarantee, not just a claim.
+- Strict replay: I added a --replay flag to localise and fix. It needs no key and allows no new spending. If the ledger lacks something the stage needs, the stage fails before writing anything, rather than calling the model or running the agent.
+
+What the tests check:
+- The guard blocks network connections and DNS lookups but not local sockets.
+- A recorded fake-victim story replays with fake keys present. The output has the key lines, and the source ledger is byte-identical afterwards.
+- --replay refuses an unrecorded ranking and an unrecorded batch of agent runs, and writes nothing.
+
+Things you'll see on the real run:
+- Each stage first prints a screen ×1: good …, bad … baseline line. It comes from the other session's baseline code, so I left it in.
+- fix prints the median-latency line twice, once at the verification and once with the result. Say if you want the second one hidden for the recording.
+- Your hero run's fix record predates the latency fields. The replay doesn't need them, because it recomputes the gates from the recorded runs, so the latency line will still appear.
+
+The linter flags three import-order issues in scripts/strength_check.py, which the other session wrote; I left that file alone.
+</pasted_content id="809e">
+
+
+now I will send session 3 what you told me
+
+---
+
+ONce that is done add this neatlogs MCP server in claude code globally: 
+
+<pasted_content id="809e">
+{
+  "mcpServers": {
+    "neatlogs": {
+      "type": "http",
+      "url": "https://ingest.neatlogs.com/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_PROJECT_KEY"
+      }
+    }
+  }
+}
+</pasted_content id="809e">
+
+---
+
+Yes
+Yes
+
+---
+
+session3 output: 
+
+<pasted_content id="809e">
+it's committed as 45b7bc5 on feat/v2-efficiency, not pushed. I didn't regenerate any CSVs or reports.
+
+- How runs are split: every step kind belongs to exactly one stage. Bisect steps are found with orchestrator.is_bisect_kind, localise:* counts as localise, and fix:*, fix:revert and verify:heldout count as fix. The fix stage includes the held-out runs on good and bad.
+- New CSV columns: localise_runs, fix_runs, and a cost column for each stage: baseline, bisect, localise and fix.
+  - Each stage's cost includes the Culprit model calls made for it: localise_rank goes to localise, fix_propose to fix.
+  - llm_cost_usd still gives the model total.
+- Columns you didn't ask for: I added other_runs and other_cost_usd, which are 0 today. They catch any future step kind or model call that has no stage, so the stage runs always add up to victim_runs and the stage costs to cost_usd. The tests check both.
+- What ff50e3620fdd should show: in the test ledger built with this run's shape, the row reads 156 baseline / 84 bisect / 84 localise / 132 fix, 456 in total. On the real ledger the bisect alone is baseline + bisect: 240 runs, $0.60. The bisect_cost_usd column covers only the 84 bisect-step runs, so add the baseline cost to it to get the $0.60.
+- Report: culprit report's cost table now has rows for localising and for fixing and verifying.
+- Tests: the new tests are in tests/test_costs.py, including one that builds a ledger with that run's shape and checks the CSV row.
+</pasted_content id="809e">
+
+
+You do the investigate and stuff with the help of neatlogs MCP server
+
+---
+
+now i have refreshed session. try again from here itself
+
+---
+
+Should I dismiss it - yes
+1. HOw to get screenshots
+2. how to use cfo.ai
+3. NO
+4. Later
+
+---
+
+[Image #14]
+
+NO trace for this id it seems
+
+---
+
+[Image #15]
+[Image #16]
+These are the screenshots
+
+
+
+<pasted_content id="809e">
+➜  piedpiper-neathacks git:(main) ✗  uv run culprit verify-trace 978624283c27
+trace a9ae3f8ce2b7283129b1e9074c3deac1: finalized=True workflow=culprit session=978624283c27 spans=203
+  baseline_screen×1, culprit_run×1, decision_rule×4, discover_tasks×1, entire_checkpoint_explain×1, evaluate_commit:baseline×2, evaluate_commit:baseline:full×2, evaluate_commit:bisect×5, git_rev_list×1, git_worktree_add×9, pin_suite×1, regression_gate×1, select_discriminating_tasks×1, uv_sync_locked×9, victim_eval_run×164
+  PASS
+2026-10-10 20:52:56 - neatlogs - INFO - Neatlogs SDK shutdown complete
+➜  piedpiper-neathacks git:(main) ✗ DEMO_PAUSE=1 bash scripts/demo_replay.sh
+
+━━ 1/3  culprit report ff50e3620fdd: what broke, and which commit did it
+# Culprit report: run `ff50e3620fdd`
+
+**Verdict: found.** Culprit: 397c42743be8cd80ae1d1e30c058772c1bd16add 'perf(agent): run tool calls in parallel and drop per-result validation' (confidence: 95% Wilson)
+
+- Culprit: `397c42743be8cd80ae1d1e30c058772c1bd16add` 'perf(agent): run tool calls in parallel and drop per-result validation'
+- Confidence: 95% Wilson
+- Range: `good-v1.0..origin/hist/b` (14 commits) in `/Volumes/DevSSD/Projects/piedpiper-neathacks-refunddesk`
+- Victim: z-ai/glm-5.3 via openrouter; k = 3; suite git:main:evals @ ba86ed06d3e5be7a1ff
+- Cost: $1.13 for 456 victim runs; wall time 12.5 min
+
+## Baselines and regression gate
+
+| End | SHA | Passes | 95% Wilson | Screen ×1 | Reused |
+|---|---|---:|---|---:|---:|
+| good | `0479c273fb` | 78/78 | [0.95, 1.00] | — | 0 |
+| bad | `f6511b8e6b` | 57/78 | [0.62, 0.82] | — | 0 |
+
+One-sided Fisher exact p = 1.006e-07 (alpha 0.05): significant, computed on the runs actually made.
+
+Discriminating tasks: `email_failed_payload_three_times`, `escalate_failed_payload_three_times`, `escalate_failed_payload_twice`, `multiturn_refund_and_email_failed_repeatedly`, `refund_failed_payload_once`, `refund_failed_payload_three_times`, `refund_failed_payload_twice`
+
+## Bisect timeline
+
+| # | Pos | Commit | Subject | Passes | 95% Wilson | Threshold | Rounds | Verdict |
+|---:|---:|---|---|---:|---|---:|---|---|
+| 1 | 7 | `22a37dbfff` | build(deps): pin python-dotenv to 1.2.99 | — | — | — | install | **SKIP** |
+| 2 | 8 | `81c07532c4` | revert(deps): restore the python-dotenv version range | 21/21 | [0.85, 1.00] | 0.50 | bisect | **GOOD** |
+| 3 | 11 | `c9a132f01b` | test(tasks): cover loading unknown and held-out task ids | 3/21 | [0.05, 0.35] | 0.50 | bisect | **BAD** |
+| 4 | 9 | `8793325134` | test(store): cover JsonStore create, load and save | 21/21 | [0.85, 1.00] | 0.50 | bisect | **GOOD** |
+| 5 | 10 | `397c42743b` | perf(agent): run tool calls in parallel and drop per-result validation | 23/105 | [0.15, 0.31] | 0.50 | bisect → localise:h4 → localise:h3 → localise:h5 → localise:h4+h3 | **GOOD** |
+| 6 | ? | `0479c273fb` | fix(readback): back off on rate limits and add root-only payload mode | 18/18 | [0.82, 1.00] | — | verify:heldout | **INCONCLUSIVE** |
+| 7 | 14 | `f6511b8e6b` | docs(readme): document the --tool-log flag | 111/114 | [0.93, 0.99] | 0.87 | verify:heldout → fix:2 | **INCONCLUSIVE** |
+
+## Skipped commits
+
+- `22a37dbfff` 'build(deps): pin python-dotenv to 1.2.99': install failed, treated like `git bisect skip`.
+  >   ╰─▶ Because there is no version of python-dotenv==1.2.99 and your project
+  >       depends on python-dotenv==1.2.99, we can conclude that your project's
+  >       requirements are unsatisfiable.
+
+## Intent
+
+```text
+Commit message:
+perf(agent): run tool calls in parallel and drop per-result validation
+
+Each response's tool calls now run on a thread pool. Lookups run first so
+refunds in the same batch see them, and calls to the same tool stay in
+ToolRuntime gains an RLock around the call log, ids, fault plan and store
+
+━━ 2/3  culprit localise ff50e3620fdd --replay: which hunk of that commit is responsible
+  localise:h4: 0/21 CI [0.00, 0.15] vs t=0.50 → BAD
+  localise:h3: 1/21 CI [0.01, 0.23] vs t=0.50 → BAD
+  localise:h5: 0/21 CI [0.00, 0.15] vs t=0.50 → BAD
+  localise:h4+h3: 21/21 CI [0.85, 1.00] vs t=0.50 → GOOD
+responsible: hunk pair hunk 4 (src/refunddesk/agent.py:144-148), hunk 3 (src/refunddesk/agent.py: lines 98-123 removed)
+
+━━ 3/3  culprit fix ff50e3620fdd --replay: a minimal fix, verified on the suite and held-out tasks
+  fix:2: 96/96 CI [0.96, 1.00] vs good [0.96, 1.00]; latency 7992 vs bad 9288 (good 8675); VERIFIED
+    median latency per run: good 7478 ms, bad 7610 ms, fix 7128 ms
+    note: the commit's latency gain is not visible: mean latency good 8675 vs bad 9288, so the gain gate passes trivially
+fix: verified_fix
+  median latency per run: good 7478 ms, bad 7610 ms, fix 7128 ms
+  note: the commit's latency gain is not visible: mean latency good 8675 vs bad 9288, so the gain gate passes trivially
+
+replayed from the ledger: 0 new victim runs, 0 new model calls, $0
+➜  piedpiper-neathacks git:(main) ✗ cat evidence/bench-v2.md
+# Culprit bench v2
+
+- Generated: 2026-10-10T14:15:04+00:00
+- Mode: scored existing runs from `/Volumes/DevSSD/Projects/piedpiper-neathacks/.culprit/ledger.sqlite`
+- Culprit code: `e4a4add6c4f5f455a79e0f52390925dba0c2dcec`
+- Victim repo: `/Volumes/DevSSD/Projects/piedpiper-neathacks-refunddesk`
+- Victim model(s): `z-ai/glm-5.3`
+
+## Summary
+
+- **Culprit accuracy: 6/6 scored correct** (correct commit, or a correct `no_regression`)
+- Victim runs: 588 (98 per scenario)
+- Cost: $1.51 ($0.25 per scenario)
+- Wall time: 29m 09s (sum of runs)
+- Hunk accuracy and fix verification: not scored by bench (see `culprit localise` / `culprit fix`)
+
+## Results
+
+| Scenario | Outcome | Status | Found | Expected | Victim runs | Cost | Wall time | Skipped | Model | Run |
+|---|---|---|---|---|---:|---:|---:|---|---|---|
+| hist/a | **correct_no_regression** | no_regression | – | `c4f2401` | 52 | $0.13 | 2m 09s | – | `z-ai/glm-5.3` | `e937df6dadbb` |
+| hist/b | **correct** | found | `397c427` | `397c427` | 164 | $0.46 | 8m 16s | `22a37db` | `z-ai/glm-5.3` | `978624283c27` |
+| hist/c | **correct** | found | `acf3b7d` | `acf3b7d` | 84 | $0.24 | 4m 43s | – | `z-ai/glm-5.3` | `cd5641dd3a46` |
+| hist/d | **correct_no_regression** | no_regression | – | `441058e` | 52 | $0.12 | 2m 42s | – | `z-ai/glm-5.3` | `61217e8fb2ea` |
+| hist/e | **correct_no_regression** | no_regression | – | `8ae122d` | 52 | $0.12 | 2m 49s | – | `z-ai/glm-5.3` | `57c1f7da7b61` |
+| hist/f | **correct** | found | `1777d44` | `1777d44` | 184 | $0.45 | 8m 30s | `2ad118e` | `z-ai/glm-5.3` | `7caf109c2b88` |
+
+## Runs
+
+### hist/a: run `e937df6dadbb`
+
+- Range: `0479c273fbd3..6a2f05ad5b5c`
+- Summary: No significant regression to bisect: good 26/26 vs bad 26/26, one-sided Fisher p=1.0000 ≥ 0.05
+- Confidence: –
+- neatlogs Culprit trace(s): `051267132a5d2b6f3528dc050b8b5c9e` (session = run ID `e937df6dadbb`)
+
+### hist/b: run `978624283c27`
+
+- Range: `0479c273fbd3..f6511b8e6bb0`
+- Summary: Culprit: 397c42743be8cd80ae1d1e30c058772c1bd16add 'perf(agent): run tool calls in parallel and drop per-result validation' (confidence: 95% Wilson)
+- Confidence: 95% Wilson
+- neatlogs Culprit trace(s): `a9ae3f8ce2b7283129b1e9074c3deac1` (session = run ID `978624283c27`)
+
+### hist/c: run `cd5641dd3a46`
+
+- Range: `0479c273fbd3..30960fe9d716`
+- Summary: Culprit: acf3b7df9fb4bf83761787e5f16dbcebc6f004bd 'perf(agent): shorten the history window to 6 messages' (confidence: 95% Wilson)
+- Confidence: 95% Wilson
+- neatlogs Culprit trace(s): `0a44a8ea2d4e463983afaf56eaf6d6c9` (session = run ID `cd5641dd3a46`)
+
+### hist/d: run `61217e8fb2ea`
+
+- Range: `0479c273fbd3..819d692b677e`
+- Summary: No significant regression to bisect: good 26/26 vs bad 26/26, one-sided Fisher p=1.0000 ≥ 0.05
+- Confidence: –
+- neatlogs Culprit trace(s): `0d5cf2fae2214e6a4cf4c653c99a86a3` (session = run ID `61217e8fb2ea`)
+
+### hist/e: run `57c1f7da7b61`
+
+- Range: `0479c273fbd3..255f40c54e0e`
+- Summary: No significant regression to bisect: good 26/26 vs bad 26/26, one-sided Fisher p=1.0000 ≥ 0.05
+- Confidence: –
+- neatlogs Culprit trace(s): `7deea3d2d7aa0623fb9d417beab6e822` (session = run ID `57c1f7da7b61`)
+
+### hist/f: run `7caf109c2b88`
+
+- Range: `0479c273fbd3..3b0938b9da37`
+- Summary: Culprit: 1777d44476fc5bfd298d96d296b9d97b6c80b258 'perf(agent): disable tool-call retries' (confidence: 95% Wilson)
+- Confidence: 95% Wilson
+- neatlogs Culprit trace(s): `e8a5d2e5f9519344aab44e0bbfb7ca38` (session = run ID `7caf109c2b88`)
+
+Outcomes: `correct` names the planted commit; `correct_no_regression` means the gate found no significant regression and none was expected (no bug planted in the range, or a measurement showed this bug is invisible on this model); `missed` means it is known to be visible; `no_regression_unverified` means its visibility on this model has not been measured; `ambiguous_*` means skipped commits hid the boundary; `incomplete` means the run stopped (budget, infrastructure or error). Wall time is from the run's start to its finish in the ledger, so it includes any pause before a resume.
+</pasted_content id="809e">

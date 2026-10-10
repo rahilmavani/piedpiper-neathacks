@@ -1,0 +1,99 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4K2XW51W1D562VY8FTRX01B",
+  "session_id": "4ac0b432-44fe-4e72-9e87-270092b3ca58",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-10T14:19:34.835779Z",
+  "branch": "main",
+  "checkpoints_count": 5,
+  "files_touched": [
+    "DEMO.md",
+    "README.md",
+    "business/runs.csv",
+    "evidence/RUNS.md",
+    "evidence/bench-v2.json",
+    "evidence/bench-v2.md",
+    "evidence/reports/report-978624283c27.html",
+    "evidence/reports/report-978624283c27.md",
+    "evidence/reports/report-ff50e3620fdd.html",
+    "evidence/reports/report-ff50e3620fdd.md"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-opus-5-5",
+  "turn_id": "3a1b6da62e2a",
+  "checkpoint_transcript_start": 1586,
+  "transcript_lines_at_start": 1586,
+  "compact_transcript_start": 234,
+  "token_usage": {
+    "input_tokens": 70,
+    "cache_creation_tokens": 32823,
+    "cache_read_tokens": 17067280,
+    "output_tokens": 20813,
+    "api_call_count": 34
+  },
+  "skill_events_version": 1,
+  "skill_events": [
+    {
+      "id": "claude-skill-toolu_01SRSgEDBJ5manoRB72AH3XN",
+      "event_type": "tool_invocation",
+      "skill": {
+        "name": "claude-api"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "skill_tool_use",
+        "confidence": "explicit"
+      },
+      "turn_id": "ec259dd7962f",
+      "transcript_anchor": {
+        "unit": "line",
+        "start": 119,
+        "end": 120,
+        "entry_ids": [
+          "a77921ef-bcb2-4b50-bd9f-e43ae93e7fa3"
+        ],
+        "tool_use_id": "toolu_01SRSgEDBJ5manoRB72AH3XN"
+      },
+      "native": {
+        "tool_name": "Skill",
+        "tool_use_id": "toolu_01SRSgEDBJ5manoRB72AH3XN"
+      },
+      "collapse": {
+        "target": "tool_pair",
+        "label": "Skill: claude-api",
+        "default_collapsed": true
+      }
+    }
+  ],
+  "session_metrics": {
+    "turn_count": 24
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-10T14:19:34.725975Z",
+    "agent_lines": 0,
+    "agent_removed": 0,
+    "human_added": 2775,
+    "human_modified": 10,
+    "human_removed": 0,
+    "total_committed": 2775,
+    "total_lines_changed": 2785,
+    "agent_percentage": 0,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 1199,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "business/runs.csv": 13,
+        "evidence/bench-v2.json": 156,
+        "evidence/bench-v2.md": 72,
+        "evidence/reports/report-ff50e3620fdd.html": 510,
+        "evidence/reports/report-ff50e3620fdd.md": 448
+      }
+    }
+  ]
+}

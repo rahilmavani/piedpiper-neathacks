@@ -1,0 +1,72 @@
+I sent the earlier messages you gave me to both
+
+---
+
+[Image #8] given. Now what?
+
+What is the progress of our app?
+
+---
+
+I did not do What you can do now yet
+
+Session2 response: 
+
+<pasted_content id="809e">
+culprit fix now prints the good and bad baseline latencies next to the gain gate. It's committed on feat/bench as a3d497c (not pushed), and all 137 tests pass.
+
+I merged origin/main (ec72b65) first; it came in as a merge commit, 4def75e.
+
+What culprit fix now prints. For every verification it adds a line like:
+    median latency per run: good 7086 ms, bad 7138 ms, fix 7100 ms
+If the commit was meant to save tokens or cost instead, that metric is shown for good, bad and the fix as well.
+
+If bad wasn't better than good on that metric by more than the tolerance (10%), it adds:
+    note: the commit's latency gain is not visible: mean latency good … vs bad …, so the gain gate passes trivially
+The final result repeats both lines. They're also stored in the fix artifact (baselines, gain_note), and each attempt's gate results record the gain metric at good, whether bad improved on it, and the three median latencies. So a report can show that the "make it faster" commit never made anything faster.
+
+Tests. A unit test uses your hero numbers (7086 vs 7138 ms): the gain gate passes and the note appears. The fake-victim test covers the opposite case, where the culprit really is faster (300 → 100 ms). There it prints good 300 ms, bad 100 ms, fix 100 ms with no note.
+
+Hero run, not re-run. The hero run's stored fix artifact predates this change, so it doesn't have these fields. Re-running culprit fix ff50e3620fdd would reuse the stored attempts and verification runs, ask the model nothing new and run no victim tasks, and would rewrite the artifact with the new fields. But it does open a neatlogs trace and needs the run's model key, so I've left it for the main session.
+</pasted_content id="809e">
+
+
+Session3 response: 
+
+<pasted_content id="809e">
+README.md and DEMO.md now use the real hist/b localise and fix numbers, and the only TODO left is the v2 bench. I merged ec72b65 without conflicts, all 131 tests pass, and the docs are committed as 53bbac7 on feat/v2-efficiency, not pushed.
+
+- README: there's a new "Localise and fix on the hero bug" section with both stages from RUNS.md.
+  - Localise: the pair h4 + h3 turns the commit GOOD (21/21) when neither hunk does alone. That matches the answer key, and the parallel-execution hunks weren't blamed. It took 84 runs and cost $0.20.
+  - Fix: verified_fix, 96/96 against good's 96/96, and held-out 18/18 against bad's 15/18. It took 132 runs and cost $0.33.
+  - Latency caveat: the fix restores validation while keeping the parallel execution. The docs say outright that there was no speed-up to keep: median latency was 7,086 ms at good and 7,138 ms at bad. They also say the gate passing only shows the fix isn't slower.
+  - Limitations: localise and fix have one real case so far (hist/b), and the "gain kept" gate hasn't yet been tested against a real gain.
+- DEMO: the localise and fix scenes are filled in with these numbers and the caveat narration. The rejected first fix attempt is pointed out as the "an action failed, here's what it did next" moment the submission asks for. The closing link now points to the v1→v2 commit 69e6b60, which has Entire checkpoint 01M4JYTGY8EAX1NK5JMS066Y4K.
+- Other TODOs reworded: the TODOs for things nobody is producing became plain "not done yet" lines: neatlogs Investigate and Detections, the cfo.ai plan itself, and Entire intent on a recorded run. For that last one, the README now gives the entire checkpoint explain command for the hero commit.
+- Replaying in the demo is free: re-running culprit localise or culprit fix on ff50e3620fdd makes no model calls and no new victim runs. I confirmed that in the code: fix replays its recorded attempts, localise reuses its stored hunk ranking, and victim runs are already in the ledger.
+- Two numbers are my own sums of RUNS.md figures, not quoted from it: the end-to-end hero cost of $1.13 ($0.60 + $0.20 + $0.33) and the 456 victim runs (240 + 84 + 132). Both docs label them as sums.
+</pasted_content id="809e">
+
+---
+
+given to session2
+
+---
+
+<task-notification>
+<task-id>bvloc5xg6</task-id>
+<tool-use-id>toolu_019oNCnJjz3KZbvxr7Q3xMMG</tool-use-id>
+<output-file>/private/tmp/claude-501/-Volumes-DevSSD-Projects-piedpiper-neathacks/4ac0b432-44fe-4e72-9e87-270092b3ca58/tasks/bvloc5xg6.output</output-file>
+<status>completed</status>
+<summary>Background command "Run v2 (staged, no reuse) on all six branches sequentially" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b12858tj2</task-id>
+<tool-use-id>toolu_01YLzGuPPNdo6kDXReDUDqbP</tool-use-id>
+<output-file>/private/tmp/claude-501/-Volumes-DevSSD-Projects-piedpiper-neathacks/4ac0b432-44fe-4e72-9e87-270092b3ca58/tasks/b12858tj2.output</output-file>
+<status>completed</status>
+<summary>Background command "Audit the v2 runs' neatlogs traces" completed (exit code 0)</summary>
+</task-notification>

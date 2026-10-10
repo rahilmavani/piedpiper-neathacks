@@ -1,0 +1,7 @@
+<pasted_content id="cab8">
+Update: the main session ran your M5 on the real hero run ff50e3620fdd (see evidence/RUNS.md on origin/main, now ec72b65; merge it):
+- localise: single reverts h4 0/21, h3 1/21, h5 0/21; the pair h4+h3 gives 21/21, which matches the ground truth exactly. $0.20.
+- fix: attempt 1 was rejected by your snippet check (GLM made up a placeholder "old" string); attempt 2 was verified 96/96 like good, parallel pool untouched. $0.33.
+- llm.structured now defaults to max_tokens 16000 (two of three GLM ranking calls were cut off at 4000).
+Small follow-up: the "make it faster" commit never made the agent measurably faster (median latency good 7086 vs bad 7138 ms), so the gain gate passes trivially. Make `culprit fix` print the good/bad baseline latencies next to the gain gate, so a report can't over-claim.
+</pasted_content id="cab8">

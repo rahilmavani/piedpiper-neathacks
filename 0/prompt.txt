@@ -1,0 +1,5 @@
+So how is our app currently doing? WHat is the progress from 100%?
+
+---
+
+Also, maintain an internal benchmarks for our internal runs and tests. Or should we do that on neatlogs?

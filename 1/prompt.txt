@@ -1,0 +1,32 @@
+<pasted_content id="4096">
+You're working on Culprit (neatHack 2026). Read HOW_IT_WORKS.md and hackathon.md first.
+Rules: create your own worktree and work only there:
+  git -C /Volumes/DevSSD/Projects/piedpiper-neathacks worktree add /Volumes/DevSSD/Projects/piedpiper-neathacks-v2 -b feat/v2-efficiency origin/fix/decision-gates
+  cp /Volumes/DevSSD/Projects/piedpiper-neathacks/.env /Volumes/DevSSD/Projects/piedpiper-neathacks-v2/
+Never modify the RefundDesk repo. No paid runs. Commit when tests pass; don't push (another session handles git and paid runs). Don't touch the main folder or other worktrees.
+
+Task 1, the v1→v2 efficiency improvement (the required before/after evidence):
+- Reuse baseline results across runs. The good ref's suite results are the same whenever (good SHA, suite SHA, victim provider+model, k) match, so reuse them from earlier runs in the ledger instead of re-running. Record the provenance (which run the results came from) in the new run, so it stays auditable.
+- Make the baseline cheaper: stage it. First run every task ×1 on both ends; run the full k only on tasks that differ or are flaky. Keep the Fisher gate correct: it must use the runs actually made.
+- Unit-test both on the fixture, and show on the fixture how many victim runs a bisect needs before and after.
+Task 2, M6: `culprit report <run_id>` (markdown plus static HTML: verdict, bisect timeline with Wilson intervals, skips, intent, diff, trace IDs, costs) and `culprit export-costs --format csv` (per-run cost, victim runs, wall time), plus business/cfo-inputs.md with pricing scenarios A/B/C labelled as hypotheses.
+Put each in its own module; keep edits to orchestrator.py minimal.
+</pasted_content id="4096">
+
+---
+
+Reminder: you were launched from the main folder. Make every edit, test run and git command use /Volumes/DevSSD/Projects/piedpiper-neathacks-v2 paths (e.g. cd there first in each Bash call). Nothing should change under /Volumes/DevSSD/Projects/piedpiper-neathacks.
+
+---
+
+<task-notification>
+<task-id>bie4jgqw2</task-id>
+<tool-use-id>toolu_019S7J3GgLfA8fuMKA9L8L3h</tool-use-id>
+<output-file>/private/tmp/claude-501/-Volumes-DevSSD-Projects-piedpiper-neathacks/4e2fbf44-3f5c-4d2c-bb07-fa6d2222b531/tasks/bie4jgqw2.output</output-file>
+<status>failed</status>
+<summary>Background command "Serve report directory on localhost" failed with exit code 144</summary>
+</task-notification>
+
+---
+
+update in your worktree:  git merge origin/main in their worktree

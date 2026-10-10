@@ -1,0 +1,7 @@
+<task-notification>
+<task-id>bcaeh12nr</task-id>
+<tool-use-id>toolu_01Kh8fUJzkXm6KXrgXTMRucb</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-rahilmavani-RAHIL-MAVANI-Personal-Projects-Hackathons-neathack-piedpiper-neathacks/272cf357-ee94-42c9-9567-e231676b6cb3/tasks/bcaeh12nr.output</output-file>
+<status>completed</status>
+<summary>Background command "Restart neatlogs device-flow login in background" completed (exit code 0)</summary>
+</task-notification>

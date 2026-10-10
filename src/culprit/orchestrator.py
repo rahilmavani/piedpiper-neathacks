@@ -35,6 +35,11 @@ class InfraError(RuntimeError):
     """A victim run failed for infrastructure reasons (API, config, timeout), not because of the commit."""
 
 
+def is_bisect_kind(kind: str) -> bool:
+    """Steps that decide a commit's bisect verdict (not baselines, not Localiser reverts)."""
+    return kind == "bisect" or kind.startswith("resample:")
+
+
 @dataclass(frozen=True)
 class StepResult:
     sha: str
@@ -191,16 +196,19 @@ class Orchestrator:
                     raise errors[0]
 
     # noise-aware classification (PRD §8.1 step 4, §8.2) ------------------------------
-    def classify(self, run_id: str, sha: str, base: Baselines, subset: list[str], ranked: list[str]) -> Verdict:
+    def classify(self, run_id: str, sha: str, base: Baselines, subset: list[str], ranked: list[str],
+                 prefix: str = "") -> Verdict:
         """Wilson decision on D × k; INCONCLUSIVE → k more repetitions, then more tasks, up to the cap.
 
         If the cap is reached and it is still inconclusive, the point estimate decides and the
-        step is flagged `low_confidence`.
+        step is flagged `low_confidence`. A `prefix` (e.g. the Localiser's "localise:h3") names the
+        steps instead of "bisect" and "resample:N", so other judgements of the same commit stay apart.
         """
-        first = self.evaluate(run_id, "bisect", sha, subset, range(self.cfg.k))
+        kind = prefix or "bisect"
+        first = self.evaluate(run_id, kind, sha, subset, range(self.cfg.k))
         if first.skipped:
             return Verdict.SKIP
-        runs, kind = list(first.runs), "bisect"
+        runs = list(first.runs)
         k = self.cfg.k
         # Only tasks that dropped from good to bad carry signal; a task that passes on both ends
         # adds cost and pulls the threshold towards 1. With none left, resample the subset again.
@@ -225,13 +233,13 @@ class Orchestrator:
             step = self.ledger.get_step(run_id, kind, sha)
             self.ledger.set_decision(step["step_id"], verdict or Decision.INCONCLUSIVE, flag, low, high,
                                      len(runs), passes)
-            self.log(f"  {sha[:10]} {gitops.subject(self.repo, sha)[:44]!r}: {passes}/{len(runs)} "
+            self.log(f"  {prefix or f'{sha[:10]} {gitops.subject(self.repo, sha)[:44]!r}'}: {passes}/{len(runs)} "
                      f"CI [{low:.2f}, {high:.2f}] vs t={threshold:.2f} → {decision}"
                      + (f" → {verdict} ({flag})" if flag else ""))
             if final:
                 return verdict  # type: ignore[return-value]
             tasks, reps = plans[round_]
-            kind = f"resample:{round_ + 1}"
+            kind = f"{prefix}/resample:{round_ + 1}" if prefix else f"resample:{round_ + 1}"
             self.log(f"    resample {round_ + 1}: {len(tasks)} tasks × reps {reps.start}..{reps.stop - 1}")
             extra = self.evaluate(run_id, kind, sha, tasks, reps)
             if extra.skipped:  # cannot happen after a successful install, but stay safe
@@ -356,7 +364,8 @@ class Orchestrator:
         self.log(f"  discriminating tasks: {', '.join(subset)}")
 
         result = bisect(candidates, lambda sha: self.classify(run_id, sha, base, subset, ranked), tested)
-        low_conf = [s["commit_sha"][:10] for s in self.ledger.steps(run_id) if s["flags"] == "low_confidence"]
+        low_conf = [s["commit_sha"][:10] for s in self.ledger.steps(run_id)
+                    if s["flags"] == "low_confidence" and is_bisect_kind(s["kind"])]
         confidence = "95% Wilson" if not low_conf else f"low: point estimate decided {', '.join(low_conf)}"
         if result.first_bad is None:
             summary = f"Culprit is one of {len(result.suspects)} commits (skipped commits hide the boundary): " + \

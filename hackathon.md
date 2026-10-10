@@ -92,6 +92,23 @@ Planned (from `PRD.md`); move items to "used" as they are integrated.
 - **Decision:** a `no_regression` result is only scored as correct when ground truth says so: no bug planted in the range, or a measurement on that victim model showed the bug is invisible. Otherwise it's `no_regression_unverified` (not counted as accurate) until the strength check is done. Only `hist/b` has a visibility measurement (GLM 5.3 and Sonnet 5.5: 18/18 → 0/18). Visibility is never taken from a Culprit run's own baselines (that would be Culprit grading itself); it must come from the separate strength check (Prompt G step 4) recorded with run IDs in `bench/strength.md`.
 - **Decision:** hist/a ("API consistency") and hist/e ("fewer rejected tool calls") get intended-gain metric `null`, because their claimed gain isn't latency, tokens or cost.
 
+- **Done: `tests/conftest.py`** (committed with bench as `94d0a26`). Every test runs without `NEATLOGS_API_KEY`, with tracing off and with both provider calls blocked, so tests can't export traces or spend money.
+- **Done: M5 part 1, the Localiser (PRD §8.3; branch `feat/bench`, fake victim only, $0).**
+  - It splits the culprit diff into hunks, leaving out `evals/`, which the pinned suite replaces.
+  - One AI call (`llm.structured`) ranks the hunks from the diff, the leak-filtered intent and the telling tasks' results. Its order is stored, so resume never asks twice, and diff order is the fallback if the call fails.
+  - It is a separate command, `culprit localise <run_id>`, that reads a finished, found run from the ledger. The orchestrator gained only a step-kind prefix and a filter, because another session is changing it in parallel.
+  - It reverse-applies the top 3 hunks one at a time on the culprit commit, each in its own worktree. Each revert is judged by the same Wilson rule, resampling, budget and resume as a bisect step, then pairs are tried (capped at 3), then the answer falls back to the whole commit.
+  - **Fake-victim results:**
+    - Multi-hunk culprit, with the fake model wrong on purpose (ranking a harmless timeout change first): that revert stayed BAD, the next one flipped the commit to GOOD, and the hunk was named correctly.
+    - Culprit that needs two hunks together, with no model available (diff-order fallback): every single revert stayed BAD, and a pair flipped it.
+    - Resume reran nothing and made no new model call.
+  - 96 tests pass (10 new).
+- **Dry check on the real culprit commits** (git archive trees, no victim runs): every hunk of all six commits reverse-applies on its own (9, 16, 3, 1, 6 and 3 hunks).
+- **Finding worth posting:** on the hero commit, "revert one hunk at a time" can't work. The retry-loop hunk calls `validate_tool_result`, which another hunk of the same commit deleted, so only the pair restores behaviour. A localiser that stops at single hunks would blame the whole commit.
+- **Decision:** reverts are applied on the culprit commit, not on the branch head, so later commits can't block a hunk. The Fixer will work on the head.
+- **Not yet:** failing-trace contents from neatlogs in the ranking prompt. The prompt uses the ledger's pass counts, errors and task definitions for now.
+- **Moment worth screenshotting:** the fake-victim log, `hunk ranking (llm): h4, h3, h1`, then `localise:h4: 1/15 … → BAD`, then `localise:h3: 14/15 … → GOOD`, then `responsible: hunk 3 (refunddesk/agent.py:3)`.
+
 ## Demo
 
 - *Pending.* No demo URL yet.

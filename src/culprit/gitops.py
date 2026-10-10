@@ -36,4 +36,4 @@ def message(repo: Path, sha: str) -> str:
 
 
 def diff(repo: Path, sha: str) -> str:
-    return git(repo, "show", "--format=", "--patch", "--no-color", sha)
+    return git(repo, "show", "--format=", "--patch", "--no-color", "--no-ext-diff", sha)

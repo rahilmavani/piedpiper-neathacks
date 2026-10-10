@@ -31,8 +31,8 @@ def locked_install_ok(repo: Path, rev: str, tmp_path: Path) -> bool:
 @pytest.mark.parametrize(
     "kwargs, agent_at_8",
     [
-        ({"breaks_at": 10, "noisy_from": 8}, "FRAGILE_PASS = 0.75"),  # the docstring example
-        ({"breaks_at": 8, "noisy_from": None}, "FRAGILE_PASS = 0.05"),
+        ({"breaks_at": 10, "noisy_from": 8}, "RETRY_PASS = 0.75"),  # the docstring example
+        ({"breaks_at": 8, "noisy_from": None}, "RETRY_PASS = 0.05"),
     ],
 )
 def test_change_on_the_revert_commit_keeps_the_revert(tmp_path: Path, kwargs, agent_at_8):

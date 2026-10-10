@@ -55,11 +55,12 @@ Culprit then:
 
 Planned but **NOT BUILT** yet:
 
-- pointing at the exact guilty lines inside the commit
 - writing a minimal fix and proving it works
 - generating a report
 
-Built but not yet run on all six branches: **scoring itself on a benchmark** (`culprit bench`, [§14](#14-commands-you-can-run)).
+Built but not yet run on the real victim:
+- **scoring itself on a benchmark** (`culprit bench`, [§14](#14-commands-you-can-run))
+- **pointing at the guilty hunk inside the commit** (the Localiser, [§7.8](#78-localise-the-responsible-hunk-m5-built-and-tested-on-the-fake-victim-only)), tested on the fake victim only
 
 To show it working, we built a realistic victim, **RefundDesk**, and planted six bugs in its history. In each case we know the right answer, so we can check Culprit honestly.
 
@@ -345,8 +346,9 @@ Branches `a`, `c`, `d`, `e` and `f` have **not been measured yet**. Some may tur
 
 | File | Job |
 |---|---|
-| `cli.py` | Commands: `run`, `resume`, `bench`, `verify-trace` |
+| `cli.py` | Commands: `run`, `resume`, `bench`, `localise`, `verify-trace` |
 | `orchestrator.py` | Runs the whole investigation |
+| `localise.py` | Localiser: splits the culprit diff into hunks, ranks them with one AI call, searches single-hunk then pair reverts |
 | `bench.py` | Runs scenarios and scores them against `bench/ground_truth.json`; writes `evidence/bench-<tag>.md` |
 | `bisect.py` | The halving search, including skip handling |
 | `stats.py` | Wilson interval and good/bad/unsure decision |
@@ -357,11 +359,11 @@ Branches `a`, `c`, `d`, `e` and `f` have **not been measured yet**. Some may tur
 | `ledger.py` | SQLite database of runs, steps, task runs, artifacts |
 | `tracing.py` | neatlogs setup and span helper |
 | `readback.py` | Reads traces back from neatlogs and audits them |
-| `llm.py` | The only place that calls Claude; validated JSON with automatic repair (**not used by `run` yet**) |
+| `llm.py` | The only place that calls Claude; validated JSON with automatic repair (used by the Localiser's hunk ranking) |
 | `config.py` | Settings and defaults |
 | `gitops.py` | Small git helpers (resolve ref, commit range, subject, diff) |
 
-About 2,700 lines of Python, with **86 tests passing** (no AI calls, about 30 s).
+About 3,000 lines of Python, with **96 tests passing** (no AI calls, about 30 s).
 
 ### 6.2 Key settings (`config.py`)
 
@@ -436,13 +438,43 @@ uv run culprit run --repo ../refunddesk --good good-v1.0 --bad hist/b
 - If the commit has no checkpoint, fall back to the commit message plus the diff, and say "intent unavailable".
 - Pass the text through the **leakage filter** ([§12](#12-keeping-the-answers-secret-leakage-guard)) and store it with the diff in the ledger.
 
-### 7.8 Finish
+### 7.8 Localise the responsible hunk (M5, built and tested on the fake victim only)
+A separate command, run on a finished run whose culprit was found: `culprit localise <run_id>` (PRD §8.3, `localise.py`). It doesn't change the run's status or summary. It reads the run from the ledger: config, SHAs, pinned suite and recorded baselines (no new baseline runs), plus the telling tasks the bisect used.
+
+Steps:
+1. **Split** the culprit's diff (`git show`, 3 lines of context) into hunks, numbered in diff order. Hunks under the suite directory (`evals/`) are left out, because the pinned suite replaces those files anyway. Binary and mode-only changes have no hunks.
+2. **Rank** them with one AI call (`llm.structured`, schema `HunkRanking`). The prompt holds only:
+   - the hunks
+   - the commit's intent as stored in the ledger, which has already been through the leakage filter
+   - for each telling task: passes before the commit and at it, up to 3 distinct errors, and the task's definition from the pinned suite
+
+   Hunk ids the model leaves out keep diff order after the ones it ranked. If the call fails, the order falls back to diff order. The ranking is stored (artifact `hunk_ranking`), and the call is recorded in `llm_calls` (purpose `localise_rank`), so resume never asks again. With fewer than 2 hunks, there is no call.
+3. **Test reverts.** For the top 3 hunks, in rank order, reverse-apply that single hunk (`git apply -R`) on the culprit commit in its own worktree (`<sha12>-localise-h<N>`). Then run the telling tasks × k and judge with the same Wilson rule, resampling and budget as a bisect step (ledger step kinds `localise:h<N>`, `localise:h<N>/resample:<r>`). The first revert that makes the commit GOOD is the **responsible hunk**.
+4. If no single revert flips it, try **pairs** of the top 3 (at most 3 pairs). If none of those flips it either, the answer is **the whole commit**. A hunk that won't reverse-apply counts as SKIP.
+5. Cost cap: `--budget-usd` (default $1.50) on top of what the run has already spent. A budget or infrastructure stop ends the localisation as `incomplete` (exit 1). Running the command again resumes it: recorded reverts and the stored ranking are reused.
+6. It prints `responsible: hunk 3 (src/x.py:144-148)` and stores the `localisation` artifact: the commit, status (`hunk` / `pair` / `single_hunk` / `whole_commit` / `no_hunks` / `incomplete`), the hunks, every revert tried with its verdict, and the ranking with reasons. Its neatlogs trace (root `culprit_localise`, session = run ID) is added to the run's `neatlogs_traces`, so `verify-trace` covers it.
+
+Reverts are applied on the culprit commit itself, not on the branch head, so later commits can't stop a hunk from applying. The Fixer (not built) will work on the branch head.
+
+How it plugs in: `orchestrator.py` changed by only three things:
+- a `prefix` on `classify`, so revert steps are named `localise:h<N>`
+- `is_bisect_kind`
+- a filter that keeps revert steps out of the run's own low-confidence check
+
+`localise.py` reverts hunks through a small `Orchestrator` subclass whose worktree has the patch reverse-applied.
+
+Dry check on the real culprit commits, using `git archive` trees with no runs: every hunk of all six commits reverse-applies on its own (a 9, b 16, c 3, d 1, e 6, f 3 hunks). Expected outcomes, not yet measured:
+- **hist/b:** probably a **pair**. Reverting only the retry-loop hunk calls `validate_tool_result`, which a separate hunk deleted, so it can't work alone.
+- **hist/a:** may need 3+ hunks (schema, signature, and `args["id"]` in agent.py), which ends as `whole_commit`.
+- **hist/d:** a single hunk, so no runs are needed.
+
+### 7.9 Finish
 - Print and store the result. Example from the free demo:
   `Culprit: a419a7d… 'speed up tool handling' (confidence: 95% Wilson)`
 - Possible statuses: `found`, `no_regression`, `ambiguous`, `budget_exceeded`, `infra_error`, `error`.
 - Output is the terminal log plus the ledger. A report file is **NOT BUILT**.
 
-### 7.9 What the free demo run looked like (fake victim, $0)
+### 7.10 What the free demo run looked like (fake victim, $0)
 
 ```
 run 6256751aa062: 14 commits in good-v1.0..main, 10 tasks × 3
@@ -516,7 +548,7 @@ File: `piedpiper-neathacks/.culprit/ledger.sqlite` (SQLite, WAL mode, gitignored
 | `runs` | Culprit run | `run_id`, `repo`, `good_ref`, `bad_ref`, `suite_source`, `suite_sha`, `config_json`, `status`, `total_cost_usd`, `culprit_sha`, `confidence`, `summary` |
 | `steps` | commit evaluation | `kind` (baseline / bisect / resample:1 / resample:2), `commit_sha`, `status` (running/done/skip), `decision`, `wilson_low/high`, `n`, `passes`, `cost_usd`, `latency_ms_p50`, `flags` (low_confidence), `error` |
 | `task_runs` | single victim task run | `task_id`, `repetition`, `passed`, `cost_usd`, `latency_ms`, `tokens_in/out`, `neatlogs_trace_id`, `error` |
-| `llm_calls` | Culprit AI call | exists but is **never written yet** (no AI stages built) |
+| `llm_calls` | Culprit AI call | written by the Localiser's hunk ranking (`purpose = localise_rank`) |
 | `artifacts` | run + kind | `neatlogs_traces`, `intent`, `diff` |
 
 Uniqueness rules make resume safe:
@@ -545,6 +577,10 @@ Right now the ledger holds only the 2 free demo runs.
   │   └─ TOOL victim_eval_run   (one per task run)
   ├─ TOOL decision_rule         (inputs: passes, n, threshold, z, round → verdict)
   └─ TOOL entire_checkpoint_explain
+
+  WORKFLOW culprit_localise     (culprit localise <run_id>; same session)
+  ├─ AGENT localise_rank        (the AI call that ranks hunks; LLM span inside)
+  └─ TOOL localise_search       (each revert: CHAIN evaluate_commit:localise:h<N>, worktree span shows the reverse-apply)
   ```
 
   - Every span carries `run_id` and `commit_sha`. neatlogs' read API doesn't return custom attributes, so they're also written into each span's input.
@@ -587,7 +623,7 @@ We know which commit is guilty on each branch. If Culprit's AI parts could see t
 
 1. **Neutral names in the victim repo:** `hist/a`…`hist/f`. No commit or comment mentions scenarios, gaps or regressions (scanned; clean).
 2. **The answer key lives only in the Culprit repo** (`PROMPTS.md`, this file, and `bench/ground_truth.json`). Culprit never feeds its own repo's files to an AI. `culprit bench` refuses to run if the scenario or ground-truth file sits inside the victim repo, resolves each scenario's refs to SHAs and passes **only those SHAs** to the orchestrator, so neither the scenario name nor its answer reaches the ledger config, a trace, an AI prompt or Entire text. The ground truth is read only to score runs that have already finished.
-3. **Only the examined commit's checkpoint is read**, never its neighbours'.
+3. **Only the examined commit's checkpoint is read**, never its neighbours'. The Localiser's prompt holds only the culprit's own hunks, its leak-filtered intent and the victim's task results and definitions. It never holds branch or tag names, scenario labels or anything from `bench/` (a test checks the prompt against every ref name in the fake victim).
 4. **Leakage filter** (`entire.leak_filter`): before any Entire text is stored or used, it drops every line containing any of:
    - `R1`–`R6` as whole words
    - `hist/`, `scenario`, `culprit`, `regression`, `seed`, `gap` or `pause` (any case, even inside longer words)
@@ -632,7 +668,7 @@ All cost figures here use Anthropic's list price for Sonnet 5.5 ($2 / $10 per mi
 From `piedpiper-neathacks/` (load keys first: `set -a; source .env; set +a`):
 
 ```bash
-uv run pytest -q                                   # 86 tests, free, ~30 s
+uv run pytest -q                                   # 96 tests, free; no test exports traces or calls a model (tests/conftest.py), ~30 s
 uv run culprit --help
 
 # Free demo on a fake victim (no AI calls)
@@ -647,6 +683,9 @@ uv run culprit resume <run_id> [--budget-usd 6]
 
 # Check a run's neatlogs traces
 uv run culprit verify-trace <run_id>
+
+# Localise a found run's culprit to its responsible hunk (COSTS MONEY on RefundDesk: up to 6 reverts × 24 runs + 1 AI call; ask first)
+uv run culprit localise <run_id> [--top-n 3] [--max-pairs 3] [--budget-usd 1.50]
 
 # Benchmark: run every scenario in bench/scenarios.yaml and score it (COSTS MONEY, ~$0.60+ per branch on GLM; ask first)
 uv run culprit bench --tag v1 [--only hist/b] [--budget-usd 3]
@@ -693,7 +732,7 @@ uv run python scripts/neatlogs_readback.py <results.jsonl>    # verify traces
 | Culprit: Entire intent with transcript fallback and leakage filter | ✅ Built |
 | Culprit: neatlogs tracing and `verify-trace` audit | ✅ Built (fixture runs) |
 | **First real Culprit run on RefundDesk** | ✅ Run `ff50e3620fdd` on `hist/b` with GLM 5.3: found `397c427` (95% Wilson), skipped `22a37db`; 240 runs, $0.60, 12.5 min |
-| Localiser: find the exact guilty lines | ❌ NOT BUILT |
+| Localiser: find the responsible hunk (PRD §8.3) | ✅ Built and tested on the fake victim (decoy rejected, pair found, AI ranking faked); not run on RefundDesk yet |
 | Fixer: write a minimal fix; Verifier: prove it on held-out tasks | ❌ NOT BUILT |
 | AI-assisted task selection / planner | ❌ NOT BUILT (plain ranking used) |
 | Report (markdown/HTML) | ❌ NOT BUILT |
@@ -708,7 +747,7 @@ uv run python scripts/neatlogs_readback.py <results.jsonl>    # verify traces
 ## 16. Known issues and oddities
 
 ### Culprit
-- No AI calls happen in `culprit run` yet. `llm.py` is tested but unused, and `llm_calls` is always empty.
+- `culprit run` makes no AI calls. The only AI call is the Localiser's hunk ranking (`culprit localise`), and it has been tested only with a fake model; no real ranking call has been made yet.
 - Budget is checked per batch, so a run can overshoot its cap by up to 4 task runs. A victim that reports no cost is never capped. Retried infrastructure attempts aren't costed either.
 - Some errors aren't caught cleanly: Entire `--transcript` timeout, import-probe timeout, `verify-trace` readback errors.
 - The leakage filter's substring matching is broad: "seeded", "gaps" and "Culprit" lines get dropped too.
@@ -855,9 +894,10 @@ All maintenance commits were checked by reading their diffs: renames, helper ext
 | `tests/test_suite.py` | Suite pinning, resume keeps suite, worktree reset, folder suite fingerprint |
 | `tests/test_fixture.py` | Fake repo's pin/revert commits install correctly |
 | `tests/test_llm.py` | JSON repair and give-up logic |
-| `tests/conftest.py` | Autouse guard: unsets `NEATLOGS_API_KEY` and keeps tracing off, so tests never export traces |
+| `tests/conftest.py` | Autouse guard: unsets `NEATLOGS_API_KEY`, keeps tracing off and blocks the two provider calls, so tests never export traces or call a model |
+| `tests/test_localise.py` | Hunk splitting, patch grouping, AI ranking with a fake model and its fallback, the revert search, and fake-victim runs (decoy rejected, pair found, resume reuses everything) |
 | `tests/test_bench.py` | Bench loaders, scoring outcomes, leakage guard, read-only scoring, end-to-end bench on 2 fixture scenarios |
-| `tests/fixtures/make_victim.py` | Builds the free fake victim repo |
+| `tests/fixtures/make_victim.py` | Builds the free fake victim repo; `--break-hunks one/multi/pair` shapes the breaking commit for the Localiser |
 | `scripts/nl-read` | Runs the neatlogs CLI with OAuth only |
 | `scripts/llm_capture_check.py` | One-off check that AI calls appear in neatlogs |
 | `.claude/settings.json` | Entire hooks; co-author lines off |

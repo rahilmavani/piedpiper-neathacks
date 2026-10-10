@@ -1,8 +1,9 @@
 """Builds a tiny throwaway victim repo for tests and local runs (no LLM, no network at eval time).
 
-"Fragile" tasks pass with probability `FRAGILE_PASS` (0.95 at good, 0.05 after the breaking
-commit, `--noisy-pass` on optional noisy commits before it). Noise is deterministic per (task, seed), so the
-fixture exercises the bisect, skip and resampling paths without spending money.
+"Fragile" tasks pass with probability `FRAGILE_PASS`, the lower of `RETRY_PASS` and `VALIDATE_PASS`
+(0.95 at good, 0.05 after the breaking commit, `--noisy-pass` on optional noisy commits before it).
+Noise is deterministic per (task, seed), so the fixture exercises the bisect, skip, resampling and
+localisation paths without spending money.
 
     uv run python tests/fixtures/make_victim.py /tmp/victim --commits 14 --breaks-at 10 --unbuildable-at 7 \
         --noisy-from 8
@@ -25,8 +26,17 @@ dependencies = [{deps}]
 package = false
 """
 
+FILLER = "".join(f"# setting note {i}\n" for i in range(8))  # keeps the knobs' diff hunks apart
 AGENT = """\
-FRAGILE_PASS = {p}
+\"\"\"Fixture agent settings.\"\"\"
+
+RETRY_PASS = {a}
+""" + FILLER + """
+VALIDATE_PASS = {b}
+""" + FILLER + """
+TOOL_TIMEOUT_S = {timeout}
+
+FRAGILE_PASS = min(RETRY_PASS, VALIDATE_PASS)
 """
 
 EVAL = '''\
@@ -82,7 +92,11 @@ def commit(repo: Path, msg: str) -> None:
 
 
 def build(path: Path, commits: int, breaks_at: int, unbuildable_at: int | None, noisy_from: int | None = None,
-          noisy_pass: float = 0.75, late_task: bool = False) -> Path:
+          noisy_pass: float = 0.75, late_task: bool = False, break_hunks: str = "one") -> Path:
+    """`break_hunks`: "one" (the breaking commit changes one line), "multi" (it also changes a harmless
+    knob, adds a changelog and edits a task file; only the RETRY_PASS hunk matters) or "pair" (it breaks
+    RETRY_PASS and VALIDATE_PASS, so only reverting both hunks restores the agent)."""
+    knobs = {"a": 0.95, "b": 0.95, "timeout": 30}
     path.mkdir(parents=True, exist_ok=False)
     sh(path, "git", "init", "-q", "-b", "main")
     sh(path, "git", "config", "user.email", "fixture@example.invalid")
@@ -90,7 +104,7 @@ def build(path: Path, commits: int, breaks_at: int, unbuildable_at: int | None, 
     pkg = path / "refunddesk"
     pkg.mkdir()
     (pkg / "__init__.py").write_text("")
-    (pkg / "agent.py").write_text(AGENT.format(p=0.95))
+    (pkg / "agent.py").write_text(AGENT.format(**knobs))
     (pkg / "eval.py").write_text(EVAL.format())
     (path / "pyproject.toml").write_text(PYPROJECT.format(deps=""))
     (path / ".gitignore").write_text(".venv/\n")
@@ -114,10 +128,18 @@ def build(path: Path, commits: int, breaks_at: int, unbuildable_at: int | None, 
             (path / "pyproject.toml").write_text(PYPROJECT.format(deps=""))
             changes.append("revert requests pin")
         if n == breaks_at:
-            (pkg / "agent.py").write_text(AGENT.format(p=0.05))
+            knobs["a"] = 0.05
+            if break_hunks in {"multi", "pair"}:
+                knobs["timeout"] = 10
+                (path / "CHANGELOG.md").write_text("- faster tool handling\n")
+                (evals / "t01.json").write_text('{"message": "refund please, quickly"}\n')
+            if break_hunks == "pair":
+                knobs["b"] = 0.05
+            (pkg / "agent.py").write_text(AGENT.format(**knobs))
             changes.append("speed up tool handling")
         elif noisy_from is not None and n == noisy_from:
-            (pkg / "agent.py").write_text(AGENT.format(p=noisy_pass))
+            knobs["a"] = noisy_pass
+            (pkg / "agent.py").write_text(AGENT.format(**knobs))
             changes.append("tune tool timeouts")
         if late_task and n == commits:
             (evals / "t11.json").write_text('{"message": "refund the second order"}\n')
@@ -139,8 +161,10 @@ def main() -> None:
     p.add_argument("--noisy-from", type=int, default=None)
     p.add_argument("--noisy-pass", type=float, default=0.75)
     p.add_argument("--late-task", action="store_true", help="add task t11 only on the last commit")
+    p.add_argument("--break-hunks", choices=["one", "multi", "pair"], default="one")
     a = p.parse_args()
-    print(build(a.path, a.commits, a.breaks_at, a.unbuildable_at, a.noisy_from, a.noisy_pass, a.late_task))
+    print(build(a.path, a.commits, a.breaks_at, a.unbuildable_at, a.noisy_from, a.noisy_pass, a.late_task,
+                a.break_hunks))
 
 
 if __name__ == "__main__":

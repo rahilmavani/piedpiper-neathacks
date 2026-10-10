@@ -131,6 +131,27 @@ def bench(
     typer.echo(f"accuracy {sum(r.outcome in b.ACCURATE for r in rows)}/{len(rows)}; report {path}")
 
 
+@app.command()
+def localise(
+    run_id: str,
+    db: Path = typer.Option(DEFAULT_DB, help="Ledger path"),
+    workers: int = typer.Option(4, help="Parallel victim task runs"),
+    top_n: int = typer.Option(3, help="Hunks whose single revert is tested, in rank order"),
+    max_pairs: int = typer.Option(3, help="Pairs of those hunks tried when no single revert restores the agent"),
+    budget_usd: float = typer.Option(1.50, help="Cost cap for localisation, on top of the run's cost so far"),
+) -> None:
+    """Find which hunk of a found run's culprit commit is responsible (PRD §8.3). Re-running resumes."""
+    from culprit import localise as loc
+
+    try:
+        result, _ = loc.localise_run(Ledger(db), run_id, log=typer.echo, workers=workers, top_n=top_n,
+                                     max_pairs=max_pairs, budget_usd=budget_usd)
+    except (loc.LocaliseError, KeyError) as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(2) from exc
+    raise typer.Exit(1 if result.status == "incomplete" else 0)
+
+
 @app.command("verify-trace")
 def verify_trace(
     run_id: str,

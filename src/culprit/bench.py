@@ -20,7 +20,7 @@ from culprit import gitops
 from culprit.bisect import Verdict, bounds
 from culprit.config import PROJECT_ROOT, Config
 from culprit.ledger import Ledger
-from culprit.orchestrator import Orchestrator
+from culprit.orchestrator import Orchestrator, is_bisect_kind
 
 Log = Callable[[str], None]
 
@@ -191,7 +191,7 @@ def run_facts(ledger: Ledger, repo: Path, run_id: str) -> RunFacts:
     # A commit's final verdict is the last decided one across its bisect and resample steps.
     final: dict[str, str] = {}
     for s in steps:
-        if s["kind"] != "baseline" and s["decision"] in {v.value for v in Verdict}:
+        if is_bisect_kind(s["kind"]) and s["decision"] in {v.value for v in Verdict}:
             final[s["commit_sha"]] = s["decision"]
     suspects: list[str] = []
     if row["good_sha"] and row["bad_sha"] and row["status"] != "no_regression":

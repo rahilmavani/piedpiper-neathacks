@@ -15,6 +15,8 @@ from typing import TypeVar
 
 from pydantic import BaseModel, ValidationError
 
+from culprit import tracing
+
 T = TypeVar("T", bound=BaseModel)
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
@@ -70,7 +72,7 @@ def _complete(system: str, messages: list[dict[str, str]], max_tokens: int) -> t
     if provider() == "anthropic":
         import anthropic
 
-        client = anthropic.Anthropic()
+        client = tracing.wrap(anthropic.Anthropic())
         resp = client.messages.create(model=model, max_tokens=max_tokens, system=system, messages=messages)
         if resp.stop_reason == "refusal":
             raise LLMError("model refused the request")
@@ -82,7 +84,7 @@ def _complete(system: str, messages: list[dict[str, str]], max_tokens: int) -> t
 
     import openai
 
-    client = openai.OpenAI(base_url=OPENROUTER_BASE_URL, api_key=os.environ["OPENROUTER_API_KEY"])
+    client = tracing.wrap(openai.OpenAI(base_url=OPENROUTER_BASE_URL, api_key=os.environ["OPENROUTER_API_KEY"]))
     resp = client.chat.completions.create(
         model=model, max_tokens=max_tokens, messages=[{"role": "system", "content": system}, *messages],
         extra_body={"usage": {"include": True}},

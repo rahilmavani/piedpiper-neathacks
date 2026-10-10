@@ -7,6 +7,7 @@ from pathlib import Path
 import typer
 from dotenv import load_dotenv
 
+from culprit import tracing
 from culprit.config import DEFAULT_DB, PROJECT_ROOT, Config
 from culprit.ledger import Ledger
 from culprit.orchestrator import Orchestrator
@@ -31,6 +32,7 @@ def run(
     run_id = orch.start()
     typer.echo(f"run_id {run_id}")
     outcome = orch.run(run_id)
+    typer.echo(f"neatlogs session: {run_id}" if tracing.enabled() else "neatlogs tracing off (no NEATLOGS_API_KEY)")
     raise typer.Exit(0 if outcome.status in {"found", "no_regression"} else 1)
 
 
@@ -49,4 +51,8 @@ def resume(
 
 def main() -> None:
     load_dotenv(PROJECT_ROOT / ".env")
-    app()
+    tracing.init()
+    try:
+        app()
+    finally:
+        tracing.shutdown()

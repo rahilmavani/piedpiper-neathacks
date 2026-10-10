@@ -136,6 +136,11 @@ class Ledger:
             raise KeyError(f"unknown run_id {run_id}")
         return row
 
+    def update_config(self, run_id: str, suite_hash: str, config_json: str) -> None:
+        with self._tx() as c:
+            c.execute("UPDATE runs SET suite_hash = ?, config_json = ? WHERE run_id = ?",
+                      (suite_hash, config_json, run_id))
+
     def finish_run(
         self, run_id: str, status: str, culprit_sha: str | None, confidence: str | None, summary: str
     ) -> None:

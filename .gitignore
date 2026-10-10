@@ -6,3 +6,6 @@ __pycache__/
 *.pyc
 .culprit/
 .DS_Store
+*.sqlite-shm
+*.sqlite-wal
+*.swp

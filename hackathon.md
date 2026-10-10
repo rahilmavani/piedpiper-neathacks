@@ -82,6 +82,15 @@ Planned (from `PRD.md`); move items to "used" as they are integrated.
   - 240 victim runs, 0 infrastructure errors, **$0.60**, 12.5 min.
   - Intent fell back to the commit message and diff, because the `entire` CLI isn't installed on this machine. The leakage filter dropped 1 harmless line containing "seed".
 - **Moment worth screenshotting:** the run log, from `22a37dbfff install failed → SKIP` to `Culprit: 397c427…`, in four decisions.
+- **Done: M3 `culprit bench` (branch `feat/bench`, fixture only, $0).**
+  - `bench/scenarios.yaml` (six branches, `good-v1.0` → `origin/hist/<x>`) and `bench/ground_truth.json`: full culprit SHAs, branch heads, uninstallable commits (`22a37db`, `2ad118e`), responsible hunks as file + line range from `git show`, and the intended-gain metric. All positions re-checked against `git rev-list` in the RefundDesk clone (read-only).
+  - `culprit bench --tag v1|v2` runs each scenario through the normal orchestrator, one after another, and scores it: `correct`, `wrong`, `correct_no_regression`, `missed`, `no_regression_unverified`, `ambiguous_*` or `incomplete`, plus victim runs, cost, wall time, skipped commits, run ID and neatlogs trace IDs. It writes `evidence/bench-<tag>.md` and `.json`.
+  - `--score-runs <id,...>` / `--score-latest` score runs already in the ledger, matched to scenarios by their recorded good/bad SHAs, so the paid runs on `hist/*` don't need repeating. Scoring opens the ledger **read-only**, so it is safe while another process is still writing it.
+  - Leakage guard: only resolved SHAs reach the orchestrator (no scenario names, no answers); bench refuses ground-truth files inside the victim repo.
+  - Fixture bench, 2 scenarios: the planted break was found (`correct`, with the unbuildable commit SKIPped), and a clean range ended `correct_no_regression` (Fisher p = 0.69). Accuracy 2/2, 180 fake runs. 86 tests pass (18 new).
+  - Tests can no longer export traces: an autouse `tests/conftest.py` fixture unsets `NEATLOGS_API_KEY` and keeps tracing off. (The fixture traces that did reach neatlogs came from a manual `culprit bench` CLI demo, which loads `.env`.)
+- **Decision:** a `no_regression` result is only scored as correct when ground truth says so: no bug planted in the range, or a measurement on that victim model showed the bug is invisible. Otherwise it's `no_regression_unverified` (not counted as accurate) until the strength check is done. Only `hist/b` has a visibility measurement (GLM 5.3 and Sonnet 5.5: 18/18 → 0/18). Visibility is never taken from a Culprit run's own baselines (that would be Culprit grading itself); it must come from the separate strength check (Prompt G step 4) recorded with run IDs in `bench/strength.md`.
+- **Decision:** hist/a ("API consistency") and hist/e ("fewer rejected tool calls") get intended-gain metric `null`, because their claimed gain isn't latency, tokens or cost.
 
 ## Demo
 
@@ -89,7 +98,7 @@ Planned (from `PRD.md`); move items to "used" as they are integrated.
 
 ## Known limitations and next steps
 
-- Culprit hasn't been built yet. Next: M1 vertical slice per `PROMPTS.md` (Prompt C).
+- Built: M1 and M2 (bisect, noise handling, recovery) and M3's `culprit bench`. Not built: localiser, fixer/verifier, report, `export-costs`. Next: score the `hist/*` runs with `culprit bench --tag v1 --score-latest`, then M4.
 
 ## Submission
 

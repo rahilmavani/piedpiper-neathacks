@@ -1,0 +1,89 @@
+{
+  "_about": "Answer key for `culprit bench`. Culprit repo only: never copy any of it into the victim repo, an LLM prompt or Entire text. Keys match `name` in scenarios.yaml. `hunks` line ranges are in the file at the culprit commit (`lines`), or at its parent for removed code (`parent_lines`), as `git show <sha>` reports them. `visible` records, per victim model, whether a separate measurement showed the bug is detectable (true / false); a missing model means not measured. It must come from a strength check with its own runs (bench/strength.md, with run IDs), never from a Culprit run's own baselines, which would let Culprit grade itself. hist/b's flags come from the separate hero check (6 harder tasks x 3 seeds: 18/18 at good-v1.0, 0/18 at 397c427, on both models; see hackathon.md). Resolved from the RefundDesk clone on 2026-10-10.",
+  "good_sha": "0479c273fbd3ef476425f5136c95a002749e043b",
+  "scenarios": {
+    "hist/a": {
+      "bad_sha": "6a2f05ad5b5ccf030ead0d4af7676a3320105fb6",
+      "commits": 12,
+      "culprit_sha": "c4f24013472d39f3a27f927507b5d0dae61f20c7",
+      "position": 5,
+      "subject": "refactor(tools): rename lookup_order parameter order_id to id",
+      "uninstallable": [],
+      "hunks": [
+        {"file": "src/refunddesk/tools.py", "lines": [168, 168], "what": "lookup_order schema parameter renamed order_id -> id; the description still says order"},
+        {"file": "src/refunddesk/tools.py", "lines": [78, 84], "what": "lookup_order signature and body use id"}
+      ],
+      "intended_gain": {"metric": null, "claim": "API consistency (no latency, token or cost metric)"},
+      "visible": {}
+    },
+    "hist/b": {
+      "bad_sha": "f6511b8e6bb0d072abf653b995f59b51233ce479",
+      "commits": 14,
+      "culprit_sha": "397c42743be8cd80ae1d1e30c058772c1bd16add",
+      "position": 10,
+      "subject": "perf(agent): run tool calls in parallel and drop per-result validation",
+      "uninstallable": ["22a37dbfff51e2eabf16123746963d5425a1f7a7"],
+      "hunks": [
+        {"file": "src/refunddesk/agent.py", "lines": [141, 155], "what": "_execute_with_retries returns any result; failed results are no longer validated or retried"},
+        {"file": "src/refunddesk/agent.py", "parent_lines": [98, 123], "what": "validate_tool_result removed"}
+      ],
+      "intended_gain": {"metric": "latency", "claim": "parallel tool calls; the fix must keep them"},
+      "visible": {"z-ai/glm-5.3": true, "claude-sonnet-5-5": true}
+    },
+    "hist/c": {
+      "bad_sha": "30960fe9d716e7fa16ac6b04f8ab92a5c57fbfa6",
+      "commits": 13,
+      "culprit_sha": "acf3b7df9fb4bf83761787e5f16dbcebc6f004bd",
+      "position": 9,
+      "subject": "perf(agent): shorten the history window to 6 messages",
+      "uninstallable": [],
+      "hunks": [
+        {"file": "src/refunddesk/config.py", "lines": [45, 45], "what": "REFUNDDESK_HISTORY_WINDOW default 24 -> 6 (what eval.py passes to the agent)"},
+        {"file": "src/refunddesk/config.py", "lines": [30, 30], "what": "Settings.history_window 24 -> 6"},
+        {"file": "src/refunddesk/agent.py", "lines": [124, 124], "what": "RefundDeskAgent.history_window 24 -> 6"}
+      ],
+      "intended_gain": {"metric": "tokens", "claim": "fewer input tokens per model call"},
+      "visible": {}
+    },
+    "hist/d": {
+      "bad_sha": "819d692b677eb4fde7d0af44f35dffd9fcdf3260",
+      "commits": 15,
+      "culprit_sha": "441058ed36ba050b8be09182076977aefe648e29",
+      "position": 6,
+      "subject": "refactor(agent): tighten the system prompt",
+      "uninstallable": [],
+      "hunks": [
+        {"file": "src/refunddesk/agent.py", "lines": [21, 35], "what": "system prompt cut from 9 rules to 7; the $500 rule survives in shorter form"}
+      ],
+      "intended_gain": {"metric": "cost", "claim": "shorter prompt, cheaper calls"},
+      "visible": {}
+    },
+    "hist/e": {
+      "bad_sha": "255f40c54e0ecc27de99ef6459171d94f7e3fc5f",
+      "commits": 12,
+      "culprit_sha": "8ae122d6ef08870b8663c98d009c54e3da5a4f41",
+      "position": 8,
+      "subject": "feat(agent): fill missing tool arguments with defaults",
+      "uninstallable": [],
+      "hunks": [
+        {"file": "src/refunddesk/agent.py", "lines": [88, 93], "what": "missing required arguments filled with defaults instead of rejected"},
+        {"file": "src/refunddesk/agent.py", "lines": [67, 67], "what": "_DEFAULTS table"}
+      ],
+      "intended_gain": {"metric": null, "claim": "fewer rejected tool calls (no latency, token or cost metric)"},
+      "visible": {}
+    },
+    "hist/f": {
+      "bad_sha": "3b0938b9da374a3045e588adfba25a7297a5624f",
+      "commits": 16,
+      "culprit_sha": "1777d44476fc5bfd298d96d296b9d97b6c80b258",
+      "position": 12,
+      "subject": "perf(agent): disable tool-call retries",
+      "uninstallable": ["2ad118e301a4d6ac2e63ebf081bbc8b3f0b4ffc0"],
+      "hunks": [
+        {"file": "src/refunddesk/agent.py", "lines": [22, 22], "what": "MAX_RETRIES 3 -> 0"}
+      ],
+      "intended_gain": {"metric": "latency", "claim": "no time spent on retries"},
+      "visible": {}
+    }
+  }
+}

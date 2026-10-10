@@ -107,7 +107,13 @@ class TaskRun:
 
 
 class Ledger:
-    def __init__(self, path: Path):
+    def __init__(self, path: Path, readonly: bool = False):
+        """`readonly` opens an existing ledger without creating, migrating or writing anything,
+        e.g. to score runs in a ledger another process is still writing."""
+        if readonly:
+            self.conn = sqlite3.connect(f"file:{path}?mode=ro", uri=True, isolation_level=None)
+            self.conn.row_factory = sqlite3.Row
+            return
         path.parent.mkdir(parents=True, exist_ok=True)
         self.conn = sqlite3.connect(path, isolation_level=None)
         self.conn.row_factory = sqlite3.Row
@@ -171,6 +177,14 @@ class Ledger:
                 " total_cost_usd = ? WHERE run_id = ?",
                 (status, _now(), culprit_sha, confidence, summary, self.run_cost(run_id), run_id),
             )
+
+    def runs(self) -> list[sqlite3.Row]:
+        return self.conn.execute("SELECT * FROM runs ORDER BY started_at, rowid").fetchall()
+
+    def task_run_count(self, run_id: str) -> int:
+        return int(self.conn.execute(
+            "SELECT COUNT(*) FROM task_runs t JOIN steps s USING (step_id) WHERE s.run_id = ?", (run_id,)
+        ).fetchone()[0])
 
     def run_cost(self, run_id: str) -> float:
         victim = self.conn.execute(

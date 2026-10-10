@@ -58,7 +58,8 @@ Planned but **NOT BUILT** yet:
 - pointing at the exact guilty lines inside the commit
 - writing a minimal fix and proving it works
 - generating a report
-- scoring itself on a benchmark
+
+Built but not yet run on all six branches: **scoring itself on a benchmark** (`culprit bench`, [§14](#14-commands-you-can-run)).
 
 To show it working, we built a realistic victim, **RefundDesk**, and planted six bugs in its history. In each case we know the right answer, so we can check Culprit honestly.
 
@@ -344,8 +345,9 @@ Branches `a`, `c`, `d`, `e` and `f` have **not been measured yet**. Some may tur
 
 | File | Job |
 |---|---|
-| `cli.py` | Commands: `run`, `resume`, `verify-trace` |
+| `cli.py` | Commands: `run`, `resume`, `bench`, `verify-trace` |
 | `orchestrator.py` | Runs the whole investigation |
+| `bench.py` | Runs scenarios and scores them against `bench/ground_truth.json`; writes `evidence/bench-<tag>.md` |
 | `bisect.py` | The halving search, including skip handling |
 | `stats.py` | Wilson interval and good/bad/unsure decision |
 | `sandbox.py` | Worktrees, `uv sync --locked` install, import check |
@@ -359,7 +361,7 @@ Branches `a`, `c`, `d`, `e` and `f` have **not been measured yet**. Some may tur
 | `config.py` | Settings and defaults |
 | `gitops.py` | Small git helpers (resolve ref, commit range, subject, diff) |
 
-About 2,300 lines of Python, with **57 tests passing** (no AI calls, about 30 s).
+About 2,700 lines of Python, with **86 tests passing** (no AI calls, about 30 s).
 
 ### 6.2 Key settings (`config.py`)
 
@@ -584,7 +586,7 @@ You do this step by hand in cfo.ai. Culprit's `export-costs` command, which woul
 We know which commit is guilty on each branch. If Culprit's AI parts could see that, the benchmark would be meaningless. The protections:
 
 1. **Neutral names in the victim repo:** `hist/a`…`hist/f`. No commit or comment mentions scenarios, gaps or regressions (scanned; clean).
-2. **The answer key lives only in the Culprit repo** (`PROMPTS.md`, this file, and later `bench/`). Culprit never feeds its own repo's files to an AI.
+2. **The answer key lives only in the Culprit repo** (`PROMPTS.md`, this file, and `bench/ground_truth.json`). Culprit never feeds its own repo's files to an AI. `culprit bench` refuses to run if the scenario or ground-truth file sits inside the victim repo, resolves each scenario's refs to SHAs and passes **only those SHAs** to the orchestrator, so neither the scenario name nor its answer reaches the ledger config, a trace, an AI prompt or Entire text. The ground truth is read only to score runs that have already finished.
 3. **Only the examined commit's checkpoint is read**, never its neighbours'.
 4. **Leakage filter** (`entire.leak_filter`): before any Entire text is stored or used, it drops every line containing any of:
    - `R1`–`R6` as whole words
@@ -630,7 +632,7 @@ All cost figures here use Anthropic's list price for Sonnet 5.5 ($2 / $10 per mi
 From `piedpiper-neathacks/` (load keys first: `set -a; source .env; set +a`):
 
 ```bash
-uv run pytest -q                                   # 57 tests, free, ~30 s
+uv run pytest -q                                   # 86 tests, free, ~30 s
 uv run culprit --help
 
 # Free demo on a fake victim (no AI calls)
@@ -645,7 +647,23 @@ uv run culprit resume <run_id> [--budget-usd 6]
 
 # Check a run's neatlogs traces
 uv run culprit verify-trace <run_id>
+
+# Benchmark: run every scenario in bench/scenarios.yaml and score it (COSTS MONEY, ~$0.60+ per branch on GLM; ask first)
+uv run culprit bench --tag v1 [--only hist/b] [--budget-usd 3]
+
+# Score runs that already exist instead of running again (free; opens the ledger read-only)
+uv run culprit bench --tag v1 --score-runs ff50e3620fdd,<run_id>...   # matched to scenarios by good/bad SHA
+uv run culprit bench --tag v1 --score-latest                          # latest finished run per scenario
 ```
+
+**`culprit bench`** (M3, PRD §10 and §13):
+- `bench/scenarios.yaml`: one scenario per branch (`name`, `good`, `bad`); here `good-v1.0` and `origin/hist/<x>`.
+- `bench/ground_truth.json`: per scenario, the culprit SHA, branch head, uninstallable commits, the responsible hunks (file + line range at the culprit commit, or at its parent for removed code), the intended-gain metric (`latency`, `tokens`, `cost`, or null for hist/a and hist/e, whose claimed gains aren't one of those), and `visible`: per victim model, whether a **separate** measurement showed the bug is detectable. It must come from a strength check with its own runs (PROMPTS.md Prompt G step 4, recorded with run IDs in `bench/strength.md`), never from a Culprit run's own baselines, which would let Culprit grade itself. Only hist/b is set so far, from the separate hero check; a, c, d, e and f are unmeasured.
+- Scenarios run one after another through the normal orchestrator. A run that stops (budget, infra error) doesn't stop the bench; resume it with `culprit resume`, then re-score with `--score-runs`.
+- Each run gets an outcome: `correct` (planted SHA found), `wrong`, `correct_no_regression` (the gate said no regression and none was expected: nothing planted, or the bug is known to be invisible on that model), `missed` (no regression, but the bug is known to be visible), `no_regression_unverified` (visibility not measured), `ambiguous_contains` / `ambiguous_misses`, or `incomplete`. **Accuracy** = `correct` + `correct_no_regression`.
+- Output: `evidence/bench-<tag>.md` (summary, table with outcome, found vs expected, victim runs, cost, wall time, skipped commits, model and run ID, then each run's summary and neatlogs trace IDs) and `evidence/bench-<tag>.json`. The report names Culprit's own commit, so v1 and v2 can be told apart.
+- Wall time is the run's start-to-finish in the ledger, so it includes any pause before a resume. Hunk accuracy and fix verification are not scored yet (no localiser or fixer).
+- Flags: `--tag` (required), `--scenarios` (default `bench/scenarios.yaml`), `--ground-truth` (default next to it), `--repo`, `--only` (repeatable), `--score-runs` (repeatable or comma-separated), `--score-latest`, `--k`, `--budget-usd` (per scenario), `--db`, `--workers`, `--out-dir` (default `evidence/`).
 
 `culprit run` flags: `--good`, `--bad` (required), `--repo` (default `../refunddesk`), `--suite` (default `evals`), `--suite-ref` (default `main`), `--k` (3), `--budget-usd` (3.00), `--db`, `--workers` (4).
 
@@ -679,7 +697,8 @@ uv run python scripts/neatlogs_readback.py <results.jsonl>    # verify traces
 | Fixer: write a minimal fix; Verifier: prove it on held-out tasks | ❌ NOT BUILT |
 | AI-assisted task selection / planner | ❌ NOT BUILT (plain ranking used) |
 | Report (markdown/HTML) | ❌ NOT BUILT |
-| `culprit bench` + ground truth, v1 vs v2 | ❌ NOT BUILT; this is the required before/after evidence |
+| `culprit bench` + ground truth (`bench/`) | ✅ Built and tested on the fixture (2 scenarios: one planted break, one clean range); `--score-runs` / `--score-latest` score existing runs |
+| Benchmark v1 vs v2 numbers | ❌ Not run yet; this is the required before/after evidence |
 | neatlogs Detections / Investigate used to improve Culprit | ❌ Not done |
 | `export-costs` and the cfo.ai business plan | ❌ Not done |
 | Demo video, README polish, X posts | ❌ Not done (Monday) |
@@ -697,7 +716,7 @@ uv run python scripts/neatlogs_readback.py <results.jsonl>    # verify traces
 - `scripts/nl-read` and `readback.py` handle `NEATLOGS_TOKEN` differently.
 - Worktrees are never cleaned up after runs (12 exist now).
 - Stale docs: the README says "Bootstrap complete", and hackathon.md says "Culprit hasn't been built yet". The test count has grown from 25 to 57.
-- `pyproject.toml` description is still "Add your description here". `jinja2` and `pyyaml` are dependencies but unused.
+- `pyproject.toml` description is still "Add your description here". `jinja2` is a dependency but unused (`pyyaml` is now used by `culprit bench`).
 - **Fixed today:** the fake-repo builder lost the "revert pin" commit when a noisy commit followed the pin (`1d43403`).
 
 ### RefundDesk
@@ -828,12 +847,16 @@ All maintenance commits were checked by reading their diffs: renames, helper ext
 | `docs/neatlogs.md` | Tracing contract, coverage table, how to repeat the readback |
 | `evidence/neatlogs-cost-discrepancy.md` | $3/$15 vs $2/$10 finding |
 | `src/culprit/*.py` | The product ([§6.1](#61-code-map-srcculprit)) |
+| `bench/scenarios.yaml`, `bench/ground_truth.json` | Benchmark scenarios and the **answer key** (Culprit repo only) |
+| `evidence/bench-<tag>.md/.json` | `culprit bench` reports (none for the real victim yet) |
 | `tests/test_core.py` | Wilson, decide, bisect (all 14 positions), skip, ledger idempotency, leak filter, intent parsing |
 | `tests/test_m2.py` | Threshold, resample + low_confidence, no_regression, budget stop + resume, global cap |
 | `tests/test_resume.py` | End-to-end resume without duplicates |
 | `tests/test_suite.py` | Suite pinning, resume keeps suite, worktree reset, folder suite fingerprint |
 | `tests/test_fixture.py` | Fake repo's pin/revert commits install correctly |
 | `tests/test_llm.py` | JSON repair and give-up logic |
+| `tests/conftest.py` | Autouse guard: unsets `NEATLOGS_API_KEY` and keeps tracing off, so tests never export traces |
+| `tests/test_bench.py` | Bench loaders, scoring outcomes, leakage guard, read-only scoring, end-to-end bench on 2 fixture scenarios |
 | `tests/fixtures/make_victim.py` | Builds the free fake victim repo |
 | `scripts/nl-read` | Runs the neatlogs CLI with OAuth only |
 | `scripts/llm_capture_check.py` | One-off check that AI calls appear in neatlogs |

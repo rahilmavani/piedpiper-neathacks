@@ -21,8 +21,9 @@ from dataclasses import dataclass, field
 
 from pydantic import BaseModel
 
-from culprit import finished, gitops, llm, tracing
+from culprit import finished, gitops, llm, tracing, victim_traces
 from culprit.bisect import Verdict
+from culprit.entire import ref_names
 from culprit.finished import TaskEvidence, evidence_text
 from culprit.ledger import Ledger
 from culprit.orchestrator import BudgetExceeded, InfraError, Log
@@ -128,9 +129,12 @@ SYSTEM = (
 )
 
 
-def rank_prompt(hunks: list[Hunk], intent: str, evidence: list[TaskEvidence]) -> str:
+def rank_prompt(hunks: list[Hunk], intent: str, evidence: list[TaskEvidence], traces: str = "") -> str:
     parts = ["## Why the commit was made\n", intent.strip()[:4000] or "(unknown)", "\n\n## Failing tasks\n",
-             evidence_text(evidence), "\n## Hunks of the commit\n"]
+             evidence_text(evidence)]
+    if traces:
+        parts += ["\n## Tool calls in failing runs after the commit (from their neatlogs traces)\n", traces]
+    parts.append("\n## Hunks of the commit\n")
     for h in hunks:
         body = h.body if len(h.body) <= MAX_HUNK_CHARS else h.body[:MAX_HUNK_CHARS] + "\n… (truncated)\n"
         parts.append(f"\n### Hunk {h.id}: {h.where}\n```diff\n{body}```\n")
@@ -146,11 +150,11 @@ class Ranking:
     reply: llm.Reply[HunkRanking] | None = None
 
 
-def rank(hunks: list[Hunk], intent: str, evidence: list[TaskEvidence]) -> Ranking:
+def rank(hunks: list[Hunk], intent: str, evidence: list[TaskEvidence], traces: str = "") -> Ranking:
     """LLM ranking; ids it leaves out keep diff order after the ones it ranked. Falls back to diff order."""
     ids = [h.id for h in hunks]
     try:
-        reply = llm.structured(SYSTEM, rank_prompt(hunks, intent, evidence), HunkRanking)
+        reply = llm.structured(SYSTEM, rank_prompt(hunks, intent, evidence, traces), HunkRanking)
     except llm.LLMError as exc:
         return Ranking(ids, {}, f"fallback: {exc}")
     order: list[int] = []
@@ -251,15 +255,31 @@ def _ranking(ctx: finished.RunContext, hunks: list[Hunk]) -> dict:
     recorded = ctx.ledger.get_artifact(ctx.run_id, "hunk_ranking")
     if recorded is not None:
         return json.loads(recorded)
+    traces = victim_traces.Summary("", "not needed")
     with tracing.span("localise_rank", "AGENT", commit_sha=ctx.culprit, input={"hunks": len(hunks)}) as sp:
         if len(hunks) < 2:  # nothing to rank, so no model call
             result = Ranking([h.id for h in hunks], {}, "not needed")
         else:
-            result = rank(hunks, ctx.ledger.get_artifact(ctx.run_id, "intent") or "", ctx.evidence())
+            traces = _failing_traces(ctx)
+            result = rank(hunks, ctx.ledger.get_artifact(ctx.run_id, "intent") or "", ctx.evidence(), traces.text)
         sp.output({"order": result.order, "source": result.source})
     ctx.record_usage("localise_rank", result.reply)
     ranking = {"order": result.order, "reasons": {str(k): v for k, v in result.reasons.items()},
-               "source": result.source}
+               "source": result.source,
+               "traces": {"note": traces.note, "trace_ids": traces.trace_ids, "lines_removed": traces.lines_removed}}
     ctx.ledger.put_artifact(ctx.run_id, "hunk_ranking", json.dumps(ranking))
     ctx.orch.log(f"  hunk ranking ({result.source}): {', '.join(f'h{i}' for i in result.order)}")
     return ranking
+
+
+def _failing_traces(ctx: finished.RunContext) -> victim_traces.Summary:
+    """Tool-call sequences of failing runs at the culprit, telling tasks first. Never fails the stage."""
+    order = {t: i for i, t in enumerate(ctx.subset)}
+    failing = sorted((r for r in ctx.runs_at(ctx.culprit) if not r.passed),
+                     key=lambda r: (order.get(r.task_id, len(order)), r.task_id, r.repetition))
+    with tracing.span("neatlogs_readback", "TOOL", commit_sha=ctx.culprit, input={"failing_runs": len(failing)}) as sp:
+        summary = victim_traces.summarise(failing, ref_names(ctx.orch.repo))
+        sp.output({"note": summary.note, "trace_ids": summary.trace_ids, "lines_removed": summary.lines_removed})
+    ctx.orch.log(f"  victim traces: {summary.note}")
+    return summary
+

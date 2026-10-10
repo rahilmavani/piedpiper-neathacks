@@ -133,6 +133,20 @@ Planned (from `PRD.md`); move items to "used" as they are integrated.
   - 85 tests pass (17 new).
 - **Note for the next paid run:** with the current ledger, a v2 run on `good-v1.0..hist/b` (GLM 5.3, k=3, suite `ba86ed0`) would reuse *all* of `ff50e3620fdd`'s baseline runs. To measure staging alone, use `--no-reuse`. To show reuse, run it as is: the baseline then costs $0.
 
+- **Done: the Localiser reads neatlogs traces (PRD §8.3), fake victim only, $0.**
+  - `victim_traces.py` reads up to 3 failing runs at the culprit (one per telling task) back through the neatlogs CLI: `traces raw-spans`, at most 200 spans, 30 s timeout.
+  - It turns each run's TOOL spans into an ordered list (tool, arguments, result status or error) for the ranking prompt. The list is leak-filtered like the intent, and what was read is stored.
+  - Readback is optional: if it fails, the failure is logged and stored, and ranking continues without traces.
+  - Tests use a fake CLI; the conftest now also blocks real readback. 136 tests pass.
+- **Checked on a real RefundDesk trace (read-only):** a timed-out tool span comes back as `status: ERROR` with `error = {type: "refunddesk.faults.ToolTimeout", messagePreview: …}`, and the summary shows `lookup_order {"order_id":"B2001"} → error: ToolTimeout: lookup_order timed out`. Traces read just after a run can answer `TRACE_PROCESSING` ("still being finalized"); that counts as a failed readback, not an error.
+- **Checked: neatlogs detections from the CLI** (0.2.0, read-only, nothing created).
+  - `detections create` supports only `classifier`, `regex`, `conditional` and `pii`.
+  - Sequence rules exist (`trace_rules`, config `trace-rules.v1`, rows with quantifiers and a `relation`), and the project has one from a suggestion, but create and update don't accept that type. So "failed result followed by `issue_refund`" can't be authored from the CLI. Details in BLOCKERS.md.
+- **Finding worth posting:** neatlogs can store trace-level sequence rules (`trace_rules`), but its public API only creates per-span rules, so "this happened, then that" can only arrive through its own suggestions.
+
+- **Done: `culprit fix` can't over-claim the intended gain.** Each verification now prints the median latency per run at good, at bad and with the fix, plus the named metric at all three. If the commit never beat good on that metric (by more than the tolerance), it adds a note that the gain gate passes trivially. Both are stored in the `fix` artifact. Prompted by the real hero fix: the "make it faster" commit left the median latency at good 7086 ms vs bad 7138 ms. 137 tests pass.
+- **Finding worth posting:** "keeps the intended gain" is only a claim if the culprit commit delivered that gain. Ours, a "make it faster" change by a coding agent, didn't measurably speed anything up, and only comparing against the good baseline shows that.
+
 ## Demo
 
 - *Pending.* No demo URL yet.

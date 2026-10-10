@@ -350,6 +350,7 @@ Branches `a`, `c`, `d`, `e` and `f` have **not been measured yet**. Some may tur
 | `orchestrator.py` | Runs the whole investigation |
 | `finished.py` | Shared by `localise` and `fix`: loads a found run from the ledger and evaluates modified copies of a commit in their own worktrees |
 | `fix.py` | Fixer and Verifier: AI-written search-and-replace fix, three verification gates, hunk-revert fallback |
+| `victim_traces.py` | Reads failing victim runs' tool-call sequences back from neatlogs for the Localiser's prompt (bounded, optional, leak-filtered) |
 | `localise.py` | Localiser: splits the culprit diff into hunks, ranks them with one AI call, searches single-hunk then pair reverts |
 | `bench.py` | Runs scenarios and scores them against `bench/ground_truth.json`; writes `evidence/bench-<tag>.md` |
 | `bisect.py` | The halving search, including skip handling |
@@ -365,7 +366,7 @@ Branches `a`, `c`, `d`, `e` and `f` have **not been measured yet**. Some may tur
 | `config.py` | Settings and defaults |
 | `gitops.py` | Small git helpers (resolve ref, commit range, subject, diff) |
 
-About 3,500 lines of Python, with **109 tests passing** (no AI calls, about 30 s).
+About 3,500 lines of Python, with **137 tests passing** (no AI calls, about 30 s).
 
 ### 6.2 Key settings (`config.py`)
 
@@ -455,6 +456,10 @@ Steps:
    - the hunks
    - the commit's intent as stored in the ledger, which has already been through the leakage filter
    - for each telling task: passes before the commit and at it, up to 3 distinct errors, and the task's definition from the pinned suite
+   - **the tool calls of up to 3 failing runs at the culprit, read back from their neatlogs traces** (`victim_traces.py`). For each run, telling tasks first and one run per task: each tool call's name, arguments and result status (e.g. `lookup_order {"order_id":"B2001"} → error: ToolTimeout: lookup_order timed out`), in order.
+     - Bounded: at most 200 spans read and 25 calls shown per run, 30 s per CLI call.
+     - Optional: a failed readback (CLI missing, trace still being finalised, timeout) is logged and stored, and the ranking goes ahead without traces.
+     - Leak-filtered like the intent. What was read is stored under `traces` in the `hunk_ranking` artifact.
 
    Hunk ids the model leaves out keep diff order after the ones it ranked. If the call fails, the order falls back to diff order. The ranking is stored (artifact `hunk_ranking`), and the call is recorded in `llm_calls` (purpose `localise_rank`), so resume never asks again. With fewer than 2 hunks, there is no call.
 3. **Test reverts.** For the top 3 hunks, in rank order, reverse-apply that single hunk (`git apply -R`) on the culprit commit in its own worktree (`<sha12>-localise-h<N>`). Then run the telling tasks × k and judge with the same Wilson rule, resampling and budget as a bisect step (ledger step kinds `localise:h<N>`, `localise:h<N>/resample:<r>`). The first revert that makes the commit GOOD is the **responsible hunk**.
@@ -489,6 +494,9 @@ A separate command, run after `culprit localise`: `culprit fix <run_id>` (PRD §
 2. **Verify** each patch at the bad head, in its own worktree (`<sha12>-fix-<n>`): run the full suite plus the held-out tasks (`evals/heldout/`, never used by the bisect) × k. Held-out tasks run once at good and once at bad (step kind `verify:heldout`), and the full-suite numbers come from the recorded baselines. The fix is **verified** only if all three gates pass:
    - **quality:** the fix's Wilson interval reaches the good one (upper bound ≥ good's lower bound). This is PRD §10's wording and it is lenient: 4/9 vs 8/9 passes it.
    - **intended gain kept:** the mean of the named metric per run is no worse than at bad by more than `--tolerance` (10%). If the gain is `none` or wasn't measured, this gate doesn't judge.
+     - This gate only proves something if the commit actually delivered the gain. So every verification prints the **median latency per run at good, at bad and with the fix** (plus the named metric at all three when it isn't latency). If bad isn't better than good by more than the tolerance, it adds `note: the commit's <metric> gain is not visible … so the gain gate passes trivially`.
+     - The same text is stored in the `fix` artifact (`baselines`, `gain_note`) and in each attempt's gates (`good_value`, `gain_at_bad`, `latency_ms`).
+     - On the real hero run, "make it faster" left the median at good 7086 ms vs bad 7138 ms, so its gain gate passes trivially, and the output now says so.
    - **no new failures:** no task that passes every repetition at good fails every repetition with the fix. This catches what the lenient quality gate lets through.
 3. **Retry.** A failed attempt's error or gate failures go into the next prompt (`--attempts`, default 2).
 4. **Fallback.** If no attempt is verified, the responsible hunks' revert is verified at the bad head the same way (step kind `fix:revert`). Result: `verified_fix`, `verified_revert`, `unverified` or `incomplete` (budget or infrastructure stop; exit 1). The `fix` artifact holds the patch (with `patch_reverse` set for the fallback), the metric and every attempt with its gates. Proposals are stored (`fix_attempts`), so a re-run resumes without asking again. `--budget-usd` (default $2.00) is added on top of what the run has already spent.
@@ -699,7 +707,7 @@ All cost figures here use Anthropic's list price for Sonnet 5.5 ($2 / $10 per mi
 From `piedpiper-neathacks/` (load keys first: `set -a; source .env; set +a`):
 
 ```bash
-uv run pytest -q                                   # 109 tests, free; no test exports traces or calls a model (tests/conftest.py), ~30 s
+uv run pytest -q                                   # 137 tests, free; no test exports or reads traces, or calls a model (tests/conftest.py), ~30 s
 uv run culprit --help
 
 # Free demo on a fake victim (no AI calls)

@@ -104,6 +104,9 @@ class Gates:
     bad_value: float | None
     gain: bool | None  # None: no metric named, or not measured
     new_failures: list[str] = field(default_factory=list)
+    good_value: float | None = None  # the metric at the good commit, to show whether bad ever improved on it
+    gain_at_bad: bool | None = None  # did bad beat good on the metric by more than the tolerance?
+    latency_ms: dict[str, float | None] = field(default_factory=dict)  # median per run: good, bad, fix
 
     @property
     def verified(self) -> bool:
@@ -121,6 +124,27 @@ class Gates:
             out.append(f"tasks that always pass at good now always fail: {', '.join(self.new_failures)}")
         return out
 
+    def gain_note(self) -> str:
+        """Says when "intended gain kept" proves nothing, because the commit never delivered the gain."""
+        if self.gain_at_bad is not False:
+            return ""
+        return (f"the commit's {self.metric} gain is not visible: mean {self.metric} good {_fmt(self.good_value)} vs "
+                f"bad {_fmt(self.bad_value)}, so the gain gate passes trivially")
+
+    def baselines_line(self) -> str:
+        lat = self.latency_ms
+        line = (f"median latency per run: good {_fmt(lat.get('good'))} ms, bad {_fmt(lat.get('bad'))} ms, "
+                f"fix {_fmt(lat.get('fix'))} ms")
+        if self.metric in METRICS and self.metric != "latency":
+            line += (f"; mean {self.metric}: good {_fmt(self.good_value)}, bad {_fmt(self.bad_value)}, "
+                     f"fix {_fmt(self.fix_value)}")
+        return line
+
+
+def _median_latency(runs: list[TaskRun]) -> float | None:
+    values = [r.latency_ms for r in runs if r.latency_ms is not None]
+    return statistics.median(values) if values else None
+
 
 def _mean(runs: list[TaskRun], metric: str) -> float | None:
     values = [v for r in runs if (v := METRICS[metric](r)) is not None]
@@ -130,12 +154,14 @@ def _mean(runs: list[TaskRun], metric: str) -> float | None:
 def gates(good: list[TaskRun], bad: list[TaskRun], fix: list[TaskRun], metric: str, tolerance: float,
           z: float = 1.96) -> Gates:
     fix_ci, good_ci = wilson(sum(r.passed for r in fix), len(fix), z), wilson(sum(r.passed for r in good), len(good), z)
-    fix_value = bad_value = None
-    gain = None
+    fix_value = bad_value = good_value = None
+    gain = gain_at_bad = None
     if metric in METRICS:
-        fix_value, bad_value = _mean(fix, metric), _mean(bad, metric)
+        fix_value, bad_value, good_value = _mean(fix, metric), _mean(bad, metric), _mean(good, metric)
         if fix_value is not None and bad_value is not None:
             gain = fix_value <= bad_value * (1 + tolerance)
+        if good_value is not None and bad_value is not None:
+            gain_at_bad = bad_value < good_value * (1 - tolerance)
 
     def by_task(runs: list[TaskRun]) -> dict[str, list[bool]]:
         out: dict[str, list[bool]] = {}
@@ -146,7 +172,8 @@ def gates(good: list[TaskRun], bad: list[TaskRun], fix: list[TaskRun], metric: s
     g, f = by_task(good), by_task(fix)
     new_failures = sorted(t for t, v in g.items() if all(v) and t in f and not any(f[t]))
     return Gates((sum(r.passed for r in fix), len(fix)), (sum(r.passed for r in good), len(good)), fix_ci, good_ci,
-                 fix_ci[1] >= good_ci[0], metric, fix_value, bad_value, gain, new_failures)
+                 fix_ci[1] >= good_ci[0], metric, fix_value, bad_value, gain, new_failures, good_value, gain_at_bad,
+                 {"good": _median_latency(good), "bad": _median_latency(bad), "fix": _median_latency(fix)})
 
 
 # prompt ----------------------------------------------------------------------------------------
@@ -183,6 +210,8 @@ class FixResult:
     patch_reverse: bool = False  # True for the fallback: the responsible hunks, to apply with `git apply -R`
     metric: str = "none"
     note: str = ""
+    baselines: str = ""  # median latency (and the gain metric) at good, bad and with the fix
+    gain_note: str = ""  # set when the commit never delivered the gain it was made for
 
 
 def fix_run(ledger: Ledger, run_id: str, log: Log = print, workers: int = 4, attempts: int = 2,
@@ -193,6 +222,10 @@ def fix_run(ledger: Ledger, run_id: str, log: Log = print, workers: int = 4, att
         sp.output({"status": result.status, "metric": result.metric, "note": result.note})
     ledger.put_artifact(run_id, "fix", json.dumps({**asdict(result), "commit": ctx.bad}))
     log(f"fix: {result.status}" + (f" ({result.note})" if result.note else ""))
+    if result.baselines:
+        log(f"  {result.baselines}")
+    if result.gain_note:
+        log(f"  note: {result.gain_note}")
     return result
 
 
@@ -225,14 +258,14 @@ def _fix(ctx: RunContext, attempts: int, tolerance: float) -> FixResult:
                 attempt.gates, attempt.failures, attempt.verified = asdict(g), g.failures(), g.verified
             ctx.ledger.put_artifact(ctx.run_id, "fix_attempts", json.dumps([asdict(a) for a in done]))
             if attempt.verified:
-                return FixResult("verified_fix", done, patch=attempt.patch, metric=metric)
+                return _explained(FixResult("verified_fix", done, patch=attempt.patch, metric=metric), g)
         revert = patch_for(responsible)
         g = _verify(ctx, "fix:revert", revert, good, bad, metric, tolerance, reverse=True)
         if g is not None and g.verified:
-            return FixResult("verified_revert", done, patch=revert, patch_reverse=True, metric=metric,
-                             note="no attempt passed every gate; the responsible hunks' revert did")
-        return FixResult("unverified", done, metric=metric, note="neither a fix nor the revert passed every gate"
-                         if g else "the revert does not apply or install at the bad head")
+            return _explained(FixResult("verified_revert", done, patch=revert, patch_reverse=True, metric=metric,
+                                        note="no attempt passed every gate; the responsible hunks' revert did"), g)
+        return _explained(FixResult("unverified", done, metric=metric, note="neither a fix nor the revert passed "
+                                    "every gate" if g else "the revert does not apply or install at the bad head"), g)
     except (BudgetExceeded, InfraError) as exc:
         return FixResult("incomplete", done, metric=metric, note=f"{type(exc).__name__}: {exc}")
 
@@ -272,9 +305,19 @@ def _verify(ctx: RunContext, label: str, patch: str, good: list[TaskRun], bad: l
         g = gates(good, bad, result.runs, metric, tolerance, cfg.z)
         sp.output(asdict(g) | {"verified": g.verified})
     ctx.orch.log(f"  {label}: {g.fix[0]}/{g.fix[1]} CI [{g.fix_ci[0]:.2f}, {g.fix_ci[1]:.2f}] vs good "
-                 f"[{g.good_ci[0]:.2f}, {g.good_ci[1]:.2f}]; {metric} {_fmt(g.fix_value)} vs bad {_fmt(g.bad_value)}; "
-                 + ("VERIFIED" if g.verified else "FAILED: " + "; ".join(g.failures())))
+                 f"[{g.good_ci[0]:.2f}, {g.good_ci[1]:.2f}]; {metric} {_fmt(g.fix_value)} vs bad {_fmt(g.bad_value)} "
+                 f"(good {_fmt(g.good_value)}); " + ("VERIFIED" if g.verified else "FAILED: " + "; ".join(g.failures())))
+    ctx.orch.log(f"    {g.baselines_line()}")
+    if g.gain_note():
+        ctx.orch.log(f"    note: {g.gain_note()}")
     return g
+
+
+def _explained(result: FixResult, g: Gates | None) -> FixResult:
+    """The deciding verification's baselines, so a report can't claim a gain the commit never had."""
+    if g is not None:
+        result.baselines, result.gain_note = g.baselines_line(), g.gain_note()
+    return result
 
 
 def _fmt(value: float | None) -> str:

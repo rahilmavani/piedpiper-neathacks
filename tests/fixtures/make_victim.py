@@ -41,7 +41,7 @@ FRAGILE_PASS = min(RETRY_PASS, VALIDATE_PASS)
 
 EVAL = '''\
 """Fake eval runner with the same interface as the real one; each run costs a nominal $0.001."""
-import argparse, json, os, random
+import argparse, hashlib, json, os, random
 from pathlib import Path
 
 from refunddesk import agent
@@ -74,7 +74,8 @@ def main() -> None:
     passed = rng.random() < p_pass
     # Latency follows the tool timeout knob, so a "faster" commit has a measurable intended gain.
     print(json.dumps({{"passed": passed, "cost": 0.001, "latency_ms": agent.TOOL_TIMEOUT_S * 10.0,
-                      "tokens": {{"in": 100, "out": 20}}, "trace_id": None}}))
+                      "tokens": {{"in": 100, "out": 20}},
+                      "trace_id": hashlib.md5(f"{{a.task}}:{{a.seed}}".encode()).hexdigest()}}))  # fake, never exported
 
 
 if __name__ == "__main__":

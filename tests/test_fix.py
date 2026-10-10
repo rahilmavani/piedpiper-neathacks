@@ -68,6 +68,24 @@ def test_gates_catch_lost_gain_lost_quality_and_new_failures():
     assert lenient.quality and lenient.new_failures == ["a"] and not lenient.verified
 
 
+def test_gates_say_when_the_commit_never_delivered_its_gain():
+    # The real hero run: "make it faster" left the agent no faster (7086 vs 7138 ms median).
+    bad = runs({"a": [False] * 3, "b": [False] * 3, "c": [True] * 3}, 7138.0)
+    g = gates(runs({"a": [True] * 3, "b": [True] * 3, "c": [True] * 3}, 7086.0), bad,
+              runs({"a": [True] * 3, "b": [True] * 3, "c": [True] * 3}, 7100.0), "latency", 0.10)
+    assert g.verified and g.gain is True and g.gain_at_bad is False
+    assert g.latency_ms == {"good": 7086.0, "bad": 7138.0, "fix": 7100.0}
+    assert g.baselines_line() == "median latency per run: good 7086 ms, bad 7138 ms, fix 7100 ms"
+    assert g.gain_note() == ("the commit's latency gain is not visible: mean latency good 7086 vs bad 7138, "
+                             "so the gain gate passes trivially")
+
+    faster = gates(GOOD, runs({"a": [False] * 3, "b": [False] * 3, "c": [True] * 3}, 50.0),
+                   runs({"a": [True] * 3, "b": [True] * 3, "c": [True] * 3}, 52.0), "tokens", 0.10)
+    assert faster.gain_at_bad is False and "mean tokens: good 15, bad 15, fix 15" in faster.baselines_line()
+    assert gates(GOOD, runs({"a": [True] * 9}, 50.0), runs({"a": [True] * 9}, 50.0), "latency", 0.1).gain_at_bad
+    assert gates(GOOD, GOOD, GOOD, "none", 0.1).gain_note() == ""
+
+
 def test_gates_without_a_measurable_metric_do_not_judge_the_gain():
     fix = runs({"a": [True] * 3, "b": [True] * 3, "c": [True] * 3})
     assert gates(GOOD, GOOD, fix, "none", 0.1).gain is None
@@ -132,6 +150,9 @@ def test_fix_is_verified_on_the_suite_and_heldout_tasks(mods, tmp_path: Path, mo
     result = mods.fix.fix_run(ledger, run_id, log=lambda _: None)
 
     assert result.status == "verified_fix" and result.metric == "latency" and not result.patch_reverse
+    # The fixture's culprit really is faster (timeout 30 → 10), and the report says so next to the gate.
+    assert result.baselines == "median latency per run: good 300 ms, bad 100 ms, fix 100 ms"
+    assert result.gain_note == "" and result.attempts[0].gates["gain_at_bad"] is True
     assert "-RETRY_PASS = 0.05\n+RETRY_PASS = 0.95\n" in result.patch and "TOOL_TIMEOUT_S" not in result.patch
     gates_ = result.attempts[0].gates
     assert gates_["quality"] and gates_["gain"] and gates_["fix_value"] == gates_["bad_value"] == 100.0
@@ -178,6 +199,7 @@ def test_without_a_verified_fix_the_hunk_revert_is_verified_instead(mods, tmp_pa
     out = CliRunner().invoke(app, ["fix", run_id, "--db", str(db)])  # no model: both attempts fail
     assert out.exit_code == 0, out.output
     assert "fix: verified_revert" in out.output
+    assert "  median latency per run: good 300 ms, bad 100 ms, fix 100 ms" in out.output
     record = json.loads(ledger.get_artifact(run_id, "fix"))
     assert record["patch_reverse"] and "RETRY_PASS" in record["patch"]
     assert all(a["error"].startswith("no proposal") for a in record["attempts"])

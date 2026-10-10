@@ -301,7 +301,8 @@ def to_markdown(r: Report) -> str:
 
     out += ["", "## Costs", "", "| Item | Value |", "|---|---:|",
             f"| Victim runs executed | {c.victim_runs} |", f"| … measuring the ends | {c.baseline_runs} |",
-            f"| … bisecting | {c.bisect_runs} |", f"| Reused from earlier runs (not paid again) | {c.reused_runs} |",
+            f"| … bisecting | {c.bisect_runs} |", f"| … localising | {c.localise_runs} |",
+            f"| … fixing and verifying | {c.fix_runs} |", f"| Reused from earlier runs (not paid again) | {c.reused_runs} |",
             f"| Victim cost | {_money(c.victim_cost_usd)} |", f"| Culprit LLM cost | {_money(c.llm_cost_usd)} |",
             f"| **Total** | **{_money(c.cost_usd)}** |", f"| Per victim run | {_money(c.cost_per_victim_run_usd)} |",
             f"| Wall time | {_duration(c.wall_time_s)} |"]
@@ -403,6 +404,8 @@ checkpoint <code>{{ r.intent_meta.checkpoint_id }}</code>{% endif %}; leakage fi
 <tr><td>Victim runs executed</td><td class="num">{{ c.victim_runs }}</td></tr>
 <tr><td>… measuring the ends</td><td class="num">{{ c.baseline_runs }}</td></tr>
 <tr><td>… bisecting</td><td class="num">{{ c.bisect_runs }}</td></tr>
+<tr><td>… localising</td><td class="num">{{ c.localise_runs }}</td></tr>
+<tr><td>… fixing and verifying</td><td class="num">{{ c.fix_runs }}</td></tr>
 <tr><td>Reused from earlier runs (not paid again)</td><td class="num">{{ c.reused_runs }}</td></tr>
 <tr><td>Victim cost</td><td class="num">{{ money(c.victim_cost_usd) }}</td></tr>
 <tr><td>Culprit LLM cost</td><td class="num">{{ money(c.llm_cost_usd) }}</td></tr>

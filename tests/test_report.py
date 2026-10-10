@@ -129,7 +129,8 @@ def test_export_costs_csv(finished):
     ledger = Ledger(db)
     for r in rows:
         c = run_costs(ledger, r["run_id"])
-        assert int(r["victim_runs"]) == c.victim_runs == int(r["baseline_runs"]) + int(r["bisect_runs"])
+        assert int(r["victim_runs"]) == c.victim_runs == sum(
+            int(r[f"{stage}_runs"]) for stage in ("baseline", "bisect", "localise", "fix", "other"))
         assert float(r["cost_usd"]) == pytest.approx(ledger.run_cost(r["run_id"]))
         assert float(r["wall_time_s"]) >= 0
     assert sum(float(r["cost_usd"]) for r in rows) == pytest.approx(ledger.total_cost())

@@ -192,6 +192,9 @@ def test_localiser_rejects_the_decoy_and_finds_the_responsible_hunk(mods, tmp_pa
     assert record["tried"] == [{"hunks": [decoy], "verdict": "BAD"}, {"hunks": [responsible], "verdict": "GOOD"}]
     assert hunks["evals/t01.json:1"] not in record["ranking"]["order"]  # the pinned suite replaces evals/
     assert record["ranking"]["source"] == "llm"
+    # conftest blocks neatlogs readback: the stage logs it and ranks without traces.
+    assert record["ranking"]["traces"]["note"].startswith("read 0/3 failing traces from neatlogs; readback failed")
+    assert record["ranking"]["traces"]["trace_ids"] == [] and "Tool calls in failing runs" not in prompts[0]
     calls = ledger.conn.execute("SELECT purpose, model, cost_usd FROM llm_calls").fetchall()
     assert [tuple(c) for c in calls] == [("localise_rank", "fake-model", 0.0001)]
     assert task_run_count(ledger) == before + 2 * 15  # two reverts × 5 telling tasks × k=3, baselines reused
@@ -237,3 +240,33 @@ def test_localise_needs_a_found_run(mods, tmp_path: Path):
     assert orch.run(run_id).status == "no_regression"
     with pytest.raises(finished.StageError, match="no_regression"):
         loc_mod.localise_run(orch.ledger, run_id, log=lambda _: None)
+
+
+def test_ranking_prompt_carries_failing_runs_tool_calls_from_neatlogs(mods, tmp_path: Path, monkeypatch):
+    from culprit import readback
+
+    loc_mod = mods[2]
+    repo = build(tmp_path / "victim", commits=6, breaks_at=4, unbuildable_at=None, break_hunks="multi")
+    ledger, run_id, outcome = bisected(mods, repo, tmp_path / "l.sqlite")
+    asked = []
+
+    def cli(*args, timeout_s):
+        asked.append(args[2])
+        tools = [("lookup_order", {"order_id": "A1"}, "failed"), ("lookup_order", {"order_id": "A1"}, "ok"),
+                 ("issue_refund", {"order_id": "A1", "note": "good-v1.0"}, "ok")]
+        return {"spans": [{"spanType": "TOOL", "spanName": n, "startedAt": f"{i}", "status": "OK",
+                           "input": {"preview": json.dumps(a)}, "output": {"preview": json.dumps({"status": st})}}
+                          for i, (n, a, st) in enumerate(tools)]}
+
+    monkeypatch.setattr(readback, "cli", cli)
+    prompts = fake_model(monkeypatch, {"ranking": []})
+    loc_mod.localise_run(ledger, run_id, log=lambda _: None)
+
+    culprit_failures = {r.trace_id for step in ledger.steps(run_id) if step["commit_sha"] == outcome.result.first_bad
+                        for r in ledger.task_runs(step["step_id"]).values() if not r.passed}
+    assert len(asked) == 3 and set(asked) <= culprit_failures  # at most 3 failing runs at the culprit
+    assert "## Tool calls in failing runs after the commit (from their neatlogs traces)" in prompts[0]
+    assert '1. lookup_order {"order_id": "A1"} → failed' in prompts[0]
+    assert "issue_refund" not in prompts[0].split("## Tool calls")[1].split("## Hunks")[0]  # carried a ref name
+    traces = json.loads(ledger.get_artifact(run_id, "localisation"))["ranking"]["traces"]
+    assert traces["trace_ids"] == asked and traces["lines_removed"] == 3

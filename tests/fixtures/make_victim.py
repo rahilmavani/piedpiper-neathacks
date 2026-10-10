@@ -31,7 +31,7 @@ FRAGILE_PASS = {p}
 
 EVAL = '''\
 """Fake eval runner with the same interface as the real one; each run costs a nominal $0.001."""
-import argparse, json, random, time
+import argparse, json, os, random, time
 from pathlib import Path
 
 from refunddesk import agent
@@ -44,6 +44,17 @@ def main() -> None:
     p.add_argument("--task", required=True)
     p.add_argument("--seed", type=int, default=0)
     a = p.parse_args()
+    # Simulated infrastructure failures, set by tests: a bad key every time, or one 429 per (task, seed).
+    infra = os.environ.get("FIXTURE_INFRA")
+    if infra == "auth":
+        print(json.dumps({{"passed": False, "cost": None, "error": "AuthenticationError: Error code: 401"}}))
+        return
+    if infra == "rate_limit_once":
+        marker = Path(os.environ["FIXTURE_INFRA_DIR"]) / f"{{a.task}}-{{a.seed}}"
+        if not marker.exists():
+            marker.touch()
+            print(json.dumps({{"passed": False, "cost": 0.0, "error": "RateLimitError: Error code: 429"}}))
+            return
     if not (Path("evals") / f"{{a.task}}.json").exists():  # like the real load_task
         print(json.dumps({{"passed": False, "cost": 0.0, "latency_ms": 0.0, "tokens": None, "trace_id": None,
                           "error": f"FileNotFoundError: no task named {{a.task!r}}"}}))

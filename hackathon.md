@@ -54,6 +54,26 @@ Planned (from `PRD.md`); move items to "used" as they are integrated.
 - **Done: pinned eval suite.** Every commit in a run is judged by one suite snapshot: `evals/` at the victim's `main` (`--suite-ref`), or a directory on disk (`--suite /path`). The snapshot is copied into each worktree before evaluation, and the ledger records `suite_source` + `suite_sha` (commit SHA, or a `sha256:` digest for a path). Resume rebuilds the recorded snapshot even if `main` has moved, and refuses a path suite that changed. Fixture run `4864e9e2df12` (trace `8992ef2cf8b254eb645bd6c1ef293695`, audit PASS): task `t11` exists only on `main` but ran at every commit with 0 errors. 38 tests pass. Not run on the real victim yet, by instruction.
 - **Decision:** worktree reuse now does `git reset --hard` + `git clean -fd` (ignored `.venv` kept) to undo the copied suite, instead of discarding the worktree as dirty and reinstalling.
 - **Waiting on:** M1's real-victim exit (R1 end to end) needs the R1 change on `hist/b` (still at its pause point) and the budget decision. M2's "all six branches run" needs `hist/a`…`hist/f` finished.
+- **Handover:** the second builder took over from `HOW_IT_WORKS.md` (Sat evening).
+- **Fixed: decision gates, from review (branch `fix/decision-gates`, fixture only, $0):**
+  - **Regression gate.** It now uses a one-sided Fisher exact test (p < 0.05) instead of "95% intervals don't overlap".
+    - The overlap rule called 57/60 vs 48/60 noise (Fisher p = 0.012), so a planted bug that breaks 3 of 20 tasks would have ended as `no_regression`.
+    - On a perfect 78/78 baseline, 1–2 flaky failures still count as noise (p = 0.50 / 0.25).
+  - **Infrastructure failures are no longer agent failures.**
+    - Victim runs that hit 429/5xx/overloaded/connection errors, time out, or print no JSON are retried twice with backoff, and are never recorded as failed tasks.
+    - Bad keys, bad config and unknown models stop the run with `infra_error`, which `culprit resume` continues.
+    - The commit's own crashes (e.g. `KeyError`) still count as failures.
+  - **Widening only adds tasks that dropped from good to bad.** If none did, it adds more repetitions of the same tasks instead. Before, it added tasks that pass on both ends: they can't tell good from bad, and they push the threshold up.
+  - **Resume reuses the run's recorded good and bad SHAs**, so a branch that moves mid-run can't change the range. An empty range stops before the baselines.
+  - 57 tests pass (19 new).
+- **Finding worth posting:** "do the 95% intervals overlap?" sounds rigorous, but as a significance test it is far stricter than 5%. On our 26-task suite, any planted bug that breaks fewer than about 3 tasks would have been reported as noise. The other five branches haven't been measured yet, so we don't know how many that is.
+- **Done: OpenRouter fallback.** With `ANTHROPIC_API_KEY` set, both apps use Claude Sonnet 5.5; with only `OPENROUTER_API_KEY`, they use GLM 5.3 (`z-ai/glm-5.3`, $0.039/$4.80 per MTok from OpenRouter's listing).
+  - Culprit picks the victim model once per run, records it in the ledger and passes `LLM_PROVIDER`, `VICTIM_MODEL` and the price to every victim commit, so all commits are judged by the same model.
+  - Resuming without that run's key stops with `infra_error`. 68 Culprit tests and 31 RefundDesk tests pass.
+- **Measured: GLM 5.3 as the victim** (OpenRouter, temperature 0 accepted):
+  - One smoke run passed for $0.0066.
+  - Hero check, the 6 harder tasks × 3 seeds: `good-v1.0` **18/18**, hero commit `397c427` **0/18**, the same as on Sonnet 5.5. 36 runs, $0.134 total, about $0.0037 per run, 0 infrastructure errors.
+- **Finding worth posting:** the hero bug is just as visible with a ~4× cheaper victim model, so the benchmark can run on GLM.
 
 ## Demo
 

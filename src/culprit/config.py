@@ -22,6 +22,9 @@ class Config:
     suite_ref: str = "main"
     k: int = 3
     z: float = 1.96
+    gate_alpha: float = 0.05  # one-sided Fisher test: is good really better than bad?
+    infra_retries: int = 2  # re-runs of a victim task that failed for infrastructure reasons
+    infra_backoff_s: float = 5.0  # first retry waits this long, then 4× longer each time
     budget_usd: float = 3.00
     global_budget_usd: float = 75.00
     max_resample_rounds: int = 2
@@ -29,6 +32,10 @@ class Config:
     install_timeout_s: int = 600
     task_timeout_s: int = 300
     eval_module: str = "refunddesk.eval"
+    # The victim's model, chosen once from the keys when the run starts (culprit.providers) and passed to
+    # every victim run, so all commits are judged by the same model. Empty: the victim's own environment.
+    victim_provider: str = ""
+    victim_model: str = ""
     task_ids: tuple[str, ...] = field(default_factory=tuple)
 
     @property

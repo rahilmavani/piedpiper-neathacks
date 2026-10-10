@@ -24,6 +24,8 @@ CREATE TABLE IF NOT EXISTS runs (
     suite_hash TEXT NOT NULL,
     suite_source TEXT,
     suite_sha TEXT,
+    good_sha TEXT,
+    bad_sha TEXT,
     config_json TEXT NOT NULL,
     status TEXT NOT NULL,
     started_at TEXT NOT NULL,
@@ -115,7 +117,8 @@ class Ledger:
         if "flags" not in columns:  # ledgers created before M2
             self.conn.execute("ALTER TABLE steps ADD COLUMN flags TEXT")
         run_columns = {r["name"] for r in self.conn.execute("PRAGMA table_info(runs)")}
-        for column in ("suite_source", "suite_sha"):  # ledgers created before the suite was pinned
+        # ledgers created before the suite was pinned, or before refs were resolved once per run
+        for column in ("suite_source", "suite_sha", "good_sha", "bad_sha"):
             if column not in run_columns:
                 self.conn.execute(f"ALTER TABLE runs ADD COLUMN {column} TEXT")
 
@@ -154,6 +157,10 @@ class Ledger:
     def set_suite(self, run_id: str, source: str, sha: str) -> None:
         with self._tx() as c:
             c.execute("UPDATE runs SET suite_source = ?, suite_sha = ? WHERE run_id = ?", (source, sha, run_id))
+
+    def set_range(self, run_id: str, good_sha: str, bad_sha: str) -> None:
+        with self._tx() as c:
+            c.execute("UPDATE runs SET good_sha = ?, bad_sha = ? WHERE run_id = ?", (good_sha, bad_sha, run_id))
 
     def finish_run(
         self, run_id: str, status: str, culprit_sha: str | None, confidence: str | None, summary: str

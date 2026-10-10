@@ -7,6 +7,7 @@ victim trace through CULPRIT_RUN_ID, COMMIT_SHA, TASK_ID and REPETITION.
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import time
 from collections.abc import Mapping
@@ -16,15 +17,25 @@ from typing import Any
 from dotenv import dotenv_values
 
 from culprit.ledger import TaskRun
+from culprit.providers import Provider
 from culprit.sandbox import clean_env, python_of
 
 
-def victim_env(repo: Path) -> dict[str, str]:
-    """Culprit's environment overlaid with the victim's own (gitignored) `.env`, if present."""
+def victim_env(repo: Path, victim: Provider | None = None) -> dict[str, str]:
+    """Culprit's environment overlaid with the victim's own (gitignored) `.env`, if present.
+
+    The run's victim provider and model go on top, so a `.env` can't switch models mid-run. Old
+    victim commits need `LLM_PROVIDER` and `VICTIM_MODEL` set explicitly; the price lets a victim
+    that doesn't know the model still report cost (RefundDesk reads VICTIM_PRICE_IN/OUT).
+    """
     env = clean_env()
     env_file = repo / ".env"
     if env_file.exists():
         env.update({k: v for k, v in dotenv_values(env_file).items() if v is not None})
+    if victim is not None:
+        env |= {"LLM_PROVIDER": victim.name, "VICTIM_MODEL": victim.model}
+        if victim.price is not None:
+            env |= {"VICTIM_PRICE_IN": str(victim.price[0]), "VICTIM_PRICE_OUT": str(victim.price[1])}
     return env
 
 
@@ -60,6 +71,30 @@ def _tokens(raw: Any) -> tuple[int | None, int | None]:
     if isinstance(raw, int | float):
         return int(raw), None
     return None, None
+
+
+# A victim run that failed for one of these reasons says nothing about the commit under test, so
+# it must never count as a failed task. Transient errors are retried; fatal ones stop the run.
+TRANSIENT_ERROR = re.compile(
+    r"RateLimitError|APIConnectionError|APITimeoutError|InternalServerError|OverloadedError|"
+    r"ServiceUnavailableError|overloaded_error|rate_limit_error|Error code: (?:429|5\d\d)|"
+    r"^timeout after \d+s$|eval runner printed no JSON"
+)
+FATAL_ERROR = re.compile(
+    r"AuthenticationError|PermissionDeniedError|ConfigError|credit balance|Could not resolve authentication|"
+    r"NotFoundError: Error code: 404 .*model"
+)
+
+
+def infra_failure(tr: TaskRun) -> str | None:
+    """'transient' or 'fatal' when the run failed for infrastructure reasons, else None."""
+    if tr.passed or not tr.error:
+        return None
+    if FATAL_ERROR.search(tr.error):
+        return "fatal"
+    if TRANSIENT_ERROR.search(tr.error):
+        return "transient"
+    return None
 
 
 def run_task(

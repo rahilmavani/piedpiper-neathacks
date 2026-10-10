@@ -129,7 +129,7 @@ Both repos have:
 RefundDesk is a customer-support agent for an online store. A customer writes something like "Order A1009, wrong size shoes, I want my money back". The agent uses tools to look up the order, apply the refund policy, refund or escalate to a human, and email the customer.
 
 - Python 3.12, managed with `uv`. Package `refunddesk` v0.1.0.
-- Model: **Claude Sonnet 5.5** (`claude-sonnet-5-5`) via the Anthropic API. The code also supports OpenRouter, but that was never used.
+- Model: **Claude Sonnet 5.5** (`claude-sonnet-5-5`) via the Anthropic API when `ANTHROPIC_API_KEY` is set, otherwise **GLM 5.3** (`z-ai/glm-5.3`) via OpenRouter. All baseline numbers below were measured on Sonnet 5.5; a GLM run needs its own baseline.
 - Temperature 0 is requested. Sonnet 5.5 rejects the temperature setting, so the client detects that and stops sending it (cached in `.cache/refunddesk/sampling.json`).
 - The tools are **mocks**: they read and write a JSON file, not a real store. That makes every test fast, free of side effects and repeatable.
 
@@ -359,7 +359,7 @@ Branches `a`, `c`, `d`, `e` and `f` have **not been measured yet**. Some may tur
 | `config.py` | Settings and defaults |
 | `gitops.py` | Small git helpers (resolve ref, commit range, subject, diff) |
 
-About 2,300 lines of Python, with **38 tests passing** (no AI calls, about 30 s).
+About 2,300 lines of Python, with **57 tests passing** (no AI calls, about 30 s).
 
 ### 6.2 Key settings (`config.py`)
 
@@ -404,7 +404,8 @@ uv run culprit run --repo ../refunddesk --good good-v1.0 --bad hist/b
 - Run **every task × k** on the good commit and on the bad commit. With 26 tasks and k=3, that's 78 runs each, 156 total. **This is the most expensive part of a run.**
 - If either end fails to install, stop: "cannot bisect".
 - Compute each end's pass rate and 95% range.
-- **Safety gate:** if good isn't clearly better than bad (the ranges overlap), stop with status **`no_regression`**. Culprit refuses to hunt for a bug that might just be noise.
+- **Safety gate:** a one-sided Fisher exact test asks whether good really passes more often than bad. If p ≥ 0.05 (`gate_alpha`), stop with status **`no_regression`**: Culprit refuses to hunt for a bug that might just be noise.
+  - This replaced an "intervals overlap" rule, which was much stricter than a 5% test. Under it, 57/60 vs 48/60 (about 3 broken tasks out of 20) was called noise. On a perfect 78/78 baseline, the Fisher gate bisects once about 5 runs fail, while 1–2 flaky failures still count as noise.
 
 ### 7.5 Choose the "telling" tasks
 - Rank tasks by how much worse they did on the bad version (good rate minus bad rate).
@@ -420,7 +421,7 @@ uv run culprit run --repo ../refunddesk --good good-v1.0 --bad hist/b
   3. Decide GOOD, BAD or INCONCLUSIVE ([§8](#8-the-statistics-explained-simply)).
   4. If INCONCLUSIVE, resample:
      - **Round 1:** 3 more repetitions of the same 8 tasks.
-     - **Round 2:** up to 8 *other* tasks × 3.
+     - **Round 2:** up to 8 *other* tasks × 3, but only tasks that also dropped from good to bad. If there are none, 3 more repetitions of the same 8 instead. A task that passes on both ends tells good from bad apart no better than a coin, and it pulls the threshold up.
      - Still unsure: decide by the plain pass rate and mark the step **`low_confidence`**.
      - At most 72 runs per commit.
   5. GOOD moves the "last good" marker up; BAD moves the "first bad" marker down.
@@ -436,7 +437,7 @@ uv run culprit run --repo ../refunddesk --good good-v1.0 --bad hist/b
 ### 7.8 Finish
 - Print and store the result. Example from the free demo:
   `Culprit: a419a7d… 'speed up tool handling' (confidence: 95% Wilson)`
-- Possible statuses: `found`, `no_regression`, `ambiguous`, `budget_exceeded`, `error`.
+- Possible statuses: `found`, `no_regression`, `ambiguous`, `budget_exceeded`, `infra_error`, `error`.
 - Output is the terminal log plus the ledger. A report file is **NOT BUILT**.
 
 ### 7.9 What the free demo run looked like (fake victim, $0)
@@ -489,16 +490,18 @@ range  = [centre − half, centre + half], clipped to [0, 1]
 
 | Problem | How Culprit notices | What it does |
 |---|---|---|
+| Victim run hit an API problem (429, 5xx, overloaded, connection), timed out, or printed no JSON | Error text from the victim runner | Retries it twice with backoff (5 s, 20 s). It is never recorded as a failed task. If it keeps failing, the run stops with `infra_error`, and `culprit resume` continues |
+| Bad key, missing config or unknown model | `AuthenticationError`, `ConfigError`, … | Stops at once with `infra_error`, without recording anything against the commit |
 | Commit won't install | `uv sync --locked` fails | Marks it SKIP and tests a neighbour |
 | Unsure result (e.g. 3/5) | Range straddles the threshold | Runs more repetitions, then more tasks, then decides by point estimate and flags `low_confidence` |
 | Process killed mid-run | The ledger has partial work | `culprit resume <run_id>` redoes only the missing task runs; no duplicates (tested by kill −9 and resume) |
 | Budget reached | Cost total ≥ cap, checked before each batch | Stops, reports the best current suspect range, tells you how to resume with a higher cap |
 | Good and bad not really different | Ranges overlap | Stops with `no_regression` |
-| Victim task times out or crashes | Subprocess timeout or no JSON | Counts that run as a failure (not a skip) |
+| Victim crashes because of the commit's own code (e.g. `KeyError`) | Error text is not an infrastructure error | Counts as a failed task: that's the commit's behaviour |
 | No Entire checkpoint | `explain` finds no checkpoint | Uses commit message + diff; says "intent unavailable" |
 | Entire Intent is a system tag | Intent starts with `<` or `*(` | Reads the session's typed prompts from `--transcript` |
 
-Not handled yet: retry and backoff on Claude API rate limits.
+Also: `culprit resume` re-uses the good and bad SHAs recorded at the start of the run, so moving a branch mid-run can't change the range. An empty range (good = bad) stops before the expensive baselines.
 
 ---
 
@@ -627,7 +630,7 @@ All cost figures here use Anthropic's list price for Sonnet 5.5 ($2 / $10 per mi
 From `piedpiper-neathacks/` (load keys first: `set -a; source .env; set +a`):
 
 ```bash
-uv run pytest -q                                   # 38 tests, free, ~30 s
+uv run pytest -q                                   # 57 tests, free, ~30 s
 uv run culprit --help
 
 # Free demo on a fake victim (no AI calls)
@@ -687,16 +690,13 @@ uv run python scripts/neatlogs_readback.py <results.jsonl>    # verify traces
 
 ### Culprit
 - No AI calls happen in `culprit run` yet. `llm.py` is tested but unused, and `llm_calls` is always empty.
-- Budget is checked per batch, so a run can overshoot its cap by up to 4 task runs. A victim that reports no cost is never capped.
-- The baselines (the most expensive part) run *before* the empty-range check.
-- `_budget_stop` would crash on an empty commit range (edge case).
+- Budget is checked per batch, so a run can overshoot its cap by up to 4 task runs. A victim that reports no cost is never capped. Retried infrastructure attempts aren't costed either.
 - Some errors aren't caught cleanly: Entire `--transcript` timeout, import-probe timeout, `verify-trace` readback errors.
-- The `no_regression` message always says "overlapping 95% intervals", even when the real reason is different.
 - The leakage filter's substring matching is broad: "seeded", "gaps" and "Culprit" lines get dropped too.
 - The victim's `.env` is read from the main checkout, not from each worktree. Culprit's own environment, keys included, is passed to victim runs.
 - `scripts/nl-read` and `readback.py` handle `NEATLOGS_TOKEN` differently.
 - Worktrees are never cleaned up after runs (12 exist now).
-- Stale docs: the README says "Bootstrap complete", and hackathon.md says "Culprit hasn't been built yet". The test count has grown from 25 to 38.
+- Stale docs: the README says "Bootstrap complete", and hackathon.md says "Culprit hasn't been built yet". The test count has grown from 25 to 57.
 - `pyproject.toml` description is still "Add your description here". `jinja2` and `pyyaml` are dependencies but unused.
 - **Fixed today:** the fake-repo builder lost the "revert pin" commit when a noisy commit followed the pin (`1d43403`).
 
@@ -871,10 +871,12 @@ All maintenance commits were checked by reading their diffs: renames, helper ext
 | `NEATLOGS_API_KEY` | both | Sends traces (project key). Removed when reading traces back |
 | `NEATLOGS_TOKEN` | readback | Optional read credential (otherwise OAuth login) |
 | `NEATLOGS_CLI` | readback | Path to the neatlogs CLI if not found automatically |
-| `ANTHROPIC_API_KEY` | both | Claude API |
-| `LLM_PROVIDER` | RefundDesk | `anthropic` |
-| `VICTIM_MODEL` | RefundDesk | `claude-sonnet-5-5` |
-| `CULPRIT_MODEL` | Culprit `llm.py` | `claude-sonnet-5-5` |
+| `ANTHROPIC_API_KEY` | both | Claude API. When set, both apps use Claude Sonnet 5.5 |
+| `OPENROUTER_API_KEY` | both | Fallback when there's no Anthropic key: GLM 5.3 (`z-ai/glm-5.3`) via OpenRouter |
+| `LLM_PROVIDER` | RefundDesk | Optional override. Culprit always sets it for victim runs |
+| `VICTIM_MODEL` | both | Optional override; must belong to the selected provider. Culprit records the victim model in the run's config and passes it to every commit |
+| `CULPRIT_MODEL` | Culprit `llm.py` | Optional override for Culprit's own model calls |
+| `CULPRIT_VICTIM_REPO` | Culprit | Victim repo path when it isn't `../refunddesk` |
 | `REFUNDDESK_HISTORY_WINDOW` | RefundDesk | History window size (default 24) |
 | `VICTIM_PRICE_IN/OUT` | RefundDesk | Override prices |
 | `CULPRIT_STATE_DIR` | Culprit | Where `.culprit/` lives |

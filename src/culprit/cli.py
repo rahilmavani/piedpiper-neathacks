@@ -8,7 +8,7 @@ from pathlib import Path
 import typer
 from dotenv import load_dotenv
 
-from culprit import tracing
+from culprit import providers, tracing
 from culprit.config import DEFAULT_DB, PROJECT_ROOT, Config
 from culprit.ledger import Ledger
 from culprit.orchestrator import Orchestrator
@@ -20,7 +20,8 @@ app = typer.Typer(add_completion=False, help="git bisect for agent behaviour, wi
 def run(
     good: str = typer.Option(..., help="Known-good ref"),
     bad: str = typer.Option(..., help="Known-bad ref"),
-    repo: Path = typer.Option(PROJECT_ROOT.parent / "refunddesk", help="Victim repo (only worktrees are created)"),
+    repo: Path = typer.Option(PROJECT_ROOT.parent / "refunddesk", envvar="CULPRIT_VICTIM_REPO",
+                              help="Victim repo (only worktrees are created)"),
     suite: str = typer.Option("evals", help="Suite directory in the victim (taken at --suite-ref), "
                               "or a directory on disk (absolute or containing '/')"),
     suite_ref: str = typer.Option("main", help="Victim ref whose suite judges every commit"),
@@ -30,7 +31,13 @@ def run(
     workers: int = typer.Option(4, help="Parallel victim task runs"),
 ) -> None:
     """Find the commit between GOOD and BAD that broke the agent."""
-    cfg = Config(repo=str(repo.resolve()), good_ref=good, bad_ref=bad, suite=suite, suite_ref=suite_ref, k=k, budget_usd=budget_usd)
+    try:
+        victim = providers.select("VICTIM_MODEL")
+    except providers.ProviderError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(2) from exc
+    cfg = Config(repo=str(repo.resolve()), good_ref=good, bad_ref=bad, suite=suite, suite_ref=suite_ref, k=k,
+                 budget_usd=budget_usd, victim_provider=victim.name, victim_model=victim.model)
     orch = Orchestrator(Ledger(db), cfg, log=typer.echo, workers=workers)
     run_id = orch.start()
     typer.echo(f"run_id {run_id}")

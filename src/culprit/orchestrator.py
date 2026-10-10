@@ -9,6 +9,7 @@ from __future__ import annotations
 import contextvars
 import hashlib
 import statistics
+import time
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, replace
@@ -18,15 +19,20 @@ from culprit import gitops, sandbox, suite, tracing
 from culprit.bisect import BisectResult, Verdict, bisect, bounds
 from culprit.config import Config
 from culprit.entire import commit_intent
-from culprit.evalrunner import discover_tasks, run_task, victim_env
+from culprit.evalrunner import discover_tasks, infra_failure, run_task, victim_env
 from culprit.ledger import Ledger, TaskRun
-from culprit.stats import Decision, decide, intervals_overlap, wilson
+from culprit.providers import Provider, ProviderError
+from culprit.stats import Decision, decide, fisher_one_sided, wilson
 
 Log = Callable[[str], None]
 
 
 class BudgetExceeded(RuntimeError):
     pass
+
+
+class InfraError(RuntimeError):
+    """A victim run failed for infrastructure reasons (API, config, timeout), not because of the commit."""
 
 
 @dataclass(frozen=True)
@@ -72,6 +78,10 @@ class Baselines:
         g, b = self.good.task_rates(), self.bad.task_rates()
         return sum((g[r.task_id] + b[r.task_id]) / 2 for r in runs) / len(runs)
 
+    def drop(self, task_id: str) -> float:
+        """How much a task's pass rate fell from good to bad."""
+        return self.good.task_rates()[task_id] - self.bad.task_rates().get(task_id, 0.0)
+
 
 def suite_hash(tasks: list[str]) -> str:
     return hashlib.sha256("\n".join(tasks).encode()).hexdigest()[:16]
@@ -84,7 +94,8 @@ class Orchestrator:
         self.repo = Path(cfg.repo).resolve()
         self.log = log
         self.workers = workers
-        self.env = victim_env(self.repo)
+        self.victim = Provider(cfg.victim_provider, cfg.victim_model) if cfg.victim_provider else None
+        self.env = victim_env(self.repo, self.victim)
         self.pinned: suite.PinnedSuite | None = None
 
     # one commit ---------------------------------------------------------------
@@ -141,13 +152,28 @@ class Orchestrator:
     def _run_tasks(self, run_id: str, step_id: int, worktree: Path, sha: str, todo: list[tuple[str, int]]) -> None:
         """Workers only run subprocesses; ledger writes and budget checks stay on this thread."""
 
-        def one(item: tuple[str, int]) -> TaskRun:
-            with tracing.span("victim_eval_run", "TOOL", input={"task_id": item[0], "repetition": item[1]}) as sp:
+        def attempt(item: tuple[str, int], n: int) -> TaskRun:
+            with tracing.span("victim_eval_run", "TOOL", input={"task_id": item[0], "repetition": item[1],
+                                                               "attempt": n}) as sp:
                 tr = run_task(worktree, self.env, self.cfg.eval_module, item[0], item[1], run_id=run_id,
                               commit_sha=sha, timeout_s=self.cfg.task_timeout_s)
                 sp.output({"passed": tr.passed, "cost_usd": tr.cost_usd, "latency_ms": tr.latency_ms,
-                           "victim_trace_id": tr.trace_id, "error": tr.error})
+                           "victim_trace_id": tr.trace_id, "error": tr.error, "infra": infra_failure(tr)})
                 return tr
+
+        def one(item: tuple[str, int]) -> TaskRun:
+            """Retry transient infrastructure failures; they are never recorded as failed tasks."""
+            for n in range(self.cfg.infra_retries + 1):
+                tr = attempt(item, n)
+                kind = infra_failure(tr)
+                if kind is None:
+                    return tr
+                if kind == "fatal":
+                    raise InfraError(f"{item[0]} rep {item[1]}: {tr.error}")
+                if n < self.cfg.infra_retries:
+                    time.sleep(self.cfg.infra_backoff_s * 4**n)
+            raise InfraError(f"{item[0]} rep {item[1]} still failing after {self.cfg.infra_retries} retries: "
+                             f"{tr.error}")
 
         with ThreadPoolExecutor(max_workers=self.workers) as pool:
             for start in range(0, len(todo), self.workers):
@@ -155,8 +181,14 @@ class Orchestrator:
                 batch = todo[start : start + self.workers]
                 # Copy the context per task so each span parents under the current step.
                 futures = [pool.submit(contextvars.copy_context().run, one, item) for item in batch]
-                for fut in futures:
-                    self.ledger.record_task_run(step_id, fut.result())
+                errors: list[InfraError] = []
+                for fut in futures:  # record every finished run before surfacing an error
+                    try:
+                        self.ledger.record_task_run(step_id, fut.result())
+                    except InfraError as exc:
+                        errors.append(exc)
+                if errors:
+                    raise errors[0]
 
     # noise-aware classification (PRD §8.1 step 4, §8.2) ------------------------------
     def classify(self, run_id: str, sha: str, base: Baselines, subset: list[str], ranked: list[str]) -> Verdict:
@@ -169,8 +201,11 @@ class Orchestrator:
         if first.skipped:
             return Verdict.SKIP
         runs, kind = list(first.runs), "bisect"
-        widened = [t for t in ranked if t not in subset][: self.cfg.discriminating_size]
-        plans = [(subset, range(self.cfg.k, 2 * self.cfg.k)), (widened, range(self.cfg.k))]
+        k = self.cfg.k
+        # Only tasks that dropped from good to bad carry signal; a task that passes on both ends
+        # adds cost and pulls the threshold towards 1. With none left, resample the subset again.
+        widened = [t for t in ranked if t not in subset and base.drop(t) > 0][: self.cfg.discriminating_size]
+        plans = [(subset, range(k, 2 * k)), (widened, range(k)) if widened else (subset, range(2 * k, 3 * k))]
         for round_ in range(self.cfg.max_resample_rounds + 1):
             threshold = base.threshold(runs)
             passes = sum(r.passed for r in runs)
@@ -210,7 +245,7 @@ class Orchestrator:
                                       suite_hash(list(self.cfg.task_ids)), self.cfg.to_json())
 
     def run(self, run_id: str) -> Outcome:
-        bad_sha = gitops.resolve(self.repo, self.cfg.bad_ref)
+        bad_sha = self.ledger.get_run(run_id)["bad_sha"] or gitops.resolve(self.repo, self.cfg.bad_ref)
         with tracing.run_context(run_id=run_id), tracing.span(
             "culprit_run", "WORKFLOW", commit_sha=bad_sha,
             input={"good": self.cfg.good_ref, "bad": self.cfg.bad_ref, "k": self.cfg.k},
@@ -255,14 +290,35 @@ class Orchestrator:
     def _run(self, run_id: str) -> Outcome:
         cfg, repo = self.cfg, self.repo
         with tracing.span("git_rev_list", "TOOL", input={"good": cfg.good_ref, "bad": cfg.bad_ref}) as sp:
-            good, bad = gitops.resolve(repo, cfg.good_ref), gitops.resolve(repo, cfg.bad_ref)
+            good, bad = self._range(run_id)
             candidates = gitops.first_parent_range(repo, good, bad)
             sp.output({"good": good, "bad": bad, "candidates": candidates})
+        if self.victim is not None:
+            try:
+                self.victim.require_key()  # e.g. a run started with Anthropic, resumed without the key
+            except ProviderError as exc:
+                return self._finish(run_id, "infra_error", None, f"Stopped: {exc}")
+            self.log(f"  victim model: {self.victim.model} via {self.victim.name}")
+        if not candidates:  # before the baselines, which are the most expensive part of a run
+            return self._finish(run_id, "error", None, f"empty range: {cfg.good_ref}..{cfg.bad_ref} has no commits")
         tested: list[tuple[str, Verdict]] = []
         try:
             return self._bisect(run_id, good, bad, candidates, tested)
         except BudgetExceeded as exc:
             return self._budget_stop(run_id, exc, candidates, tested)
+        except InfraError as exc:
+            return self._finish(run_id, "infra_error", None,
+                                f"Stopped: {exc}. Nothing was counted against the commit. Fix the cause, then "
+                                f"`culprit resume {run_id}` continues where it stopped.")
+
+    def _range(self, run_id: str) -> tuple[str, str]:
+        """Good and bad SHAs, resolved once; resume keeps them even if the refs have moved since."""
+        row = self.ledger.get_run(run_id)
+        if row["good_sha"] and row["bad_sha"]:
+            return row["good_sha"], row["bad_sha"]
+        good, bad = gitops.resolve(self.repo, self.cfg.good_ref), gitops.resolve(self.repo, self.cfg.bad_ref)
+        self.ledger.set_range(run_id, good, bad)
+        return good, bad
 
     def _bisect(self, run_id: str, good: str, bad: str, candidates: list[str],
                 tested: list[tuple[str, Verdict]]) -> Outcome:
@@ -280,13 +336,21 @@ class Orchestrator:
         ci_bad = wilson(base.bad.passes, base.bad.n, cfg.z)
         self.log(f"  good {base.good.passes}/{base.good.n} CI [{ci_good[0]:.2f}, {ci_good[1]:.2f}]  "
                  f"bad {base.bad.passes}/{base.bad.n} CI [{ci_bad[0]:.2f}, {ci_bad[1]:.2f}]")
-        if base.good.rate <= base.bad.rate or intervals_overlap(ci_good, ci_bad):
+        p_value = fisher_one_sided(base.good.passes, base.good.n, base.bad.passes, base.bad.n)
+        with tracing.span("regression_gate", "TOOL", input={
+            "good": [base.good.passes, base.good.n], "bad": [base.bad.passes, base.bad.n], "alpha": cfg.gate_alpha,
+        }) as sp:
+            significant = base.good.rate > base.bad.rate and p_value < cfg.gate_alpha
+            sp.output({"p_value": p_value, "significant": significant})
+        self.log(f"  regression gate: one-sided Fisher p={p_value:.4f} (alpha {cfg.gate_alpha})")
+        if not significant:
             return self._finish(run_id, "no_regression", None,
-                                f"No significant regression to bisect: good {base.good.passes}/{base.good.n} "
-                                f"and bad {base.bad.passes}/{base.bad.n} have overlapping 95% intervals")
+                                f"No significant regression to bisect: good {base.good.passes}/{base.good.n} vs "
+                                f"bad {base.bad.passes}/{base.bad.n}, one-sided Fisher p={p_value:.4f} "
+                                f"≥ {cfg.gate_alpha}")
         with tracing.span("select_discriminating_tasks", "TOOL", input={"size": cfg.discriminating_size}) as sp:
             ranked = self.ranked_tasks(base)
-            subset = [t for t in ranked if base.good.task_rates()[t] > base.bad.task_rates()[t]]
+            subset = [t for t in ranked if base.drop(t) > 0]
             subset = subset[: cfg.discriminating_size] or ranked[: cfg.discriminating_size]
             sp.output({"tasks": subset, "ranked": ranked})
         self.log(f"  discriminating tasks: {', '.join(subset)}")

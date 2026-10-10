@@ -9,7 +9,7 @@ import typer
 from dotenv import load_dotenv
 
 from culprit import providers, tracing
-from culprit.config import DEFAULT_DB, PROJECT_ROOT, Config
+from culprit.config import DEFAULT_DB, PROJECT_ROOT, STATE_DIR, Config
 from culprit.ledger import Ledger
 from culprit.orchestrator import Orchestrator
 
@@ -29,15 +29,18 @@ def run(
     budget_usd: float = typer.Option(3.00, help="Hard cost cap for this run"),
     db: Path = typer.Option(DEFAULT_DB, help="Ledger path"),
     workers: int = typer.Option(4, help="Parallel victim task runs"),
+    reuse: bool = typer.Option(True, help="Reuse matching baseline results from earlier runs in the ledger"),
+    staged: bool = typer.Option(True, help="Screen every task ×1 before running the full k on the ends"),
 ) -> None:
-    """Find the commit between GOOD and BAD that broke the agent."""
+    """Find the commit between GOOD and BAD that broke the agent. `--no-reuse --no-staged` is v1."""
     try:
         victim = providers.select("VICTIM_MODEL")
     except providers.ProviderError as exc:
         typer.echo(f"error: {exc}", err=True)
         raise typer.Exit(2) from exc
     cfg = Config(repo=str(repo.resolve()), good_ref=good, bad_ref=bad, suite=suite, suite_ref=suite_ref, k=k,
-                 budget_usd=budget_usd, victim_provider=victim.name, victim_model=victim.model)
+                 budget_usd=budget_usd, victim_provider=victim.name, victim_model=victim.model,
+                 reuse_baselines=reuse, staged_baseline=staged)
     orch = Orchestrator(Ledger(db), cfg, log=typer.echo, workers=workers)
     run_id = orch.start()
     typer.echo(f"run_id {run_id}")
@@ -198,6 +201,42 @@ def verify_trace(
         typer.echo("  PASS" if result.ok else "  FAIL")
         failed |= not result.ok
     raise typer.Exit(1 if failed else 0)
+
+
+@app.command()
+def report(
+    run_id: str,
+    db: Path = typer.Option(DEFAULT_DB, help="Ledger path"),
+    out: Path = typer.Option(STATE_DIR / "reports", help="Directory for report-<run_id>.md and .html"),
+) -> None:
+    """Write a run's report as markdown and a static HTML page."""
+    from culprit.report import write
+
+    md, html = write(Ledger(db), run_id, out)
+    typer.echo(f"{md}\n{html}")
+
+
+@app.command("export-costs")
+def export_costs(
+    format: str = typer.Option("csv", "--format", help="Output format (csv)"),
+    db: Path = typer.Option(DEFAULT_DB, help="Ledger path"),
+    out: Path | None = typer.Option(None, help="Write to this file instead of stdout"),
+) -> None:
+    """Per-run cost, victim runs and wall time for every run in the ledger (input for cfo.ai)."""
+    import sys
+
+    from culprit.costs import all_runs, write_csv
+
+    if format != "csv":
+        typer.echo(f"error: unsupported format {format!r} (supported: csv)", err=True)
+        raise typer.Exit(2)
+    rows = all_runs(Ledger(db))
+    if out is None:
+        write_csv(rows, sys.stdout)
+    else:
+        with out.open("w", newline="") as f:
+            write_csv(rows, f)
+        typer.echo(f"{len(rows)} runs → {out}")
 
 
 def main() -> None:

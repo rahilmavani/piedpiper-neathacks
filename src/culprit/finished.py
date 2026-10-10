@@ -12,7 +12,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass, replace
 from pathlib import Path
 
-from culprit import llm, sandbox, tracing
+from culprit import baseline, llm, sandbox, tracing
 from culprit.config import Config
 from culprit.ledger import Ledger, TaskRun
 from culprit.orchestrator import Baselines, Log, Orchestrator, is_bisect_kind
@@ -133,8 +133,9 @@ def load(ledger: Ledger, run_id: str, log: Log, workers: int, budget_usd: float)
     orch.pinned = orch._pin_suite(run_id)  # the run's own suite snapshot
     tasks = list(cfg.task_ids)
     good, bad = row["good_sha"], row["bad_sha"]
-    base = Baselines(orch.evaluate(run_id, "baseline", good, tasks, range(cfg.k)),
-                     orch.evaluate(run_id, "baseline", bad, tasks, range(cfg.k)))  # recorded, so no runs
+    # The same function the run used, so a staged (v2) or full (v1) baseline is rebuilt exactly as
+    # recorded and nothing is re-run; asking for every task × k would top up a staged baseline.
+    base = baseline.measure(orch, run_id, good, bad, tasks)
     ranked = orch.ranked_tasks(base)
     return RunContext(run_id, orch, row["culprit_sha"], good, bad, base, ranked,
                       _telling_tasks(ledger, run_id, base, ranked, cfg))

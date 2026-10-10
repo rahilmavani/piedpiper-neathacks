@@ -120,13 +120,26 @@ Planned (from `PRD.md`); move items to "used" as they are integrated.
 - **Finding worth posting:** PRD §10's quality gate ("the fix's 95% interval overlaps the good baseline's") is lenient: a fix passing 4/9 against good's 8/9 passes it. The "no task that always passed now always fails" gate is what catches such a fix. A Fisher test, like the regression gate's, would be stricter; candidate for M4.
 - **Moment worth screenshotting:** the two `fix:` lines above: the Verifier refusing a fix that quietly gives the speed-up back.
 
+- **Done: v2 efficiency (branch `feat/v2-efficiency`, fixture only, $0).** This is the required before/after.
+  - **Staged baseline** (`culprit/baseline.py`): every task ×1 on both ends, then the full k only on tasks that didn't pass on both. Both ends run the same (task, repetition) set, and the Fisher gate uses the runs actually made.
+  - **Baseline reuse** (`culprit/reuse.py`): results at a commit are copied from an earlier run with the same commit SHA, suite SHA, victim provider and model, eval module and k. Each copied row records its source (`task_runs.reused_from_run` / `reused_from_id`, plus the `baseline_reuse` artifact) and isn't counted as spend again.
+  - **Victim runs per bisect, 4 fixture scenarios** (`scripts/v2_efficiency.py`, `evidence/v2-efficiency-fixture.md`): v1 510 → v2 430 (−16%) → v2 with the good end reused 335 (−34%) → v2 with both ends reused 270 (−47%). All 16 runs found the planted commit, and bisect runs were unchanged.
+  - **Projection for `hist/b`** (not measured): about 164 runs instead of 240.
+  - Runs recorded before v2 resume as v1. `culprit run --no-reuse --no-staged` gives v1.
+- **Done: M6 report and costs.**
+  - `culprit report <run_id>` writes markdown plus static HTML: verdict, baselines and gate, bisect timeline with Wilson intervals against the threshold, skips, intent, diff, trace IDs, costs and reuse provenance.
+  - `culprit export-costs --format csv` writes per-run cost, victim runs (executed/baseline/bisect/reused) and wall time.
+  - `business/cfo-inputs.md` holds the measured and projected unit costs, with pricing scenarios A/B/C labelled as hypotheses.
+  - 85 tests pass (17 new).
+- **Note for the next paid run:** with the current ledger, a v2 run on `good-v1.0..hist/b` (GLM 5.3, k=3, suite `ba86ed0`) would reuse *all* of `ff50e3620fdd`'s baseline runs. To measure staging alone, use `--no-reuse`. To show reuse, run it as is: the baseline then costs $0.
+
 ## Demo
 
 - *Pending.* No demo URL yet.
 
 ## Known limitations and next steps
 
-- Built: M1 and M2 (bisect, noise handling, recovery) and M3's `culprit bench`. Not built: localiser, fixer/verifier, report, `export-costs`. Next: score the `hist/*` runs with `culprit bench --tag v1 --score-latest`, then M4.
+- Built: M1–M3, M5 (`culprit localise`, `culprit fix`) and M6 (`culprit report`, `export-costs`), plus v2 staged and reused baselines. Not done yet: localise and fix on the real victim, the real v1 vs v2 benchmark, and neatlogs Investigate/Detections. v2's real-victim savings are projected, not measured.
 
 ## Submission
 

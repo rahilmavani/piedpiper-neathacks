@@ -89,7 +89,8 @@ def run_context(run_id: str | None = None, commit_sha: str | None = None) -> Ite
 
 
 @contextmanager
-def span(name: str, kind: str, *, commit_sha: str | None = None, input: Any = None, **attrs: Any) -> Iterator[Span]:
+def span(name: str, kind: str, *, commit_sha: str | None = None, input: dict[str, Any] | None = None,
+         **attrs: Any) -> Iterator[Span]:
     """A WORKFLOW / AGENT / TOOL span. The WORKFLOW root binds the run_id as the neatlogs session."""
     with run_context(commit_sha=commit_sha):
         if not _enabled:
@@ -100,11 +101,22 @@ def span(name: str, kind: str, *, commit_sha: str | None = None, input: Any = No
         session = _run_id.get() if kind == "WORKFLOW" else None
         with neatlogs.trace(name, kind=kind, session_id=session) as otel_span:
             handle = Span(otel_span)
-            if input is not None:
-                otel_span.set_attribute("input.value", _json(input))
-                otel_span.set_attribute("input.mime_type", "application/json")
+            # The read API does not return custom attributes, so the run context also goes into
+            # the recorded input, where readback can verify it.
+            context = {"run_id": _run_id.get() or "none", "commit_sha": _commit_sha.get() or "none"}
+            otel_span.set_attribute("input.value", _json({**context, **(input or {})}))
+            otel_span.set_attribute("input.mime_type", "application/json")
             handle.set(**attrs)
-            yield handle
+            try:
+                yield handle
+            except BaseException as exc:
+                # trace() leaves the span OK on exceptions, so record the failure explicitly.
+                from opentelemetry.trace import Status, StatusCode
+
+                otel_span.record_exception(exc)
+                otel_span.set_status(Status(StatusCode.ERROR, f"{type(exc).__name__}: {exc}"))
+                handle.output({"error": f"{type(exc).__name__}: {exc}"})
+                raise
 
 
 def current_trace_id() -> str | None:

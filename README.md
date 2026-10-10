@@ -9,3 +9,8 @@ Team PiedPiper, neatHack 2026. Work in progress: see `PRD.md` for the spec and `
 ## Status
 
 Bootstrap complete. Culprit build (M1) starts next.
+
+## Docs
+
+- `docs/research.md`: what the neatlogs, Entire and cfo.ai docs actually support
+- `docs/neatlogs.md`: tracing contract, coverage, and how to repeat the readback evidence loop

@@ -1,0 +1,3 @@
+#!/bin/sh
+# neatlogs readback with the saved CLI OAuth login only: the ingest key must not act as a read credential.
+exec env -u NEATLOGS_API_KEY -u NEATLOGS_TOKEN neatlogs "$@"

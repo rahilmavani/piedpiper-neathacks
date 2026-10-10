@@ -49,6 +49,31 @@ def resume(
     raise typer.Exit(0 if outcome.status in {"found", "no_regression"} else 1)
 
 
+@app.command("verify-trace")
+def verify_trace(
+    run_id: str,
+    db: Path = typer.Option(DEFAULT_DB, help="Ledger path"),
+) -> None:
+    """Read a run's Culprit traces back from neatlogs and audit them against the trace contract."""
+    from culprit.readback import audit
+
+    traces = (Ledger(db).get_artifact(run_id, "neatlogs_traces") or "").split()
+    if not traces:
+        typer.echo(f"no neatlogs trace recorded for run {run_id}")
+        raise typer.Exit(1)
+    failed = False
+    for trace_id in traces:
+        result = audit(trace_id, run_id)
+        typer.echo(f"trace {trace_id}: finalized={result.finalized} workflow={result.workflow} "
+                   f"session={result.session} spans={result.span_count}")
+        typer.echo("  " + ", ".join(f"{k}×{v}" for k, v in sorted(result.by_name.items())))
+        for problem in result.problems:
+            typer.echo(f"  PROBLEM {problem}")
+        typer.echo("  PASS" if result.ok else "  FAIL")
+        failed |= not result.ok
+    raise typer.Exit(1 if failed else 0)
+
+
 def main() -> None:
     load_dotenv(PROJECT_ROOT / ".env")
     tracing.init()

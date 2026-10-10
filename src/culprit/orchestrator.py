@@ -150,8 +150,10 @@ class Orchestrator:
                                       suite_hash(list(self.cfg.task_ids)), self.cfg.to_json())
 
     def run(self, run_id: str) -> Outcome:
+        bad_sha = gitops.resolve(self.repo, self.cfg.bad_ref)
         with tracing.run_context(run_id=run_id), tracing.span(
-            "culprit_run", "WORKFLOW", input={"good": self.cfg.good_ref, "bad": self.cfg.bad_ref, "k": self.cfg.k}
+            "culprit_run", "WORKFLOW", commit_sha=bad_sha,
+            input={"good": self.cfg.good_ref, "bad": self.cfg.bad_ref, "k": self.cfg.k},
         ) as sp:
             trace_id = tracing.current_trace_id()
             if trace_id:
@@ -164,6 +166,9 @@ class Orchestrator:
                 summary = f"Stopped: {exc}. Resume with a higher --budget-usd to continue."
                 self.ledger.finish_run(run_id, "budget_exceeded", None, None, summary)
                 outcome = Outcome(run_id, "budget_exceeded", None, summary)
+            except Exception as exc:
+                self.ledger.finish_run(run_id, "error", None, None, f"{type(exc).__name__}: {exc}")
+                raise
             sp.output({"status": outcome.status, "summary": outcome.summary})
             return outcome
 

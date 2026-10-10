@@ -142,6 +142,8 @@ def localise(
     top_n: int = typer.Option(3, help="Hunks whose single revert is tested, in rank order"),
     max_pairs: int = typer.Option(3, help="Pairs of those hunks tried when no single revert restores the agent"),
     budget_usd: float = typer.Option(1.50, help="Cost cap for localisation, on top of the run's cost so far"),
+    replay: bool = typer.Option(False, help="Only replay what the ledger holds: no key, model call or victim run; "
+                                "fails if anything else is needed"),
 ) -> None:
     """Find which hunk of a found run's culprit commit is responsible (PRD §8.3). Re-running resumes."""
     from culprit import localise as loc
@@ -149,7 +151,7 @@ def localise(
 
     try:
         result, _ = loc.localise_run(Ledger(db), run_id, log=typer.echo, workers=workers, top_n=top_n,
-                                     max_pairs=max_pairs, budget_usd=budget_usd)
+                                     max_pairs=max_pairs, budget_usd=budget_usd, replay=replay)
     except (StageError, KeyError) as exc:
         typer.echo(f"error: {exc}", err=True)
         raise typer.Exit(2) from exc
@@ -164,6 +166,8 @@ def fix(
     attempts: int = typer.Option(2, help="Fix proposals verified before falling back to the hunk revert"),
     tolerance: float = typer.Option(0.10, help="How much worse than bad the intended-gain metric may get"),
     budget_usd: float = typer.Option(2.00, help="Cost cap for fixing, on top of the run's cost so far"),
+    replay: bool = typer.Option(False, help="Only replay what the ledger holds: no key, model call or victim run; "
+                                "fails if anything else is needed"),
 ) -> None:
     """Write and verify a minimal fix for a localised run (PRD §8.4, §10). Re-running resumes."""
     from culprit import fix as fixer
@@ -171,7 +175,7 @@ def fix(
 
     try:
         result = fixer.fix_run(Ledger(db), run_id, log=typer.echo, workers=workers, attempts=attempts,
-                               tolerance=tolerance, budget_usd=budget_usd)
+                               tolerance=tolerance, budget_usd=budget_usd, replay=replay)
     except (StageError, KeyError) as exc:
         typer.echo(f"error: {exc}", err=True)
         raise typer.Exit(2) from exc

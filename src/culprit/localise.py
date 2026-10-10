@@ -202,10 +202,11 @@ def describe(loc: Localisation, by_id: dict[int, Hunk]) -> str:
 
 
 def localise_run(ledger: Ledger, run_id: str, log: Log = print, workers: int = 4, top_n: int = 3,
-                 max_pairs: int = 3, budget_usd: float = 1.50) -> tuple[Localisation, str]:
-    """Localise a found run's culprit. `budget_usd` is what localisation may add to the run's cost."""
+                 max_pairs: int = 3, budget_usd: float = 1.50, replay: bool = False) -> tuple[Localisation, str]:
+    """Localise a found run's culprit. `budget_usd` is what localisation may add to the run's cost;
+    `replay` uses only what the ledger holds and fails if anything else would be needed."""
     with finished.workflow(ledger, run_id, "culprit_localise", top_n=top_n, max_pairs=max_pairs) as sp:
-        ctx = finished.load(ledger, run_id, log, workers, budget_usd)
+        ctx = finished.load(ledger, run_id, log, workers, budget_usd, replay)
         loc, text = _localise(ctx, top_n, max_pairs)
         sp.output({"status": loc.status, "hunks": loc.hunks, "tried": loc.tried})
     log(f"responsible: {text}")
@@ -239,6 +240,8 @@ def _localise(ctx: finished.RunContext, top_n: int, max_pairs: int) -> tuple[Loc
         except (BudgetExceeded, InfraError) as exc:
             loc = Localisation("incomplete", [], note=f"{type(exc).__name__}: {exc}")
         sp.output({"status": loc.status, "hunks": loc.hunks, "tried": loc.tried, "note": loc.note})
+    if ctx.replay and loc.status == "incomplete":  # before anything is written
+        raise ctx.unrecorded(f"victim runs for the reverts ({loc.note})")
     text = describe(loc, by_id)
     ctx.ledger.put_artifact(ctx.run_id, "localisation", json.dumps({
         "commit": ctx.culprit, "status": loc.status, "summary": text, "note": loc.note,
@@ -255,6 +258,8 @@ def _ranking(ctx: finished.RunContext, hunks: list[Hunk]) -> dict:
     recorded = ctx.ledger.get_artifact(ctx.run_id, "hunk_ranking")
     if recorded is not None:
         return json.loads(recorded)
+    if ctx.replay:
+        raise ctx.unrecorded("a hunk ranking (a model call)")
     traces = victim_traces.Summary("", "not needed")
     with tracing.span("localise_rank", "AGENT", commit_sha=ctx.culprit, input={"hunks": len(hunks)}) as sp:
         if len(hunks) < 2:  # nothing to rank, so no model call

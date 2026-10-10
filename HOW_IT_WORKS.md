@@ -674,7 +674,7 @@ uv run python scripts/neatlogs_readback.py <results.jsonl>    # verify traces
 | Culprit: suite pinning | ✅ Built |
 | Culprit: Entire intent with transcript fallback and leakage filter | ✅ Built |
 | Culprit: neatlogs tracing and `verify-trace` audit | ✅ Built (fixture runs) |
-| **First real Culprit run on RefundDesk** | ❌ Not run yet (waiting for your OK, ~$3.70) |
+| **First real Culprit run on RefundDesk** | ✅ Run `ff50e3620fdd` on `hist/b` with GLM 5.3: found `397c427` (95% Wilson), skipped `22a37db`; 240 runs, $0.60, 12.5 min |
 | Localiser: find the exact guilty lines | ❌ NOT BUILT |
 | Fixer: write a minimal fix; Verifier: prove it on held-out tasks | ❌ NOT BUILT |
 | AI-assisted task selection / planner | ❌ NOT BUILT (plain ranking used) |

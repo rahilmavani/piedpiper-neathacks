@@ -74,6 +74,14 @@ Planned (from `PRD.md`); move items to "used" as they are integrated.
   - One smoke run passed for $0.0066.
   - Hero check, the 6 harder tasks × 3 seeds: `good-v1.0` **18/18**, hero commit `397c427` **0/18**, the same as on Sonnet 5.5. 36 runs, $0.134 total, about $0.0037 per run, 0 infrastructure errors.
 - **Finding worth posting:** the hero bug is just as visible with a ~4× cheaper victim model, so the benchmark can run on GLM.
+- **Done: first real Culprit run (M1 exit on the real victim).** Run `ff50e3620fdd`, trace `d80e61a81918c7eb3ffd917a2509efb0`, `good-v1.0..origin/hist/b`, GLM 5.3 victim, suite pinned at RefundDesk `main` `ba86ed0`.
+  - Baselines: good 78/78 vs bad 57/78 (Fisher p ≈ 0).
+  - Discriminating tasks: the 6 harder failed-payload tasks plus `refund_failed_payload_once`.
+  - Bisect: `22a37db` install failed → SKIP; `81c0753` 21/21 GOOD; `c9a132f` 3/21 BAD; `8793325` 21/21 GOOD; `397c427` 1/21 BAD.
+  - **Culprit: `397c427` "perf(agent): run tool calls in parallel and drop per-result validation"** (95% Wilson), which is the planted hero commit.
+  - 240 victim runs, 0 infrastructure errors, **$0.60**, 12.5 min.
+  - Intent fell back to the commit message and diff, because the `entire` CLI isn't installed on this machine. The leakage filter dropped 1 harmless line containing "seed".
+- **Moment worth screenshotting:** the run log, from `22a37dbfff install failed → SKIP` to `Culprit: 397c427…`, in four decisions.
 
 ## Demo
 

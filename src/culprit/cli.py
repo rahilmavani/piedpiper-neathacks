@@ -64,6 +64,117 @@ def resume(
     raise typer.Exit(0 if outcome.status in {"found", "no_regression"} else 1)
 
 
+@app.command()
+def bench(
+    tag: str = typer.Option(..., help="Label for this benchmark (e.g. v1, v2); names evidence/bench-<tag>.md"),
+    scenarios: Path = typer.Option(PROJECT_ROOT / "bench" / "scenarios.yaml", help="Scenario list"),
+    ground_truth: Path | None = typer.Option(None, help="Answer key [default: ground_truth.json next to "
+                                             "--scenarios]"),
+    repo: Path = typer.Option(PROJECT_ROOT.parent / "refunddesk", envvar="CULPRIT_VICTIM_REPO",
+                              help="Victim repo (only worktrees are created)"),
+    only: list[str] = typer.Option([], help="Run or score only these scenarios (repeatable)"),
+    score_runs: list[str] = typer.Option([], help="Score these existing run IDs instead of running "
+                                         "(repeatable or comma-separated); matched to scenarios by good/bad SHA"),
+    score_latest: bool = typer.Option(False, help="Score each scenario's latest matching run in the ledger "
+                                      "instead of running"),
+    k: int = typer.Option(3, help="Repetitions per task"),
+    budget_usd: float = typer.Option(3.00, help="Hard cost cap per scenario run"),
+    db: Path = typer.Option(DEFAULT_DB, help="Ledger path"),
+    workers: int = typer.Option(4, help="Parallel victim task runs"),
+    out_dir: Path = typer.Option(PROJECT_ROOT / "evidence", help="Where bench-<tag>.md/.json are written"),
+) -> None:
+    """Run each scenario through Culprit and score it against ground truth (or score existing runs)."""
+    from culprit import bench as b
+
+    if not tag.replace("-", "").replace("_", "").replace(".", "").isalnum():
+        typer.echo("error: --tag may contain only letters, digits, '.', '-' and '_'", err=True)
+        raise typer.Exit(2)
+    ids = [i for item in score_runs for i in item.split(",") if i]
+    if ids and score_latest:
+        typer.echo("error: use --score-runs or --score-latest, not both", err=True)
+        raise typer.Exit(2)
+    repo = repo.resolve()
+    truth_path = ground_truth or scenarios.parent / "ground_truth.json"
+    try:
+        b.guard_outside_repo(repo, scenarios, truth_path)
+        selected = b.load_scenarios(scenarios)
+        truth = b.load_ground_truth(truth_path)
+        if only:
+            unknown = set(only) - {s.name for s in selected}
+            if unknown:
+                raise b.BenchError(f"unknown scenario(s): {', '.join(sorted(unknown))}")
+            selected = [s for s in selected if s.name in only]
+        if ids or score_latest:
+            ledger = Ledger(db, readonly=True)  # scoring never writes, so it is safe on a ledger in use
+            run_ids = b.match_runs(ledger, repo, selected, ids or None)
+            mode = f"scored existing runs from `{db}`"
+        else:
+            victim = providers.select("VICTIM_MODEL")
+            ledger = Ledger(db)
+            typer.echo(f"bench {tag}: {len(selected)} scenarios, victim {victim.model} via {victim.name}, "
+                       f"cap ${budget_usd:.2f} each")
+            run_ids = b.run_scenarios(ledger, repo, selected, log=typer.echo, workers=workers, k=k,
+                                      budget_usd=budget_usd, victim_provider=victim.name,
+                                      victim_model=victim.model)
+            mode = "fresh runs (`culprit bench`)"
+        rows = b.score_runs(ledger, repo, truth, {s.name: run_ids[s.name] for s in selected if s.name in run_ids})
+    except (b.BenchError, providers.ProviderError, KeyError) as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(2) from exc
+    for row in rows:
+        typer.echo(f"{row.scenario}: {row.outcome} ({row.facts.status}, run {row.facts.run_id}, "
+                   f"{row.facts.victim_runs} runs, ${row.facts.cost_usd:.2f})")
+    missing = [s.name for s in selected if s.name not in run_ids]
+    if missing:
+        typer.echo(f"no run found for: {', '.join(missing)}")
+    path = b.write_report(out_dir, tag, rows, mode, repo, missing)
+    typer.echo(f"accuracy {sum(r.outcome in b.ACCURATE for r in rows)}/{len(rows)}; report {path}")
+
+
+@app.command()
+def localise(
+    run_id: str,
+    db: Path = typer.Option(DEFAULT_DB, help="Ledger path"),
+    workers: int = typer.Option(4, help="Parallel victim task runs"),
+    top_n: int = typer.Option(3, help="Hunks whose single revert is tested, in rank order"),
+    max_pairs: int = typer.Option(3, help="Pairs of those hunks tried when no single revert restores the agent"),
+    budget_usd: float = typer.Option(1.50, help="Cost cap for localisation, on top of the run's cost so far"),
+) -> None:
+    """Find which hunk of a found run's culprit commit is responsible (PRD §8.3). Re-running resumes."""
+    from culprit import localise as loc
+    from culprit.finished import StageError
+
+    try:
+        result, _ = loc.localise_run(Ledger(db), run_id, log=typer.echo, workers=workers, top_n=top_n,
+                                     max_pairs=max_pairs, budget_usd=budget_usd)
+    except (StageError, KeyError) as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(2) from exc
+    raise typer.Exit(1 if result.status == "incomplete" else 0)
+
+
+@app.command()
+def fix(
+    run_id: str,
+    db: Path = typer.Option(DEFAULT_DB, help="Ledger path"),
+    workers: int = typer.Option(4, help="Parallel victim task runs"),
+    attempts: int = typer.Option(2, help="Fix proposals verified before falling back to the hunk revert"),
+    tolerance: float = typer.Option(0.10, help="How much worse than bad the intended-gain metric may get"),
+    budget_usd: float = typer.Option(2.00, help="Cost cap for fixing, on top of the run's cost so far"),
+) -> None:
+    """Write and verify a minimal fix for a localised run (PRD §8.4, §10). Re-running resumes."""
+    from culprit import fix as fixer
+    from culprit.finished import StageError
+
+    try:
+        result = fixer.fix_run(Ledger(db), run_id, log=typer.echo, workers=workers, attempts=attempts,
+                               tolerance=tolerance, budget_usd=budget_usd)
+    except (StageError, KeyError) as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(2) from exc
+    raise typer.Exit(0 if result.status in {"verified_fix", "verified_revert"} else 1)
+
+
 @app.command("verify-trace")
 def verify_trace(
     run_id: str,

@@ -82,6 +82,43 @@ Planned (from `PRD.md`); move items to "used" as they are integrated.
   - 240 victim runs, 0 infrastructure errors, **$0.60**, 12.5 min.
   - Intent fell back to the commit message and diff, because the `entire` CLI isn't installed on this machine. The leakage filter dropped 1 harmless line containing "seed".
 - **Moment worth screenshotting:** the run log, from `22a37dbfff install failed → SKIP` to `Culprit: 397c427…`, in four decisions.
+- **Done: M3 `culprit bench` (branch `feat/bench`, fixture only, $0).**
+  - `bench/scenarios.yaml` (six branches, `good-v1.0` → `origin/hist/<x>`) and `bench/ground_truth.json`: full culprit SHAs, branch heads, uninstallable commits (`22a37db`, `2ad118e`), responsible hunks as file + line range from `git show`, and the intended-gain metric. All positions re-checked against `git rev-list` in the RefundDesk clone (read-only).
+  - `culprit bench --tag v1|v2` runs each scenario through the normal orchestrator, one after another, and scores it: `correct`, `wrong`, `correct_no_regression`, `missed`, `no_regression_unverified`, `ambiguous_*` or `incomplete`, plus victim runs, cost, wall time, skipped commits, run ID and neatlogs trace IDs. It writes `evidence/bench-<tag>.md` and `.json`.
+  - `--score-runs <id,...>` / `--score-latest` score runs already in the ledger, matched to scenarios by their recorded good/bad SHAs, so the paid runs on `hist/*` don't need repeating. Scoring opens the ledger **read-only**, so it is safe while another process is still writing it.
+  - Leakage guard: only resolved SHAs reach the orchestrator (no scenario names, no answers); bench refuses ground-truth files inside the victim repo.
+  - Fixture bench, 2 scenarios: the planted break was found (`correct`, with the unbuildable commit SKIPped), and a clean range ended `correct_no_regression` (Fisher p = 0.69). Accuracy 2/2, 180 fake runs. 86 tests pass (18 new).
+  - Tests can no longer export traces: an autouse `tests/conftest.py` fixture unsets `NEATLOGS_API_KEY` and keeps tracing off. (The fixture traces that did reach neatlogs came from a manual `culprit bench` CLI demo, which loads `.env`.)
+- **Decision:** a `no_regression` result is only scored as correct when ground truth says so: no bug planted in the range, or a measurement on that victim model showed the bug is invisible. Otherwise it's `no_regression_unverified` (not counted as accurate) until the strength check is done. Only `hist/b` has a visibility measurement (GLM 5.3 and Sonnet 5.5: 18/18 → 0/18). Visibility is never taken from a Culprit run's own baselines (that would be Culprit grading itself); it must come from the separate strength check (Prompt G step 4) recorded with run IDs in `bench/strength.md`.
+- **Decision:** hist/a ("API consistency") and hist/e ("fewer rejected tool calls") get intended-gain metric `null`, because their claimed gain isn't latency, tokens or cost.
+
+- **Done: `tests/conftest.py`** (committed with bench as `94d0a26`). Every test runs without `NEATLOGS_API_KEY`, with tracing off and with both provider calls blocked, so tests can't export traces or spend money.
+- **Done: M5 part 1, the Localiser (PRD §8.3; branch `feat/bench`, fake victim only, $0).**
+  - It splits the culprit diff into hunks, leaving out `evals/`, which the pinned suite replaces.
+  - One AI call (`llm.structured`) ranks the hunks from the diff, the leak-filtered intent and the telling tasks' results. Its order is stored, so resume never asks twice, and diff order is the fallback if the call fails.
+  - It is a separate command, `culprit localise <run_id>`, that reads a finished, found run from the ledger. The orchestrator gained only a step-kind prefix and a filter, because another session is changing it in parallel.
+  - It reverse-applies the top 3 hunks one at a time on the culprit commit, each in its own worktree. Each revert is judged by the same Wilson rule, resampling, budget and resume as a bisect step, then pairs are tried (capped at 3), then the answer falls back to the whole commit.
+  - **Fake-victim results:**
+    - Multi-hunk culprit, with the fake model wrong on purpose (ranking a harmless timeout change first): that revert stayed BAD, the next one flipped the commit to GOOD, and the hunk was named correctly.
+    - Culprit that needs two hunks together, with no model available (diff-order fallback): every single revert stayed BAD, and a pair flipped it.
+    - Resume reran nothing and made no new model call.
+  - 96 tests pass (10 new).
+- **Dry check on the real culprit commits** (git archive trees, no victim runs): every hunk of all six commits reverse-applies on its own (9, 16, 3, 1, 6 and 3 hunks).
+- **Finding worth posting:** on the hero commit, "revert one hunk at a time" can't work. The retry-loop hunk calls `validate_tool_result`, which another hunk of the same commit deleted, so only the pair restores behaviour. A localiser that stops at single hunks would blame the whole commit.
+- **Decision:** reverts are applied on the culprit commit, not on the branch head, so later commits can't block a hunk. The Fixer will work on the head.
+- **Not yet:** failing-trace contents from neatlogs in the ranking prompt. The prompt uses the ledger's pass counts, errors and task definitions for now.
+- **Moment worth screenshotting:** the fake-victim log, `hunk ranking (llm): h4, h3, h1`, then `localise:h4: 1/15 … → BAD`, then `localise:h3: 14/15 … → GOOD`, then `responsible: hunk 3 (refunddesk/agent.py:3)`.
+
+- **Done: M5 part 2, the Fixer and Verifier (PRD §8.4, §10), as `culprit fix <run_id>`** (fake victim only, $0). Shared run loading moved into `finished.py`, so `localise` and `fix` don't touch the orchestrator.
+  - **Fixer:** one AI call per attempt returns the intended gain (latency/tokens/cost/none) and exact search-and-replace edits. Culprit builds the patch itself, and only the responsible hunks' files may change.
+  - **Verifier:** runs the full suite plus held-out tasks × k at the bad head with the patch applied. It passes only if quality is restored, the intended gain is kept (10% tolerance) and there are no new always-failing tasks. Failed attempts are fed back; after 2, the responsible hunks' revert is verified instead.
+  - **Fake-victim log** (the culprit also made the agent faster):
+    - `fix:1: 34/36 … latency 300 vs bad 100; FAILED: intended gain lost`
+    - `fix:2: 34/36 … latency 100 vs bad 100; VERIFIED`
+    - With no model, both attempts fail and the hunk revert is `verified_revert`.
+  - 109 tests pass (13 new).
+- **Finding worth posting:** PRD §10's quality gate ("the fix's 95% interval overlaps the good baseline's") is lenient: a fix passing 4/9 against good's 8/9 passes it. The "no task that always passed now always fails" gate is what catches such a fix. A Fisher test, like the regression gate's, would be stricter; candidate for M4.
+- **Moment worth screenshotting:** the two `fix:` lines above: the Verifier refusing a fix that quietly gives the speed-up back.
 
 ## Demo
 
@@ -89,7 +126,7 @@ Planned (from `PRD.md`); move items to "used" as they are integrated.
 
 ## Known limitations and next steps
 
-- Culprit hasn't been built yet. Next: M1 vertical slice per `PROMPTS.md` (Prompt C).
+- Built: M1 and M2 (bisect, noise handling, recovery) and M3's `culprit bench`. Not built: localiser, fixer/verifier, report, `export-costs`. Next: score the `hist/*` runs with `culprit bench --tag v1 --score-latest`, then M4.
 
 ## Submission
 

@@ -101,7 +101,7 @@ def _extract_json(text: str) -> str:
     return text[start : end + 1] if start != -1 and end > start else text
 
 
-def structured(system: str, prompt: str, schema: type[T], max_tokens: int = 4000) -> Reply[T]:
+def structured(system: str, prompt: str, schema: type[T], max_tokens: int = 16000) -> Reply[T]:
     """Ask for JSON matching `schema`; repair invalid output at most MAX_REPAIRS times."""
     instructions = (
         f"{system}\n\nRespond with a single JSON object and nothing else. It must validate against this "

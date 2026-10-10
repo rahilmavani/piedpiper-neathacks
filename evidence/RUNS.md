@@ -25,6 +25,15 @@ Notes:
 - All decisions were clear at the first sample: no step needed resampling on the real victim.
 - `hist/a`, `d`, `e`: the independent strength check (below; different seeds) also gives 78/78 on every bad head. The three `no_regression` results are therefore correct for GLM 5.3 with this suite, not misses.
 
+## Localise and fix on the real victim (hist/b, run `ff50e3620fdd`)
+
+| Stage | Result | Victim runs | Model calls | Cost |
+|---|---|---:|---|---:|
+| `culprit localise` | GLM ranked 16 hunks. Single reverts of h4 (0/21), h3 (1/21) and h5 (0/21) stayed BAD; the **pair h4+h3 → 21/21 GOOD**. Responsible: `agent.py:144-148` (retry loop) + `agent.py` lines 98–123 removed (`validate_tool_result`), which **matches `bench/ground_truth.json`**. The parallel-execution hunks were not blamed. | 84 | 3 ranking calls (2 were cut off at the 4,000-token cap and repaired) | $0.20 |
+| `culprit fix` | Attempt 1 was rejected before running: its edit referred to a snippet that isn't in the file. Attempt 2 restores validation and retry-on-failure and leaves the thread pool alone: **96/96** on full suite + held-out × 3, the same as good (96/96). Held-out alone: good 18/18, bad 15/18, fix 18/18. No new failures. Status `verified_fix`. | 132 | 2 proposals | $0.33 |
+
+Latency caveat: the planted "make it faster" commit didn't make the agent measurably faster (baseline median latency good 7086 ms vs bad 7138 ms; time is dominated by model calls, and the tools are mocks). The "intended gain kept" gate passed (fix 7992 ms vs bad 9288 ms over the verify runs), but there was no real speed-up to keep.
+
 ## Checks (scripts, not Culprit runs)
 
 | Date (IST) | Check | Refs | Tasks × seeds | Result | Runs | Cost | Errors |

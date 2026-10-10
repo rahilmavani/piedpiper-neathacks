@@ -23,13 +23,12 @@ SDK `neatlogs` 1.4.26 (Python 3.12), CLI `neatlogs-cli` 0.2.0. SDK Doctor `--loc
 | LLM call path (`culprit.llm`, Anthropic) | `scripts/llm_capture_check.py` | `wrap()` under an AGENT span | `traces spans list <id> --type LLM` | **PASS (fixture)**: trace `ffdf497989747bf30856935f187e6013`, LLM span parented under AGENT, 131/18 tokens match the SDK usage |
 | Planner, Task Selector (LLM), Localiser, Fixer | not built yet (M2–M5) | AGENT + LLM via `wrap()` | rerun the evidence loop after each milestone | Pending |
 | Victim runs launched by Culprit (`refunddesk` workflow) | `victim_eval_run` → `python -m refunddesk.eval` | traced by the victim; Culprit records the returned `trace_id` | read back by trace ID | Pending: `../refunddesk` doesn't have the agent yet |
-| OpenRouter provider path | `LLM_PROVIDER=openrouter` | `wrap(openai.OpenAI(base_url=...))` | — | Unverified: no OpenRouter key; the docs don't cover a wrapped OpenAI client with a custom `base_url` |
 
 **Overall: PARTIAL.** Every implemented workflow passes. The rows still pending cover components that don't exist yet.
 
 ## Known differences
 
-- **Cost:** neatlogs reported $0.000663 for 131 in / 18 out on `claude-sonnet-5-5`, which matches $3/$15 per MTok. Culprit's ledger uses the $2/$10 list price, so the two totals will differ.
+- **Cost:** neatlogs reported $0.000663 for 131 in / 18 out on `claude-sonnet-5-5`, which matches $3/$15 per MTok. Culprit's ledger uses Anthropic's $2/$10 list price, which is the source of truth for all cost numbers and cfo.ai; neatlogs' cost figures are not used (see `BLOCKERS.md`).
 - **Root output fill-in:** when a root span has no output (for example after an exception, before the fix), the backend showed a child span's output in its place.
 
 ## Repeat the evidence loop

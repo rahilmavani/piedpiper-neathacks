@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from culprit.bisect import Verdict, bisect, probe_order
-from culprit.entire import leak_filter
+from culprit.entire import intent_line, leak_filter
 from culprit.ledger import Ledger, TaskRun
 from culprit.stats import Decision, decide, wilson
 
@@ -99,3 +99,15 @@ def test_leak_filter_strips_labels_and_refs():
     kept, removed = leak_filter(text, ["exp-x"])
     assert kept.splitlines() == ["Make it faster", "drop RR1 marker", "keep this line"]
     assert removed == 6
+
+
+# Entire intent parsing ------------------------------------------------------------
+def explain_text(intent: str) -> str:
+    return f"● Checkpoint 01ABCDEFGHJKMNPQRSTVWXYZ00\n## Intent\n\n{intent}\n\n## Summary\n\n*Not generated yet.*\n"
+
+
+def test_intent_line_keeps_real_prompts_and_drops_placeholders():
+    assert intent_line(explain_text("RefundDesk is too slow. Make it faster.")) == "RefundDesk is too slow. Make it faster."
+    assert intent_line(explain_text("<task-notification>")) == ""
+    assert intent_line(explain_text("*(no prompt recorded)*")) == ""
+    assert intent_line("no intent section at all") == ""

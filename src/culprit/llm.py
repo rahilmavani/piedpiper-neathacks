@@ -1,8 +1,7 @@
 """The only module that talks to a model.
 
-`LLM_PROVIDER` is `anthropic` (default) or `openrouter` (OpenAI-compatible); `CULPRIT_MODEL` picks
-the model. Structured outputs are validated with pydantic; on a validation failure the model gets
-a repair prompt, at most twice.
+Anthropic only; `CULPRIT_MODEL` picks the model. Structured outputs are validated with pydantic;
+on a validation failure the model gets a repair prompt, at most twice.
 """
 
 from __future__ import annotations
@@ -19,10 +18,10 @@ from culprit import tracing
 
 T = TypeVar("T", bound=BaseModel)
 
-OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 MAX_REPAIRS = 2
 # USD per million tokens (input, output), Anthropic first-party list prices as of 2026-10-06.
-# Unknown models report cost as None rather than a guess. OpenRouter reports cost itself.
+# This table is the source of truth for cost (ledger, cfo.ai). Unknown models report cost as None
+# rather than a guess. neatlogs prices claude-sonnet-5-5 at $3/$15; see BLOCKERS.md.
 ANTHROPIC_PRICES = {
     "claude-opus-5-5": (4.00, 20.00),
     "claude-sonnet-5-5": (2.00, 10.00),
@@ -60,41 +59,19 @@ def model_name() -> str:
     return name
 
 
-def provider() -> str:
-    value = os.environ.get("LLM_PROVIDER", "anthropic")
-    if value not in {"anthropic", "openrouter"}:
-        raise LLMError(f"LLM_PROVIDER must be anthropic or openrouter, not {value!r}")
-    return value
-
-
 def _complete(system: str, messages: list[dict[str, str]], max_tokens: int) -> tuple[str, Usage]:
+    import anthropic
+
     model = model_name()
-    if provider() == "anthropic":
-        import anthropic
-
-        client = tracing.wrap(anthropic.Anthropic())
-        resp = client.messages.create(model=model, max_tokens=max_tokens, system=system, messages=messages)
-        if resp.stop_reason == "refusal":
-            raise LLMError("model refused the request")
-        text = "".join(b.text for b in resp.content if b.type == "text")
-        tin, tout = resp.usage.input_tokens, resp.usage.output_tokens
-        price = ANTHROPIC_PRICES.get(model)
-        cost = None if price is None else (tin * price[0] + tout * price[1]) / 1e6
-        return text, Usage(model, tin, tout, cost)
-
-    import openai
-
-    client = tracing.wrap(openai.OpenAI(base_url=OPENROUTER_BASE_URL, api_key=os.environ["OPENROUTER_API_KEY"]))
-    resp = client.chat.completions.create(
-        model=model, max_tokens=max_tokens, messages=[{"role": "system", "content": system}, *messages],
-        extra_body={"usage": {"include": True}},
-    )
-    usage = resp.usage
-    cost = getattr(usage, "cost", None) if usage else None
-    return resp.choices[0].message.content or "", Usage(
-        model, usage.prompt_tokens if usage else None, usage.completion_tokens if usage else None,
-        None if cost is None else float(cost),
-    )
+    client = tracing.wrap(anthropic.Anthropic())
+    resp = client.messages.create(model=model, max_tokens=max_tokens, system=system, messages=messages)
+    if resp.stop_reason == "refusal":
+        raise LLMError("model refused the request")
+    text = "".join(b.text for b in resp.content if b.type == "text")
+    tin, tout = resp.usage.input_tokens, resp.usage.output_tokens
+    price = ANTHROPIC_PRICES.get(model)
+    cost = None if price is None else (tin * price[0] + tout * price[1]) / 1e6
+    return text, Usage(model, tin, tout, cost)
 
 
 def _extract_json(text: str) -> str:

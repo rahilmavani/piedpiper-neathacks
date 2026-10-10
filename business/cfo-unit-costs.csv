@@ -1,5 +1,5 @@
-culprit_version,victim_model,stage,scenarios,victim_runs,total_cost_usd,cost_per_scenario_usd,cost_per_victim_run_usd
-v1,glm-5.3,bisect,6,1140,2.6957,0.4493,0.00236
-v2,glm-5.3,bisect,6,588,1.5123,0.2520,0.00257
-v1,glm-5.3,localise,1,84,0.2002,0.2002,0.00238
-v1,glm-5.3,fix_verify,1,132,0.3337,0.3337,0.00253
+date,culprit_version,victim_model,stage,scenarios,victim_runs,total_cost_usd,cost_per_scenario_usd,cost_per_victim_run_usd
+2026-10-10,v1,glm-5.3,bisect,6,1140,2.6957,0.4493,0.00236
+2026-10-10,v2,glm-5.3,bisect,6,588,1.5123,0.2520,0.00257
+2026-10-10,v1,glm-5.3,localise,1,84,0.2002,0.2002,0.00238
+2026-10-10,v1,glm-5.3,fix_verify,1,132,0.3337,0.3337,0.00253

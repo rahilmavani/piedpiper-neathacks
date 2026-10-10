@@ -131,7 +131,7 @@ def bench(
     if missing:
         typer.echo(f"no run found for: {', '.join(missing)}")
     path = b.write_report(out_dir, tag, rows, mode, repo, missing)
-    typer.echo(f"accuracy {sum(r.outcome in b.ACCURATE for r in rows)}/{len(rows)}; report {path}")
+    typer.echo(f"accuracy {b.accuracy_text(rows)}; report {path}")
 
 
 @app.command()

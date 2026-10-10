@@ -34,6 +34,8 @@ AMBIGUOUS_CONTAINS = "ambiguous_contains"
 AMBIGUOUS_MISSES = "ambiguous_misses"
 INCOMPLETE = "incomplete"  # budget_exceeded, infra_error, error or still running
 ACCURATE = {CORRECT, CORRECT_NO_REGRESSION}
+# Not scorable yet: whether the bug is visible hasn't been measured, or the run didn't finish.
+UNSCORED = {NO_REGRESSION_UNVERIFIED, INCOMPLETE}
 
 
 class BenchError(RuntimeError):
@@ -259,8 +261,24 @@ def _short(sha: str | None) -> str:
     return f"`{sha[:7]}`" if sha else "none"
 
 
+def accuracy(rows: Sequence[Row]) -> dict[str, int]:
+    """Correct over scored runs; unverified no-regressions and incomplete runs are counted apart."""
+    return {
+        "correct": sum(r.outcome in ACCURATE for r in rows),
+        "scored": sum(r.outcome not in UNSCORED for r in rows),
+        "unverified": sum(r.outcome == NO_REGRESSION_UNVERIFIED for r in rows),
+        "incomplete": sum(r.outcome == INCOMPLETE for r in rows),
+    }
+
+
+def accuracy_text(rows: Sequence[Row]) -> str:
+    a = accuracy(rows)
+    extra = [f"{a['unverified']} no_regression awaiting a strength check"] if a["unverified"] else []
+    extra += [f"{a['incomplete']} incomplete"] if a["incomplete"] else []
+    return f"{a['correct']}/{a['scored']} scored correct" + (f"; {', '.join(extra)}" if extra else "")
+
+
 def render(tag: str, rows: list[Row], mode: str, repo: Path, missing: Sequence[str] = ()) -> str:
-    accurate = sum(r.outcome in ACCURATE for r in rows)
     runs = sum(r.facts.victim_runs for r in rows)
     cost = sum(r.facts.cost_usd for r in rows)
     wall = sum(r.facts.wall_s or 0 for r in rows)
@@ -276,11 +294,11 @@ def render(tag: str, rows: list[Row], mode: str, repo: Path, missing: Sequence[s
         "",
         "## Summary",
         "",
-        f"- **Culprit accuracy: {accurate}/{len(rows)}** (correct commit, or a correct `no_regression`)",
+        f"- **Culprit accuracy: {accuracy_text(rows)}** (correct commit, or a correct `no_regression`)",
         f"- Victim runs: {runs} ({runs / len(rows):.0f} per scenario)" if rows else "- Victim runs: 0",
         f"- Cost: ${cost:.2f} (${cost / len(rows):.2f} per scenario)" if rows else "- Cost: $0.00",
         f"- Wall time: {_duration(wall)} (sum of runs)",
-        "- Hunk accuracy and fix verification: not measured (localiser and fixer not built yet)",
+        "- Hunk accuracy and fix verification: not scored by bench (see `culprit localise` / `culprit fix`)",
         *([f"- Not scored (no run): {', '.join(missing)}"] if missing else []),
         "",
         "## Results",
@@ -332,6 +350,7 @@ def write_report(out_dir: Path, tag: str, rows: list[Row], mode: str, repo: Path
     md.write_text(render(tag, rows, mode, repo, missing))
     (out_dir / f"bench-{tag}.json").write_text(json.dumps(
         {"tag": tag, "mode": mode, "culprit": culprit_version(), "not_scored": list(missing),
+         "accuracy": accuracy(rows),
          "rows": [{**asdict(r.facts), "scenario": r.scenario, "outcome": r.outcome, "expected": r.expected,
                    "note": r.note} for r in rows]},
         indent=2) + "\n")

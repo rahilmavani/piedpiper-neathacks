@@ -113,16 +113,25 @@ class TaskRun:
 
 class Ledger:
     def __init__(self, path: Path, readonly: bool = False):
-        """`readonly` opens an existing ledger without creating, migrating or writing anything,
-        e.g. to score runs in a ledger another process is still writing."""
+        """`readonly` reads an existing ledger without ever writing to it, e.g. to score runs in a ledger
+        another process is still writing. It works on an in-memory copy, migrated to the current schema."""
         if readonly:
-            self.conn = sqlite3.connect(f"file:{path}?mode=ro", uri=True, isolation_level=None)
+            # Copy into memory and migrate the copy: the file is never written, and queries still see
+            # the current schema even when the ledger predates a migration.
+            source = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+            self.conn = sqlite3.connect(":memory:", isolation_level=None)
+            source.backup(self.conn)
+            source.close()
             self.conn.row_factory = sqlite3.Row
+            self._migrate()
             return
         path.parent.mkdir(parents=True, exist_ok=True)
         self.conn = sqlite3.connect(path, isolation_level=None)
         self.conn.row_factory = sqlite3.Row
         self.conn.execute("PRAGMA journal_mode=WAL")
+        self._migrate()
+
+    def _migrate(self) -> None:
         self.conn.executescript(SCHEMA)
         columns = {r["name"] for r in self.conn.execute("PRAGMA table_info(steps)")}
         if "flags" not in columns:  # ledgers created before M2

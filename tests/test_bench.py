@@ -151,7 +151,7 @@ def test_bench_end_to_end_on_two_fixture_scenarios(mods, tmp_path: Path):
 
     md = b.write_report(tmp_path / "out", "v1", list(rows.values()), "test", repo)
     text = md.read_text()
-    assert "**Culprit accuracy: 2/2**" in text
+    assert "**Culprit accuracy: 2/2 scored correct**" in text
     assert f"| broken | **correct** | found | `{culprit[:7]}` | `{culprit[:7]}` |" in text
     assert run_ids["broken"] in text and run_ids["clean"] in text
     data = json.loads((tmp_path / "out" / "bench-v1.json").read_text())
@@ -171,7 +171,7 @@ def test_bench_end_to_end_on_two_fixture_scenarios(mods, tmp_path: Path):
         "--db", str(db), "--out-dir", str(tmp_path / "out"), "--score-runs", f"{run_ids['broken']},{run_ids['clean']}",
     ])
     assert result.exit_code == 0, result.output
-    assert "accuracy 2/2" in result.output
+    assert "accuracy 2/2 scored correct" in result.output
     assert (tmp_path / "out" / "bench-rescore.md").exists()
 
 
@@ -182,3 +182,15 @@ def test_tests_never_export_traces():
 
     tracing.init()
     assert "NEATLOGS_API_KEY" not in os.environ and not tracing.enabled()
+
+
+def test_accuracy_excludes_runs_that_cannot_be_scored_yet():
+    from types import SimpleNamespace
+
+    rows = [SimpleNamespace(outcome=o) for o in (
+        bench.CORRECT, bench.CORRECT, bench.CORRECT,
+        bench.NO_REGRESSION_UNVERIFIED, bench.NO_REGRESSION_UNVERIFIED, bench.NO_REGRESSION_UNVERIFIED)]
+    assert bench.accuracy(rows) == {"correct": 3, "scored": 3, "unverified": 3, "incomplete": 0}
+    assert bench.accuracy_text(rows) == "3/3 scored correct; 3 no_regression awaiting a strength check"
+    rows += [SimpleNamespace(outcome=bench.MISSED), SimpleNamespace(outcome=bench.INCOMPLETE)]
+    assert bench.accuracy_text(rows) == "3/4 scored correct; 3 no_regression awaiting a strength check, 1 incomplete"

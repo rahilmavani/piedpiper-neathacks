@@ -1,0 +1,5 @@
+Update: real localise/fix numbers for hist/b now exist in evidence/RUNS.md on origin/main (ec72b65; merge it). Use them in README.md and DEMO.md instead of TODOs, including the latency caveat: the planted "make it faster" commit didn't measurably speed the agent up, so describe the fix as restoring validation while keeping the parallel execution, not as keeping a latency gain. Leave a TODO only for the v2 bench numbers, which the main session is producing now.
+
+---
+
+Small fix in costs.py (export-costs): localise:* and fix/verify:* steps are counted as bisect runs, so ff50e3620fdd shows victim_runs 456 / bisect_runs 300 / $1.13 when the bisect itself was 240 runs / $0.60. Add separate columns (localise_runs, fix_runs, and their costs) and keep bisect_runs to the bisect and resample steps only (orchestrator.is_bisect_kind). Test it, merge origin/main first (98599b1), and commit on feat/v2-efficiency; I review and push. Then regenerate nothing: the main session will re-run export-costs.

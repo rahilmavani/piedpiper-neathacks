@@ -142,14 +142,37 @@ def localise(
 ) -> None:
     """Find which hunk of a found run's culprit commit is responsible (PRD §8.3). Re-running resumes."""
     from culprit import localise as loc
+    from culprit.finished import StageError
 
     try:
         result, _ = loc.localise_run(Ledger(db), run_id, log=typer.echo, workers=workers, top_n=top_n,
                                      max_pairs=max_pairs, budget_usd=budget_usd)
-    except (loc.LocaliseError, KeyError) as exc:
+    except (StageError, KeyError) as exc:
         typer.echo(f"error: {exc}", err=True)
         raise typer.Exit(2) from exc
     raise typer.Exit(1 if result.status == "incomplete" else 0)
+
+
+@app.command()
+def fix(
+    run_id: str,
+    db: Path = typer.Option(DEFAULT_DB, help="Ledger path"),
+    workers: int = typer.Option(4, help="Parallel victim task runs"),
+    attempts: int = typer.Option(2, help="Fix proposals verified before falling back to the hunk revert"),
+    tolerance: float = typer.Option(0.10, help="How much worse than bad the intended-gain metric may get"),
+    budget_usd: float = typer.Option(2.00, help="Cost cap for fixing, on top of the run's cost so far"),
+) -> None:
+    """Write and verify a minimal fix for a localised run (PRD §8.4, §10). Re-running resumes."""
+    from culprit import fix as fixer
+    from culprit.finished import StageError
+
+    try:
+        result = fixer.fix_run(Ledger(db), run_id, log=typer.echo, workers=workers, attempts=attempts,
+                               tolerance=tolerance, budget_usd=budget_usd)
+    except (StageError, KeyError) as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(2) from exc
+    raise typer.Exit(0 if result.status in {"verified_fix", "verified_revert"} else 1)
 
 
 @app.command("verify-trace")

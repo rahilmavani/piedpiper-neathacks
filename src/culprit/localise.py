@@ -17,17 +17,15 @@ import itertools
 import json
 import re
 from collections.abc import Callable
-from dataclasses import dataclass, field, replace
-from pathlib import Path
+from dataclasses import dataclass, field
 
 from pydantic import BaseModel
 
-from culprit import gitops, llm, sandbox, tracing
+from culprit import finished, gitops, llm, tracing
 from culprit.bisect import Verdict
-from culprit.config import Config
-from culprit.ledger import Ledger, TaskRun
-from culprit.orchestrator import Baselines, BudgetExceeded, InfraError, Log, Orchestrator, is_bisect_kind
-from culprit.providers import ProviderError
+from culprit.finished import TaskEvidence, evidence_text
+from culprit.ledger import Ledger
+from culprit.orchestrator import BudgetExceeded, InfraError, Log
 
 HUNK_HEADER = re.compile(r"^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@")
 MAX_HUNK_CHARS = 3000
@@ -130,25 +128,9 @@ SYSTEM = (
 )
 
 
-@dataclass(frozen=True)
-class TaskEvidence:
-    task_id: str
-    good: tuple[int, int]  # passes, runs at the known-good commit
-    culprit: tuple[int, int]  # passes, runs at the culprit commit
-    errors: tuple[str, ...] = ()
-    definition: str = ""
-
-
 def rank_prompt(hunks: list[Hunk], intent: str, evidence: list[TaskEvidence]) -> str:
-    parts = ["## Why the commit was made\n", intent.strip()[:4000] or "(unknown)", "\n\n## Failing tasks\n"]
-    for e in evidence:
-        parts.append(f"\n### {e.task_id}: passed {e.good[0]}/{e.good[1]} before the commit, "
-                     f"{e.culprit[0]}/{e.culprit[1]} after\n")
-        if e.definition:
-            parts.append(f"Task definition:\n```\n{e.definition[:1200]}\n```\n")
-        for err in e.errors:
-            parts.append(f"Error: {err[:300]}\n")
-    parts.append("\n## Hunks of the commit\n")
+    parts = ["## Why the commit was made\n", intent.strip()[:4000] or "(unknown)", "\n\n## Failing tasks\n",
+             evidence_text(evidence), "\n## Hunks of the commit\n"]
     for h in hunks:
         body = h.body if len(h.body) <= MAX_HUNK_CHARS else h.body[:MAX_HUNK_CHARS] + "\n… (truncated)\n"
         parts.append(f"\n### Hunk {h.id}: {h.where}\n```diff\n{body}```\n")
@@ -208,31 +190,6 @@ def search(ranked: list[int], verdict: Callable[[tuple[int, ...]], Verdict], top
 
 
 # a finished run ------------------------------------------------------------------------------
-class LocaliseError(RuntimeError):
-    pass
-
-
-class RevertError(RuntimeError):
-    pass
-
-
-class _Reverting(Orchestrator):
-    """Evaluates a commit with `patch` reverse-applied, in a worktree of its own."""
-
-    def __init__(self, ledger: Ledger, cfg: Config, log: Log, workers: int, label: str, patch: str):
-        super().__init__(ledger, cfg, log=log, workers=workers)
-        self.label, self.patch = label, patch
-
-    def _worktree(self, sha: str) -> Path:
-        with tracing.span("git_worktree_add", "TOOL", input={"sha": sha, "label": self.label}) as sp:
-            path = sandbox.add_worktree(self.repo, sha, self.label.replace(":", "-"))
-            applied, out = sandbox.reverse_apply(path, self.patch)
-            sp.output({"worktree": path.name, "reverse_applied": applied, "log": out[-1500:]})
-        if not applied:
-            raise RevertError(out.strip() or "git apply -R failed")
-        return path
-
-
 def describe(loc: Localisation, by_id: dict[int, Hunk]) -> str:
     where = ", ".join(f"hunk {i} ({by_id[i].where})" for i in loc.hunks if i in by_id)
     return {"hunk": where, "pair": f"hunk pair {where}", "single_hunk": f"its only hunk, {where}",
@@ -243,58 +200,35 @@ def describe(loc: Localisation, by_id: dict[int, Hunk]) -> str:
 def localise_run(ledger: Ledger, run_id: str, log: Log = print, workers: int = 4, top_n: int = 3,
                  max_pairs: int = 3, budget_usd: float = 1.50) -> tuple[Localisation, str]:
     """Localise a found run's culprit. `budget_usd` is what localisation may add to the run's cost."""
-    row = ledger.get_run(run_id)
-    if row["status"] != "found" or not row["culprit_sha"]:
-        raise LocaliseError(f"run {run_id} has status {row['status']!r}; only a found culprit can be localised")
-    sha = row["culprit_sha"]
-    cfg = Config.from_json(row["config_json"])
-    cfg = replace(cfg, budget_usd=ledger.run_cost(run_id) + budget_usd)
-    orch = Orchestrator(ledger, cfg, log=log, workers=workers)
-    if orch.victim is not None:
-        try:
-            orch.victim.require_key()
-        except ProviderError as exc:
-            raise LocaliseError(str(exc)) from exc
-    with tracing.run_context(run_id=run_id), tracing.span(
-        "culprit_localise", "WORKFLOW", commit_sha=sha, input={"top_n": top_n, "max_pairs": max_pairs}
-    ) as sp:
-        trace_id = tracing.current_trace_id()
-        if trace_id:
-            previous = ledger.get_artifact(run_id, "neatlogs_traces")
-            ledger.put_artifact(run_id, "neatlogs_traces", f"{previous}\n{trace_id}" if previous else trace_id)
-        loc, text = _localise(orch, run_id, sha, top_n, max_pairs)
+    with finished.workflow(ledger, run_id, "culprit_localise", top_n=top_n, max_pairs=max_pairs) as sp:
+        ctx = finished.load(ledger, run_id, log, workers, budget_usd)
+        loc, text = _localise(ctx, top_n, max_pairs)
         sp.output({"status": loc.status, "hunks": loc.hunks, "tried": loc.tried})
     log(f"responsible: {text}")
     return loc, text
 
 
-def _localise(orch: Orchestrator, run_id: str, sha: str, top_n: int, max_pairs: int) -> tuple[Localisation, str]:
-    ledger, cfg = orch.ledger, orch.cfg
-    orch.pinned = orch._pin_suite(run_id)  # the run's own suite snapshot
-    tasks = list(cfg.task_ids)
-    good, bad = ledger.get_run(run_id)["good_sha"], ledger.get_run(run_id)["bad_sha"]
-    base = Baselines(orch.evaluate(run_id, "baseline", good, tasks, range(cfg.k)),
-                     orch.evaluate(run_id, "baseline", bad, tasks, range(cfg.k)))  # recorded, so no runs
-    ranked = orch.ranked_tasks(base)
-    at_culprit = _runs_at(ledger, run_id, sha)
-    subset = _subset(ledger, run_id, sha, base, ranked, cfg)
+def culprit_hunks(ctx: finished.RunContext) -> list[Hunk]:
+    """The culprit's hunks, without those in the suite directory, which the pinned suite replaces anyway."""
+    target = f"{ctx.orch.cfg.suite_target}/"
+    return [h for h in split_hunks(gitops.diff(ctx.orch.repo, ctx.culprit)) if not h.file.startswith(target)]
 
-    target = f"{cfg.suite_target}/"  # the pinned suite replaces these files, so reverting them is moot
-    hunks = [h for h in split_hunks(gitops.diff(orch.repo, sha)) if not h.file.startswith(target)]
+
+def _localise(ctx: finished.RunContext, top_n: int, max_pairs: int) -> tuple[Localisation, str]:
+    hunks = culprit_hunks(ctx)
     by_id = {h.id: h for h in hunks}
-    ranking = _ranking(orch, run_id, sha, hunks, _evidence(orch, base, subset, at_culprit))
+    ranking = _ranking(ctx, hunks)
 
     def verdict(ids: tuple[int, ...]) -> Verdict:
         label = "localise:" + "+".join(f"h{i}" for i in ids)
-        rev = _Reverting(ledger, cfg, orch.log, orch.workers, label, patch_for([by_id[i] for i in ids]))
-        rev.pinned = orch.pinned
+        rev = finished.Prepared(ctx, label, finished.apply_patch(patch_for([by_id[i] for i in ids]), reverse=True))
         try:
-            return rev.classify(run_id, sha, base, subset, ranked, prefix=label)
-        except RevertError as exc:
-            orch.log(f"  {label} does not reverse-apply → SKIP ({exc})")
+            return rev.classify(ctx.run_id, ctx.culprit, ctx.base, ctx.subset, ctx.ranked, prefix=label)
+        except finished.PrepareError as exc:
+            ctx.orch.log(f"  {label} does not reverse-apply → SKIP ({exc})")
             return Verdict.SKIP
 
-    with tracing.span("localise_search", "TOOL", commit_sha=sha,
+    with tracing.span("localise_search", "TOOL", commit_sha=ctx.culprit,
                       input={"ranking": ranking["order"], "top_n": top_n, "max_pairs": max_pairs}) as sp:
         try:
             loc = search(ranking["order"], verdict, top_n, max_pairs)
@@ -302,8 +236,8 @@ def _localise(orch: Orchestrator, run_id: str, sha: str, top_n: int, max_pairs: 
             loc = Localisation("incomplete", [], note=f"{type(exc).__name__}: {exc}")
         sp.output({"status": loc.status, "hunks": loc.hunks, "tried": loc.tried, "note": loc.note})
     text = describe(loc, by_id)
-    ledger.put_artifact(run_id, "localisation", json.dumps({
-        "commit": sha, "status": loc.status, "summary": text, "note": loc.note,
+    ctx.ledger.put_artifact(ctx.run_id, "localisation", json.dumps({
+        "commit": ctx.culprit, "status": loc.status, "summary": text, "note": loc.note,
         "hunks": [{"id": i, "file": by_id[i].file, "where": by_id[i].where,
                    "reason": ranking["reasons"].get(str(i), "")} for i in loc.hunks],
         "tried": [{"hunks": list(ids), "verdict": v} for ids, v in loc.tried],
@@ -312,56 +246,20 @@ def _localise(orch: Orchestrator, run_id: str, sha: str, top_n: int, max_pairs: 
     return loc, text
 
 
-def _runs_at(ledger: Ledger, run_id: str, sha: str) -> list[TaskRun]:
-    """Every recorded run of the commit itself: its bisect steps, or its baseline when it is the bad end."""
-    runs: list[TaskRun] = []
-    for step in ledger.steps(run_id):
-        if step["commit_sha"] == sha and (is_bisect_kind(step["kind"]) or step["kind"] == "baseline"):
-            runs += ledger.task_runs(step["step_id"]).values()
-    return runs
-
-
-def _subset(ledger: Ledger, run_id: str, sha: str, base: Baselines, ranked: list[str], cfg: Config) -> list[str]:
-    """The discriminating tasks the bisect used: those of a recorded bisect step, else the same rule."""
-    for step in ledger.steps(run_id):
-        if step["kind"] == "bisect" and step["status"] == "done":
-            used = {r.task_id for r in ledger.task_runs(step["step_id"]).values()}
-            return [t for t in ranked if t in used]
-    dropped = [t for t in ranked if base.drop(t) > 0]  # as in Orchestrator._bisect
-    return dropped[: cfg.discriminating_size] or ranked[: cfg.discriminating_size]
-
-
-def _evidence(orch: Orchestrator, base: Baselines, subset: list[str], at_culprit: list[TaskRun]) -> list[TaskEvidence]:
-    """Pass counts before and at the culprit, its errors, and each task's definition from the pinned suite."""
-    assert orch.pinned is not None
-    evidence = []
-    for task in subset:
-        good = [r.passed for r in base.good.runs if r.task_id == task]
-        mine = [r for r in at_culprit if r.task_id == task]
-        errors = tuple(dict.fromkeys(r.error for r in mine if r.error))[:3]
-        files = sorted(orch.pinned.path.glob(f"{task}.*"))
-        evidence.append(TaskEvidence(task, (sum(good), len(good)), (sum(r.passed for r in mine), len(mine)),
-                                     errors, files[0].read_text() if files else ""))
-    return evidence
-
-
-def _ranking(orch: Orchestrator, run_id: str, sha: str, hunks: list[Hunk], evidence: list[TaskEvidence]) -> dict:
+def _ranking(ctx: finished.RunContext, hunks: list[Hunk]) -> dict:
     """The stored ranking if there is one (resume never asks the model twice), else a new one."""
-    recorded = orch.ledger.get_artifact(run_id, "hunk_ranking")
+    recorded = ctx.ledger.get_artifact(ctx.run_id, "hunk_ranking")
     if recorded is not None:
         return json.loads(recorded)
-    with tracing.span("localise_rank", "AGENT", commit_sha=sha, input={"hunks": len(hunks)}) as sp:
+    with tracing.span("localise_rank", "AGENT", commit_sha=ctx.culprit, input={"hunks": len(hunks)}) as sp:
         if len(hunks) < 2:  # nothing to rank, so no model call
             result = Ranking([h.id for h in hunks], {}, "not needed")
         else:
-            result = rank(hunks, orch.ledger.get_artifact(run_id, "intent") or "", evidence)
+            result = rank(hunks, ctx.ledger.get_artifact(ctx.run_id, "intent") or "", ctx.evidence())
         sp.output({"order": result.order, "source": result.source})
-    if result.reply is not None:
-        for u in result.reply.usage:
-            orch.ledger.record_llm_call(run_id, None, "localise_rank", u.model, u.tokens_in, u.tokens_out,
-                                        u.cost_usd, tracing.current_trace_id())
+    ctx.record_usage("localise_rank", result.reply)
     ranking = {"order": result.order, "reasons": {str(k): v for k, v in result.reasons.items()},
                "source": result.source}
-    orch.ledger.put_artifact(run_id, "hunk_ranking", json.dumps(ranking))
-    orch.log(f"  hunk ranking ({result.source}): {', '.join(f'h{i}' for i in result.order)}")
+    ctx.ledger.put_artifact(ctx.run_id, "hunk_ranking", json.dumps(ranking))
+    ctx.orch.log(f"  hunk ranking ({result.source}): {', '.join(f'h{i}' for i in result.order)}")
     return ranking

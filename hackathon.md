@@ -109,6 +109,17 @@ Planned (from `PRD.md`); move items to "used" as they are integrated.
 - **Not yet:** failing-trace contents from neatlogs in the ranking prompt. The prompt uses the ledger's pass counts, errors and task definitions for now.
 - **Moment worth screenshotting:** the fake-victim log, `hunk ranking (llm): h4, h3, h1`, then `localise:h4: 1/15 … → BAD`, then `localise:h3: 14/15 … → GOOD`, then `responsible: hunk 3 (refunddesk/agent.py:3)`.
 
+- **Done: M5 part 2, the Fixer and Verifier (PRD §8.4, §10), as `culprit fix <run_id>`** (fake victim only, $0). Shared run loading moved into `finished.py`, so `localise` and `fix` don't touch the orchestrator.
+  - **Fixer:** one AI call per attempt returns the intended gain (latency/tokens/cost/none) and exact search-and-replace edits. Culprit builds the patch itself, and only the responsible hunks' files may change.
+  - **Verifier:** runs the full suite plus held-out tasks × k at the bad head with the patch applied. It passes only if quality is restored, the intended gain is kept (10% tolerance) and there are no new always-failing tasks. Failed attempts are fed back; after 2, the responsible hunks' revert is verified instead.
+  - **Fake-victim log** (the culprit also made the agent faster):
+    - `fix:1: 34/36 … latency 300 vs bad 100; FAILED: intended gain lost`
+    - `fix:2: 34/36 … latency 100 vs bad 100; VERIFIED`
+    - With no model, both attempts fail and the hunk revert is `verified_revert`.
+  - 109 tests pass (13 new).
+- **Finding worth posting:** PRD §10's quality gate ("the fix's 95% interval overlaps the good baseline's") is lenient: a fix passing 4/9 against good's 8/9 passes it. The "no task that always passed now always fails" gate is what catches such a fix. A Fisher test, like the regression gate's, would be stricter; candidate for M4.
+- **Moment worth screenshotting:** the two `fix:` lines above: the Verifier refusing a fix that quietly gives the speed-up back.
+
 ## Demo
 
 - *Pending.* No demo URL yet.

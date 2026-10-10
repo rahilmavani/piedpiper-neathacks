@@ -11,7 +11,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent / "fixtures"))
 from make_victim import build  # noqa: E402
 
-from culprit import gitops, llm, localise  # noqa: E402
+from culprit import finished, gitops, llm, localise  # noqa: E402
 from culprit.bisect import Verdict  # noqa: E402
 from culprit.entire import ref_names  # noqa: E402
 from culprit.ledger import Ledger  # noqa: E402
@@ -80,7 +80,7 @@ def fake_model(monkeypatch, reply: dict):
     return prompts
 
 
-EVIDENCE = [localise.TaskEvidence("t02", (3, 3), (0, 3), ("KeyError: 'x'",), '{"message": "refund"}')]
+EVIDENCE = [finished.TaskEvidence("t02", (3, 3), (0, 3), ("KeyError: 'x'",), '{"message": "refund"}')]
 
 
 def test_rank_uses_the_model_order_and_completes_it(monkeypatch):
@@ -142,12 +142,14 @@ def test_search_needs_no_runs_for_zero_or_one_hunk():
 def mods(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("CULPRIT_STATE_DIR", str(tmp_path / "state"))
     import culprit.config
+    import culprit.finished
     import culprit.localise
     import culprit.orchestrator
     import culprit.sandbox
     import culprit.suite
 
-    for mod in (culprit.config, culprit.sandbox, culprit.suite, culprit.orchestrator, culprit.localise):
+    for mod in (culprit.config, culprit.sandbox, culprit.suite, culprit.orchestrator, culprit.finished,
+                culprit.localise):
         importlib.reload(mod)
     return culprit.orchestrator, culprit.config, culprit.localise
 
@@ -233,5 +235,5 @@ def test_localise_needs_a_found_run(mods, tmp_path: Path):
                                      log=lambda _: None)
     run_id = orch.start()
     assert orch.run(run_id).status == "no_regression"
-    with pytest.raises(loc_mod.LocaliseError, match="no_regression"):
+    with pytest.raises(finished.StageError, match="no_regression"):
         loc_mod.localise_run(orch.ledger, run_id, log=lambda _: None)

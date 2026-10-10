@@ -55,10 +55,10 @@ def remove_worktree(repo: Path, path: Path) -> None:
     git(repo, "worktree", "prune", check=False)
 
 
-def reverse_apply(worktree: Path, patch: str) -> tuple[bool, str]:
-    """Reverse-apply `patch` to the worktree's files; (applied, git's output)."""
-    proc = subprocess.run(["git", "-C", str(worktree), "apply", "-R", "--whitespace=nowarn", "-"],
-                          input=patch, capture_output=True, text=True)
+def apply(worktree: Path, patch: str, reverse: bool = False) -> tuple[bool, str]:
+    """Apply (or reverse-apply) `patch` to the worktree's files; (applied, git's output)."""
+    proc = subprocess.run(["git", "-C", str(worktree), "apply", *(["-R"] if reverse else []), "--whitespace=nowarn",
+                           "-"], input=patch, capture_output=True, text=True)
     return proc.returncode == 0, proc.stdout + proc.stderr
 
 

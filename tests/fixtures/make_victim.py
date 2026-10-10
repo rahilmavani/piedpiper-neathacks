@@ -41,12 +41,12 @@ FRAGILE_PASS = min(RETRY_PASS, VALIDATE_PASS)
 
 EVAL = '''\
 """Fake eval runner with the same interface as the real one; each run costs a nominal $0.001."""
-import argparse, json, os, random, time
+import argparse, json, os, random
 from pathlib import Path
 
 from refunddesk import agent
 
-FRAGILE = {{"t01", "t02", "t03", "t04", "t05"}}
+FRAGILE = {{"t01", "t02", "t03", "t04", "t05", "h01"}}
 
 
 def main() -> None:
@@ -65,15 +65,15 @@ def main() -> None:
             marker.touch()
             print(json.dumps({{"passed": False, "cost": 0.0, "error": "RateLimitError: Error code: 429"}}))
             return
-    if not (Path("evals") / f"{{a.task}}.json").exists():  # like the real load_task
+    if not any((d / f"{{a.task}}.json").exists() for d in (Path("evals"), Path("evals/heldout"))):  # like load_task
         print(json.dumps({{"passed": False, "cost": 0.0, "latency_ms": 0.0, "tokens": None, "trace_id": None,
                           "error": f"FileNotFoundError: no task named {{a.task!r}}"}}))
         return
     rng = random.Random(f"{{a.task}}:{{a.seed}}")
     p_pass = agent.FRAGILE_PASS if a.task in FRAGILE else 0.95
-    started = time.monotonic()
     passed = rng.random() < p_pass
-    print(json.dumps({{"passed": passed, "cost": 0.001, "latency_ms": (time.monotonic() - started) * 1000,
+    # Latency follows the tool timeout knob, so a "faster" commit has a measurable intended gain.
+    print(json.dumps({{"passed": passed, "cost": 0.001, "latency_ms": agent.TOOL_TIMEOUT_S * 10.0,
                       "tokens": {{"in": 100, "out": 20}}, "trace_id": None}}))
 
 
@@ -112,6 +112,9 @@ def build(path: Path, commits: int, breaks_at: int, unbuildable_at: int | None, 
     evals.mkdir()
     for i in range(1, 11):
         (evals / f"t{i:02d}.json").write_text('{"message": "refund please"}\n')
+    (evals / "heldout").mkdir()
+    for i in range(1, 3):  # held-out tasks: never used by the bisect, only to verify a fix
+        (evals / "heldout" / f"h{i:02d}.json").write_text('{"message": "refund the other order"}\n')
     sh(path, "uv", "lock", "-q")
     commit(path, "initial agent")
     sh(path, "git", "tag", "good-v1.0")

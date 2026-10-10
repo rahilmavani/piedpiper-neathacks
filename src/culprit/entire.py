@@ -100,6 +100,12 @@ def commit_intent(repo: Path, sha: str) -> Intent:
         if not intent:
             intent = "\n\n".join(session_prompts(repo, sha))
             source = "entire: session prompts (Intent field empty or a harness event)"
+        elif intent.endswith(("...", "…")):
+            # The Intent field is a shortened preview; the transcript holds the full prompt.
+            prefix = intent.rstrip(".…").rstrip()
+            full = next((p for p in session_prompts(repo, sha) if p.startswith(prefix)), None)
+            if full:
+                intent, source = full, "entire: full prompt from the transcript (Intent field was truncated)"
         text, removed = leak_filter(f"Intent:\n{intent}\n\nCheckpoint context:\n{out}", refs)
         return Intent(bool(intent.strip()), match.group(1), text, removed, source)
     reason = out.strip().splitlines()[0] if out.strip() else f"exit {code}"

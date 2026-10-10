@@ -124,6 +124,7 @@ class Ledger:
             source.close()
             self.conn.row_factory = sqlite3.Row
             self._migrate()
+            self.conn.execute("PRAGMA query_only = ON")  # a write is a bug: fail loudly, don't lose it
             return
         path.parent.mkdir(parents=True, exist_ok=True)
         self.conn = sqlite3.connect(path, isolation_level=None)

@@ -21,6 +21,11 @@ def test_readonly_reads_a_ledger_from_before_a_migration_without_writing_it(tmp_
 
     readonly = Ledger(db, readonly=True)
     assert readonly.run_cost(run_id) == 0.25  # this query uses reused_from_run
+    try:
+        readonly.conn.execute("UPDATE runs SET status = 'x'")
+        raise AssertionError("a read-only ledger accepted a write")
+    except sqlite3.OperationalError:
+        pass
 
     assert hashlib.sha256(db.read_bytes()).hexdigest() == before
     columns = {r[1] for r in sqlite3.connect(db).execute("PRAGMA table_info(task_runs)")}

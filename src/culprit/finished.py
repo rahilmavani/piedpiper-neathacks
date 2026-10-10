@@ -85,6 +85,11 @@ class RunContext:
     base: Baselines
     ranked: list[str]  # tasks by drop from good to bad
     subset: list[str]  # the telling tasks the bisect used
+    replay: bool = False  # only what the ledger holds: no key, no model calls, no victim runs
+
+    def unrecorded(self, what: str) -> StageError:
+        return StageError(f"replay of run {self.run_id} needs {what}, which the ledger doesn't hold; "
+                          "run the command without --replay to do that work")
 
     @property
     def ledger(self) -> Ledger:
@@ -118,14 +123,21 @@ class RunContext:
                                         u.cost_usd, tracing.current_trace_id())
 
 
-def load(ledger: Ledger, run_id: str, log: Log, workers: int, budget_usd: float) -> RunContext:
-    """A found run, ready for a follow-up command that may spend `budget_usd` more than the run has."""
+def load(ledger: Ledger, run_id: str, log: Log, workers: int, budget_usd: float, replay: bool = False) -> RunContext:
+    """A found run, ready for a follow-up command that may spend `budget_usd` more than the run has.
+
+    With `replay`, nothing may be spent: no key is needed, the cap is the run's cost so far (so a victim
+    batch that isn't recorded stops at the budget check before it starts), and the stages refuse to ask
+    a model for anything not recorded.
+    """
+    if replay:
+        budget_usd = 0.0
     row = ledger.get_run(run_id)
     if row["status"] != "found" or not row["culprit_sha"]:
         raise StageError(f"run {run_id} has status {row['status']!r}; this needs a run whose culprit was found")
     cfg = replace(Config.from_json(row["config_json"]), budget_usd=ledger.run_cost(run_id) + budget_usd)
     orch = Orchestrator(ledger, cfg, log=log, workers=workers)
-    if orch.victim is not None:
+    if orch.victim is not None and not replay:
         try:
             orch.victim.require_key()
         except ProviderError as exc:
@@ -138,7 +150,7 @@ def load(ledger: Ledger, run_id: str, log: Log, workers: int, budget_usd: float)
     base = baseline.measure(orch, run_id, good, bad, tasks)
     ranked = orch.ranked_tasks(base)
     return RunContext(run_id, orch, row["culprit_sha"], good, bad, base, ranked,
-                      _telling_tasks(ledger, run_id, base, ranked, cfg))
+                      _telling_tasks(ledger, run_id, base, ranked, cfg), replay)
 
 
 def _telling_tasks(ledger: Ledger, run_id: str, base: Baselines, ranked: list[str], cfg: Config) -> list[str]:

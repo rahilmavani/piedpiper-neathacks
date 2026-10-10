@@ -366,7 +366,7 @@ Branches `a`, `c`, `d`, `e` and `f` have **not been measured yet**. Some may tur
 | `config.py` | Settings and defaults |
 | `gitops.py` | Small git helpers (resolve ref, commit range, subject, diff) |
 
-About 3,500 lines of Python, with **137 tests passing** (no AI calls, about 30 s).
+About 3,500 lines of Python, with **141 tests passing** (no AI calls, about 30 s).
 
 ### 6.2 Key settings (`config.py`)
 
@@ -707,7 +707,7 @@ All cost figures here use Anthropic's list price for Sonnet 5.5 ($2 / $10 per mi
 From `piedpiper-neathacks/` (load keys first: `set -a; source .env; set +a`):
 
 ```bash
-uv run pytest -q                                   # 137 tests, free; no test exports or reads traces, or calls a model (tests/conftest.py), ~30 s
+uv run pytest -q                                   # 141 tests, free; no test exports or reads traces, or calls a model (tests/conftest.py), ~30 s
 uv run culprit --help
 
 # Free demo on a fake victim (no AI calls)
@@ -728,6 +728,14 @@ uv run culprit localise <run_id> [--top-n 3] [--max-pairs 3] [--budget-usd 1.50]
 
 # Then write and verify a fix (COSTS MONEY: up to 3 × (26+6 tasks × 3) runs + held-out baselines + 2 AI calls; ask first)
 uv run culprit fix <run_id> [--attempts 2] [--tolerance 0.10] [--budget-usd 2.00]
+
+# Replay what the ledger holds, at $0: no key, no model call, no victim run (fails if anything else is needed)
+uv run culprit localise <run_id> --replay
+uv run culprit fix <run_id> --replay
+
+# The hero story for screen recording, at $0 and with no network: report → localise → fix, replayed
+# from a copy of the ledger (keys blanked, uv offline, scripts/no_network blocks internet sockets)
+scripts/demo_replay.sh [run_id]            # default ff50e3620fdd; DEMO_PAUSE=2 s between stages, CULPRIT_DB=…
 
 # Benchmark: run every scenario in bench/scenarios.yaml and score it (COSTS MONEY, ~$0.60+ per branch on GLM; ask first)
 uv run culprit bench --tag v1 [--only hist/b] [--budget-usd 3]

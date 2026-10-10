@@ -147,6 +147,14 @@ Planned (from `PRD.md`); move items to "used" as they are integrated.
 - **Done: `culprit fix` can't over-claim the intended gain.** Each verification now prints the median latency per run at good, at bad and with the fix, plus the named metric at all three. If the commit never beat good on that metric (by more than the tolerance), it adds a note that the gain gate passes trivially. Both are stored in the `fix` artifact. Prompted by the real hero fix: the "make it faster" commit left the median latency at good 7086 ms vs bad 7138 ms. 137 tests pass.
 - **Finding worth posting:** "keeps the intended gain" is only a claim if the culprit commit delivered that gain. Ours, a "make it faster" change by a coding agent, didn't measurably speed anything up, and only comparing against the good baseline shows that.
 
+- **Done: `scripts/demo_replay.sh`**, the hero story for screen recording at $0: `culprit report`, then `culprit localise --replay`, then `culprit fix --replay`, with short pauses between stages.
+  - It works on an SQLite backup of the ledger in a temp directory, so the real ledger is only read.
+  - It blanks the model and neatlogs keys (empty values, so `.env` can't put them back) and runs uv offline.
+  - `scripts/no_network/sitecustomize.py` makes every internet connect and DNS lookup in the culprit process raise.
+  - At the end it prints the counts of new victim runs and model calls (0 and 0) and fails if either changed.
+  - `--replay` is new on `localise` and `fix`: no key needed and nothing may be spent. A victim batch or model call the ledger doesn't hold fails the stage before anything is written.
+  - Tests: the guard blocks connects and DNS but not local sockets; a recorded fixture story replays with fake keys present and leaves the source ledger byte-identical; replay refuses unrecorded work. 141 tests pass.
+
 ## Demo
 
 - *Pending.* No demo URL yet.

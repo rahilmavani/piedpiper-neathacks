@@ -215,9 +215,9 @@ class FixResult:
 
 
 def fix_run(ledger: Ledger, run_id: str, log: Log = print, workers: int = 4, attempts: int = 2,
-            tolerance: float = 0.10, budget_usd: float = 2.00) -> FixResult:
+            tolerance: float = 0.10, budget_usd: float = 2.00, replay: bool = False) -> FixResult:
     with finished.workflow(ledger, run_id, "culprit_fix", attempts=attempts, tolerance=tolerance) as sp:
-        ctx = finished.load(ledger, run_id, log, workers, budget_usd)
+        ctx = finished.load(ledger, run_id, log, workers, budget_usd, replay)
         result = _fix(ctx, attempts, tolerance)
         sp.output({"status": result.status, "metric": result.metric, "note": result.note})
     ledger.put_artifact(run_id, "fix", json.dumps({**asdict(result), "commit": ctx.bad}))
@@ -244,6 +244,8 @@ def _fix(ctx: RunContext, attempts: int, tolerance: float) -> FixResult:
     try:
         good, bad = _verify_runs(ctx, ctx.good, "baseline"), _verify_runs(ctx, ctx.bad, "baseline")
         for n in range(1, attempts + 1):
+            if n > len(recorded) and ctx.replay:
+                raise ctx.unrecorded(f"fix proposal {n} (a model call)")
             attempt = recorded[n - 1] if n <= len(recorded) else _propose(ctx, n, responsible, files, allowed, done)
             done.append(attempt)
             ctx.ledger.put_artifact(ctx.run_id, "fix_attempts", json.dumps([asdict(a) for a in done]))
@@ -267,6 +269,8 @@ def _fix(ctx: RunContext, attempts: int, tolerance: float) -> FixResult:
         return _explained(FixResult("unverified", done, metric=metric, note="neither a fix nor the revert passed "
                                     "every gate" if g else "the revert does not apply or install at the bad head"), g)
     except (BudgetExceeded, InfraError) as exc:
+        if ctx.replay:  # before the fix artifact is written
+            raise ctx.unrecorded(f"victim runs to verify ({exc})") from exc
         return FixResult("incomplete", done, metric=metric, note=f"{type(exc).__name__}: {exc}")
 
 

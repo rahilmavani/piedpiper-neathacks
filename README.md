@@ -36,8 +36,8 @@ there, often written by a coding agent. Finding the commit responsible is hard f
    leakage filter, and falls back to the commit message and diff when there is no checkpoint.
 6. **Localises and fixes** (`culprit localise`, `culprit fix`). It finds the responsible hunk(s) by
    reverting them, writes a minimal fix, and verifies it on the full and held-out suites. The fix must
-   keep the intended gain. These have been tested on the fixture victim only; see
-   [Limitations](#limitations).
+   keep the intended gain. On the hero bug they named the right two hunks and produced a verified fix;
+   see [Localise and fix on the hero bug](#localise-and-fix-on-the-hero-bug-histb).
 7. **Reports.** `culprit report <run_id>` writes markdown and static HTML. `culprit export-costs`
    writes per-run cost, victim runs and wall time as CSV for the business model.
 
@@ -74,8 +74,26 @@ Sources: [`evidence/bench-v1.md`](evidence/bench-v1.md), [`evidence/RUNS.md`](ev
 - **Every Culprit trace passed `culprit verify-trace`** (one root, no orphans, run ID and commit SHA on
   every span).
 
-Not measured yet: hunk accuracy and fix verification on the real victim, and the v2 benchmark. See
-[Limitations](#limitations).
+### Localise and fix on the hero bug (`hist/b`)
+
+These ran on run `ff50e3620fdd`, using the same ledger, budget and Wilson rule as the bisect
+([`evidence/RUNS.md`](evidence/RUNS.md)).
+
+| Stage | Result | Victim runs | Model calls | Cost |
+|---|---|---:|---|---:|
+| `culprit localise` | Single reverts of the top three hunks stayed BAD (h4 0/21, h3 1/21, h5 0/21). The **pair h4 + h3 → 21/21 GOOD**: the retry loop (`agent.py:144-148`) plus the removed `validate_tool_result` (lines 98–123). This **matches the answer key**, and the parallel-execution hunks were not blamed. | 84 | 3 ranking calls (2 hit the 4,000-token cap and were repaired) | $0.20 |
+| `culprit fix` | Attempt 1 was rejected before running: its edit referred to text not in the file. Attempt 2 restores validation and retry-on-failure and leaves the thread pool alone: **96/96** on full + held-out suites × 3, the same as good (96/96). Held-out alone: good 18/18, bad 15/18, fix 18/18. No new failures. `verified_fix`. | 132 | 2 proposals | $0.33 |
+
+**Latency caveat.** The planted "make it faster" commit didn't make the agent measurably faster. Median
+baseline latency was 7,086 ms at good and 7,138 ms at bad: model calls dominate, and the tools are mocks.
+The fix restores validation while keeping the parallel tool execution the commit introduced. It doesn't
+keep a speed-up, because there was none to keep. Its "intended gain kept" gate passed (fix 7,992 ms vs
+bad 9,288 ms over the verify runs), but that says the fix isn't slower, not that anything got faster.
+
+Hero bug end to end: bisect $0.60 + localise $0.20 + fix $0.33 = **$1.13**, 456 victim runs.
+
+Not measured yet: hunk accuracy and fixes on the other found bugs (`hist/c`, `hist/f`), and the v2
+benchmark.
 
 ### v1 → v2: cheaper baselines
 
@@ -164,7 +182,7 @@ uv run culprit export-costs --format csv --out business/runs.csv
   Culprit's own price table is the only cost source
   ([`evidence/neatlogs-cost-discrepancy.md`](evidence/neatlogs-cost-discrepancy.md),
   [`BLOCKERS.md`](BLOCKERS.md)).
-- TODO: Investigate and Detections on the v1 runs (dashboard only; see `BLOCKERS.md`).
+- Not done yet: Investigate and Detections on the v1 runs (dashboard only; see `BLOCKERS.md`).
 
 ### Entire
 
@@ -176,8 +194,8 @@ uv run culprit export-costs --format csv --out business/runs.csv
 - **In the build:** both repos have Entire enabled, so Culprit's own commits and every planted-bug
   commit in RefundDesk carry `Entire-Checkpoint` trailers.
 - In run `ff50e3620fdd` the intent fell back to the commit message and diff, because the Entire CLI
-  wasn't installed on the machine that ran it. TODO: the hero commit's intent read through Entire on
-  a recorded run.
+  wasn't installed on the machine that ran it. The hero commit's checkpoint can be read directly with
+  `entire checkpoint explain 397c42743be8cd80ae1d1e30c058772c1bd16add` in the victim repo.
 
 ### cfo.ai
 
@@ -185,7 +203,8 @@ uv run culprit export-costs --format csv --out business/runs.csv
   three pricing scenarios, all labelled hypotheses: (A) flat per-repo subscription, (B) bring your own
   model key plus a platform fee, and (C) metered per bisect.
 - `culprit export-costs --format csv` produces the per-run inputs.
-- TODO: the cfo.ai business plan (pricing, costs, revenue, runway), exported to `business/`.
+- Not done yet: the cfo.ai business plan itself (pricing, costs, revenue, runway), entered by hand
+  from these inputs and exported to `business/`.
 
 ## Honesty note: the bugs are planted
 
@@ -220,8 +239,9 @@ against a known truth (PRD §9.2).
 
 ## Limitations
 
-- **Localise and fix are unproven on the real victim.** They have been tested on the fixture only.
-  TODO: `culprit localise` / `culprit fix` on `hist/b`.
+- **Localise and fix have one real case.** They have run only on `hist/b`, where both were right. They
+  haven't run on `hist/c` or `hist/f` yet. The hero commit's claimed speed-up didn't exist (see the
+  latency caveat), so the "intended gain kept" gate hasn't yet been tested against a real gain.
 - **The v2 savings are measured on the fixture only.** The real-victim v2 benchmark isn't done yet.
   The fixture has 5 of 10 tasks sensitive to the planted bug, against 7 of 26 on RefundDesk.
 - **The staged baseline can miss a task.** A task that dropped from good to bad but happened to pass

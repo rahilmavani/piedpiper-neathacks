@@ -1,0 +1,1 @@
+Read PROMPTS.md. Run Prompt A steps 3, 5 and 6, then Prompt C.

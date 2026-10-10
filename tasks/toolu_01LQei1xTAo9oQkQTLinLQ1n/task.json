@@ -1,0 +1,18 @@
+{
+  "tool_use_id": "toolu_01LQei1xTAo9oQkQTLinLQ1n",
+  "agent_id": "afb6111ef8832e33d",
+  "subagent_type": "general-purpose",
+  "task_description": "Research neatlogs/Entire/cfo.ai docs",
+  "files": [
+    "docs/research.md"
+  ],
+  "token_usage": {
+    "input_tokens": 110,
+    "cache_creation_tokens": 186514,
+    "cache_read_tokens": 6257193,
+    "output_tokens": 14556,
+    "api_call_count": 55
+  },
+  "started_at": "2026-10-10T13:15:21.941623+05:30",
+  "completed_at": "2026-10-10T13:24:15.341812+05:30"
+}

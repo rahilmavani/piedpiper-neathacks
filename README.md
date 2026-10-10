@@ -215,8 +215,15 @@ uv run culprit export-costs --format csv --out business/runs.csv
   three pricing scenarios, all labelled hypotheses: (A) flat per-repo subscription, (B) bring your own
   model key plus a platform fee, and (C) metered per bisect.
 - `culprit export-costs --format csv` produces the per-run inputs.
-- Not done yet: the cfo.ai business plan itself (pricing, costs, revenue, runway), entered by hand
-  from these inputs and exported to `business/`.
+- **The business plan** ([`business/cfo-plan.md`](business/cfo-plan.md), plus two cfo.ai exports:
+  [pricing comparison](business/cfo-ai-pricing-comparison.xlsx) and [cash runway](business/cfo-ai-cash-runway.xlsx)).
+  It was built in cfo.ai from the measured cost per bisect ($0.252, v2 on GLM 5.3).
+  - **Gross margin:** B (customer's own key + $99/repo) holds 97% at any volume. A at $49 goes negative
+    at 200 bisects a month. C ($5/bisect) is about 92%.
+  - **Break-even:** 110 repos on plan B with $10,500 a month of fixed costs (assumed).
+  - **Runway:** on the assumed growth, cash flow turns positive in month 13 (Oct 2027).
+  - Prices and growth are hypotheses. Our own stress test on a Sonnet-priced victim shows v2
+    taking plan C's margin from 35% to 65%.
 
 ## Honesty note: the bugs are planted
 
@@ -278,6 +285,6 @@ against a known truth (PRD §9.2).
 | `tests/` | Unit and end-to-end tests on a generated fake victim (`tests/fixtures/make_victim.py`); no model calls, tracing off |
 | `bench/` | Scenarios, ground truth, strength checks |
 | `evidence/` | Run register, benchmark results, raw check data |
-| `business/` | cfo.ai inputs |
+| `business/` | cfo.ai inputs, the business plan (`cfo-plan.md`) and cfo.ai exports |
 | `docs/` | `research.md` (what the neatlogs, Entire and cfo.ai docs support), `neatlogs.md` (tracing contract and readback) |
 | `scripts/` | Strength check, v1 vs v2 fixture comparison, trace helpers |

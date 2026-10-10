@@ -1,0 +1,84 @@
+yes
+
+---
+
+Session 2: 
+
+<pasted_content id="809e">
+The Localiser and Fixer are built as separate commands, culprit localise <run_id> and culprit fix <run_id>, each reading a found run from the ledger. Both are tested only on the fake victim with a fake model. No paid runs or real model calls were made, and I haven't opened the other session's ledger. All 109 tests pass and lint is clean.
+
+Three commits on feat/bench, not pushed:
+
+┌─────────┬──────────────────────────────────────────┐
+│ Commit  │                   What                   │
+├─────────┼──────────────────────────────────────────┤
+│ 94d0a26 │ M3 culprit bench, plus tests/conftest.py │
+├─────────┼──────────────────────────────────────────┤
+│ 7124089 │ Localiser: culprit localise <run_id>     │
+├─────────┼──────────────────────────────────────────┤
+│ 10ac743 │ Fixer and Verifier: culprit fix <run_id> │
+└─────────┴──────────────────────────────────────────┘
+
+About the traces you asked me to stop: they came from my manual culprit bench demo, not from pytest (the CLI loads .env). The conftest now does three things for every test: unsets NEATLOGS_API_KEY, keeps tracing off, and blocks both model-provider calls. So no test can export a trace or spend money.
+
+Visibility flag: I added your rule to the ground-truth file and the docs: the "visible on this model" flag only ever comes from a separate strength check recorded in bench/strength.md, never from Culprit's own run. hist/b keeps the flag from its separate hero check; a, c, d, e and f stay unmeasured.
+
+orchestrator.py: the whole M5 change there is 16 added lines, all in 7124089. They are a name prefix for steps, a helper that says which steps belong to the bisect, and a one-line filter so localise steps can't change a run's confidence. The rest lives in new modules: localise.py, fix.py and finished.py, which loads a finished run and tests patched copies of a commit.
+
+culprit localise <run_id>
+- Splits the culprit commit into hunks, ignoring the test-suite folder.
+- Ranks them with one model call, given the diff, the commit's intent (with answer-revealing lines removed) and the failing tasks. If that call fails, it uses diff order.
+- Reverts the top 3 hunks one at a time on the culprit commit and re-runs the tasks that distinguished good from bad, then tries pairs, then falls back to "the whole commit".
+- Its own budget defaults to $1.50 on top of what the run already spent. Running it again resumes without repeating work.
+- On the fake victim, it rejected a wrong top-ranked hunk and found the right one, and it found a case where only reverting two hunks together restores the agent.
+
+culprit fix <run_id>
+- The model names what the commit was trying to gain (latency, tokens, cost or none) and returns exact edits, limited to the responsible hunks' files.
+- Each fix is checked at the branch head on the full suite plus the held-out tasks, against three gates: quality restored, the intended gain kept (within 10%), and no task that always passed now always fails.
+- Failed attempts are fed back to the next one. After 2 failures, it checks the plain revert of the responsible hunks instead.
+- On the fake victim, a fix that restored quality but gave the speed-up back was rejected (latency 300 vs 100), and the next attempt was verified.
+
+Things you should know:
+- hist/b will probably need a pair. Every hunk of all six real culprit commits reverts cleanly on its own (checked on extracted copies, no runs). But on hist/b, reverting the retry-loop hunk alone calls validate_tool_result, which a separate hunk deleted, so only the two together can work. hist/a may come out as "whole commit".
+- The quality gate from PRD §10 is weak. It only asks that the fix's confidence interval overlap the good one, so a fix passing 4/9 against good's 8/9 passes it. The "no new failures" gate is what catches that. A stricter test is a candidate for M4.
+- Failing-trace contents aren't in the prompts yet. The prompts use the ledger's pass counts, errors and task definitions; the neatlogs trace contents aren't fetched yet.
+
+Decision for you: when the hist/* loop finishes, I'll score the runs as agreed (culprit bench --tag v1 --score-latest, ledger opened read-only). After that, do you want me to run culprit localise and then culprit fix on the hist/b run ff50e3620fdd? That's the first real use of both, with real model calls. At hist/b's measured ~$0.0025 per victim run on GLM, I estimate roughly $1–2 together.
+</pasted_content id="809e">
+
+
+Session 3: 
+
+<pasted_content id="809e">
+Both tasks are finished and committed as 69e6b60 on feat/v2-efficiency in the piedpiper-neathacks-v2 worktree. All 85 tests pass (17 are new). Nothing was pushed, no paid runs were made, and the main folder and RefundDesk weren't touched.
+
+Task 1: v1 → v2 efficiency
+
+- Staged baseline (culprit/baseline.py): every task runs once on both ends. Only tasks that didn't pass on both ends get the rest of k. Both ends always run the same set of runs, and the Fisher gate counts the runs actually made (a test checks this).
+- Baseline reuse (culprit/reuse.py): results are copied from an earlier run with the same commit SHA, suite SHA, victim provider and model, eval module and k. Each copied row records the run and row it came from. Copied runs aren't charged again, so the budget caps and totals stay correct.
+- Before/after on the fixture (scripts/v2_efficiency.py, evidence/v2-efficiency-fixture.md), victim runs over 4 scenarios:
+
+| Version              | Victim runs | Change vs v1 |
+|----------------------|-------------|--------------|
+| v1                   |         510 |              |
+| v2, staged baseline  |         430 |         −16% |
+| v2, good end reused  |         335 |         −34% |
+| v2, both ends reused |         270 |         −47% |
+  All 16 runs found the planted commit, and the bisect steps used the same number of runs in v1 and v2.
+- Real victim (projection only, not measured): hist/b would need about 164 victim runs instead of 240.
+
+Task 2: M6
+
+- culprit report <run_id> (report.py) writes markdown and a static HTML page. It shows the verdict, the bisect timeline with Wilson intervals against the threshold, skips, intent, diff, trace IDs, costs, and where any reused results came from. I checked the HTML in a browser.
+- culprit export-costs --format csv (costs.py) gives per-run cost, victim runs (executed, baseline, bisect, reused) and wall time.
+- business/cfo-inputs.md separates measured, projected and assumed numbers, and labels pricing scenarios A, B and C as hypotheses.
+
+orchestrator.py has two small edits: one line now calls the new baseline module, and one saves the intent's source and checkpoint ID for the report. hackathon.md and HOW_IT_WORKS.md are updated too.
+
+Before the next paid run
+
+- v2 on hist/b would reuse the whole baseline. The real ledger already holds run ff50e3620fdd, which matches on suite, model and k. A v2 run on good-v1.0..hist/b would copy its entire baseline and pay $0 for it. To measure staging on its own, add --no-reuse.
+- v1 for comparison: --no-reuse --no-staged gives v1. Runs recorded before v2 resume as v1.
+- Staging has a known blind spot. It can miss a task that got worse but happened to pass its single run on the bad end. Other tasks that dropped still carry the signal, and this is documented in baseline.py.
+- Fixture runs still send neatlogs traces. I ran the fixture through the CLI, which loads .env, so it sent a free trace (78c72dfa…).
+</pasted_content id="809e">

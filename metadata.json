@@ -1,0 +1,41 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4JZ8S12JXAZDN7Q91VS7FQA",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "HOW_IT_WORKS.md",
+    "business/cfo-inputs.md",
+    "evidence/v2-efficiency-fixture.md",
+    "hackathon.md",
+    "scripts/v2_efficiency.py",
+    "src/culprit/baseline.py",
+    "src/culprit/cli.py",
+    "src/culprit/config.py",
+    "src/culprit/costs.py",
+    "src/culprit/finished.py",
+    "src/culprit/ledger.py",
+    "src/culprit/orchestrator.py",
+    "src/culprit/report.py",
+    "src/culprit/reuse.py",
+    "tests/test_report.py",
+    "tests/test_v2_efficiency.py"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 26,
+    "cache_creation_tokens": 20107,
+    "cache_read_tokens": 5623080,
+    "output_tokens": 7258,
+    "api_call_count": 13
+  }
+}

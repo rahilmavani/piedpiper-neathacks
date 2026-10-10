@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Culprit report ff50e3620fdd</title>
+<style>
+:root{--bg:#fbfaf7;--fg:#1d1c1a;--muted:#6b675f;--line:#e4e0d7;--card:#ffffff;--good:#2f7d4f;--bad:#b4402f;
+--skip:#8a6d1f;--accent:#3a5fb0;--code:#f3f0ea}
+@media (prefers-color-scheme:dark){:root{--bg:#161514;--fg:#ece9e2;--muted:#a19c92;--line:#34312c;--card:#1f1e1c;
+--good:#6cc08e;--bad:#e88573;--skip:#d9b65a;--accent:#8fb0f0;--code:#26241f}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);
+font:15px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:1040px;margin:0 auto;padding:32px 16px 64px}h1{font-size:22px;margin:0 0 4px}
+h2{font-size:16px;margin:36px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.muted{color:var(--muted)}code,pre{font:12.5px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace}
+pre{background:var(--code);padding:12px;border-radius:6px;overflow:auto;max-height:480px;white-space:pre}
+.verdict{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:8px;
+padding:16px 18px;margin:18px 0}.verdict.found{border-left-color:var(--bad)}.verdict.no_regression{border-left-color:var(--good)}
+.verdict b{font-size:17px}.kv{display:grid;grid-template-columns:max-content 1fr;gap:4px 16px;margin-top:10px}
+.wrap{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-weight:600;color:var(--muted);font-size:12.5px}td.num{text-align:right;font-variant-numeric:tabular-nums}
+.GOOD{color:var(--good);font-weight:600}.BAD{color:var(--bad);font-weight:600}.SKIP{color:var(--skip);font-weight:600}
+.INCONCLUSIVE{color:var(--muted);font-weight:600}svg .ci{stroke:var(--fg);stroke-width:2}
+svg .axis{stroke:var(--line)}svg .t{stroke:var(--accent);stroke-width:2;stroke-dasharray:3 2}
+svg .pt{fill:var(--fg)}.ci-cell{white-space:nowrap}details{margin:6px 0}summary{cursor:pointer;color:var(--accent)}
+</style></head><body><main>
+<h1>Culprit report</h1>
+<div class="muted">run <code>ff50e3620fdd</code> · <code>good-v1.0..origin/hist/b</code>
+(14 commits) · z-ai/glm-5.3 via openrouter · k = 3</div>
+
+<div class="verdict found"><b>found</b> · Culprit: 397c42743be8cd80ae1d1e30c058772c1bd16add &#39;perf(agent): run tool calls in parallel and drop per-result validation&#39; (confidence: 95% Wilson)
+<div class="kv">
+<span class="muted">Culprit</span><span><code>397c42743be8cd80ae1d1e30c058772c1bd16add</code> perf(agent): run tool calls in parallel and drop per-result validation</span>
+<span class="muted">Confidence</span><span>95% Wilson</span>
+<span class="muted">Suite</span><span><code>git:main:evals @ ba86ed06d3e5be7a1ff</code></span>
+<span class="muted">Cost</span><span>$1.13 for 456 victim runs · 12.5 min</span>
+</div></div>
+
+<h2>Baselines and regression gate</h2>
+<div class="wrap"><table><tr><th>End</th><th>SHA</th><th>Passes</th><th>95% Wilson</th><th></th><th>Screen ×1</th><th>Reused</th></tr>
+<tr><td>good</td><td><code>0479c273fb</code></td><td class="num">78/78</td>
+<td>[0.95, 1.00]</td><td><svg width="160" height="18" role="img" aria-label="Wilson interval 0.95 to 1.00"><line class="axis" x1="4" y1="9" x2="156" y2="9"/><line class="ci" x1="148.9" y1="9" x2="156.0" y2="9"/><circle class="pt" cx="156.0" cy="9" r="3.5"/></svg></td>
+<td class="num">—</td><td class="num">0</td></tr><tr><td>bad</td><td><code>f6511b8e6b</code></td><td class="num">57/78</td>
+<td>[0.62, 0.82]</td><td><svg width="160" height="18" role="img" aria-label="Wilson interval 0.62 to 0.82"><line class="axis" x1="4" y1="9" x2="156" y2="9"/><line class="ci" x1="98.7" y1="9" x2="128.1" y2="9"/><circle class="pt" cx="115.1" cy="9" r="3.5"/></svg></td>
+<td class="num">—</td><td class="num">0</td></tr>
+</table></div>
+<p>One-sided Fisher exact p = <b>1.006e-07</b> (alpha 0.05):
+significant, computed on the runs actually made.</p>
+<p class="muted">Discriminating tasks: <code>email_failed_payload_three_times</code>, <code>escalate_failed_payload_three_times</code>, <code>escalate_failed_payload_twice</code>, <code>multiturn_refund_and_email_failed_repeatedly</code>, <code>refund_failed_payload_once</code>, <code>refund_failed_payload_three_times</code>, <code>refund_failed_payload_twice</code></p>
+
+<h2>Bisect timeline</h2>
+<div class="wrap"><table><tr><th>#</th><th>Pos</th><th>Commit</th><th>Subject</th><th>Passes</th>
+<th>95% Wilson vs threshold</th><th>Rounds</th><th>Verdict</th></tr>
+<tr><td class="num">1</td><td class="num">7</td>
+<td><code>22a37dbfff</code></td><td>build(deps): pin python-dotenv to 1.2.99</td>
+<td class="num">—</td>
+<td class="ci-cell"><span class="muted">install failed</span></td>
+<td></td>
+<td class="SKIP">SKIP</td></tr><tr><td class="num">2</td><td class="num">8</td>
+<td><code>81c07532c4</code></td><td>revert(deps): restore the python-dotenv version range</td>
+<td class="num">21/21</td>
+<td class="ci-cell"><svg width="160" height="18" role="img" aria-label="Wilson interval 0.85 to 1.00"><line class="axis" x1="4" y1="9" x2="156" y2="9"/><line class="t" x1="80.0" y1="2" x2="80.0" y2="16"/><line class="ci" x1="132.5" y1="9" x2="156.0" y2="9"/><circle class="pt" cx="156.0" cy="9" r="3.5"/></svg> <span class="muted">[0.85, 1.00]
+ t=0.50</span></td>
+<td>bisect</td>
+<td class="GOOD">GOOD</td></tr><tr><td class="num">3</td><td class="num">11</td>
+<td><code>c9a132f01b</code></td><td>test(tasks): cover loading unknown and held-out task ids</td>
+<td class="num">3/21</td>
+<td class="ci-cell"><svg width="160" height="18" role="img" aria-label="Wilson interval 0.05 to 0.35"><line class="axis" x1="4" y1="9" x2="156" y2="9"/><line class="t" x1="80.0" y1="2" x2="80.0" y2="16"/><line class="ci" x1="11.6" y1="9" x2="56.6" y2="9"/><circle class="pt" cx="25.7" cy="9" r="3.5"/></svg> <span class="muted">[0.05, 0.35]
+ t=0.50</span></td>
+<td>bisect</td>
+<td class="BAD">BAD</td></tr><tr><td class="num">4</td><td class="num">9</td>
+<td><code>8793325134</code></td><td>test(store): cover JsonStore create, load and save</td>
+<td class="num">21/21</td>
+<td class="ci-cell"><svg width="160" height="18" role="img" aria-label="Wilson interval 0.85 to 1.00"><line class="axis" x1="4" y1="9" x2="156" y2="9"/><line class="t" x1="80.0" y1="2" x2="80.0" y2="16"/><line class="ci" x1="132.5" y1="9" x2="156.0" y2="9"/><circle class="pt" cx="156.0" cy="9" r="3.5"/></svg> <span class="muted">[0.85, 1.00]
+ t=0.50</span></td>
+<td>bisect</td>
+<td class="GOOD">GOOD</td></tr><tr><td class="num">5</td><td class="num">10</td>
+<td><code>397c42743b</code></td><td>perf(agent): run tool calls in parallel and drop per-result validation</td>
+<td class="num">23/105</td>
+<td class="ci-cell"><svg width="160" height="18" role="img" aria-label="Wilson interval 0.15 to 0.31"><line class="axis" x1="4" y1="9" x2="156" y2="9"/><line class="t" x1="80.0" y1="2" x2="80.0" y2="16"/><line class="ci" x1="26.9" y1="9" x2="50.7" y2="9"/><circle class="pt" cx="37.3" cy="9" r="3.5"/></svg> <span class="muted">[0.15, 0.31]
+ t=0.50</span></td>
+<td>bisect → localise:h4 → localise:h3 → localise:h5 → localise:h4+h3</td>
+<td class="GOOD">GOOD</td></tr><tr><td class="num">6</td><td class="num">?</td>
+<td><code>0479c273fb</code></td><td>fix(readback): back off on rate limits and add root-only payload mode</td>
+<td class="num">18/18</td>
+<td class="ci-cell"><svg width="160" height="18" role="img" aria-label="Wilson interval 0.82 to 1.00"><line class="axis" x1="4" y1="9" x2="156" y2="9"/><line class="ci" x1="129.3" y1="9" x2="156.0" y2="9"/><circle class="pt" cx="156.0" cy="9" r="3.5"/></svg> <span class="muted">[0.82, 1.00]
+</span></td>
+<td>verify:heldout</td>
+<td class="INCONCLUSIVE">INCONCLUSIVE</td></tr><tr><td class="num">7</td><td class="num">14</td>
+<td><code>f6511b8e6b</code></td><td>docs(readme): document the --tool-log flag</td>
+<td class="num">111/114</td>
+<td class="ci-cell"><svg width="160" height="18" role="img" aria-label="Wilson interval 0.93 to 0.99"><line class="axis" x1="4" y1="9" x2="156" y2="9"/><line class="t" x1="135.5" y1="2" x2="135.5" y2="16"/><line class="ci" x1="144.7" y1="9" x2="154.6" y2="9"/><circle class="pt" cx="152.0" cy="9" r="3.5"/></svg> <span class="muted">[0.93, 0.99]
+ t=0.87</span></td>
+<td>verify:heldout → fix:2</td>
+<td class="INCONCLUSIVE">INCONCLUSIVE</td></tr>
+</table></div>
+<p class="muted">Bars: 95% Wilson interval (line), pass rate (dot), threshold (dashed). GOOD needs the whole interval above
+the threshold, BAD the whole interval below it.</p>
+
+<h2>Skipped commits</h2>
+<p><code>22a37dbfff</code> build(deps): pin python-dotenv to 1.2.99: install failed, treated like
+<code>git bisect skip</code>.</p><details><summary>install log tail</summary><pre>$ uv sync --locked (exit 1)
+Using CPython 3.12.11
+Creating virtual environment at: .venv
+  × No solution found when resolving dependencies:
+  ╰─▶ Because there is no version of python-dotenv==1.2.99 and your project
+      depends on python-dotenv==1.2.99, we can conclude that your project&#39;s
+      requirements are unsatisfiable.
+</pre></details>
+
+
+<h2>Intent</h2>
+
+<pre>Commit message:
+perf(agent): run tool calls in parallel and drop per-result validation
+
+Each response&#39;s tool calls now run on a thread pool. Lookups run first so
+refunds in the same batch see them, and calls to the same tool stay in
+ToolRuntime gains an RLock around the call log, ids, fault plan and store
+writes.
+
+validate_tool_result is removed: only timeouts are retried now, and failed
+results go straight back to the model.
+
+Entire-Checkpoint: 01M4JM8P2C4NDS2AAQ0MPVR8YR</pre>
+
+<h2>Diff</h2>
+<pre>diff --git a/README.md b/README.md
+index c43b1a2..1f017fb 100644
+--- a/README.md
++++ b/README.md
+@@ -27,7 +27,7 @@ and caches that decision in `.cache/refunddesk/sampling.json`. The eval output r
+ ## Layout
+ 
+ - `src/refunddesk/llm.py` is the only module that talks to a model provider.
+-- `src/refunddesk/agent.py` holds the agent loop. It has the system prompt with the business rules, strict tool-argument parsing, validation of every tool result, retries (`MAX_RETRIES = 3`) and a history window.
++- `src/refunddesk/agent.py` holds the agent loop. It has the system prompt with the business rules, strict tool-argument parsing, parallel execution of each response&#39;s tool calls, timeout retries (`MAX_RETRIES = 3`) and a history window.
+ - `src/refunddesk/tools.py` has the mock tools over a local JSON store (`store.py`), with deterministic fault injection from `faults.py`.
+ - `evals/*.json` holds 20 tasks and `evals/heldout/*.json` holds 6 more. Each task has turns, an initial store, faults and deterministic checks (`checks.py`).
+ 
+diff --git a/src/refunddesk/agent.py b/src/refunddesk/agent.py
+index 72f49e1..d63938e 100644
+--- a/src/refunddesk/agent.py
++++ b/src/refunddesk/agent.py
+@@ -3,8 +3,10 @@
+ from __future__ import annotations
+ 
+ import json
++import contextvars
+ import logging
+ import math
++from concurrent.futures import ThreadPoolExecutor
+ from dataclasses import dataclass, field
+ from typing import Any, Protocol
+ 
+@@ -95,32 +97,6 @@ def parse_tool_arguments(call: ToolCall) -&gt; dict[str, Any]:
+     return args
+ 
+ 
+-def validate_tool_result(tool: str, result: Any) -&gt; tuple[bool, bool, str]:
+-    &#34;&#34;&#34;Check a tool result before the agent acts on it.
+-
+-    Returns ``(valid, retryable, reason)``. A valid result can be handed to the
+-    model. An invalid one is retried when ``retryable`` is true.
+-    &#34;&#34;&#34;
+-    if not isinstance(result, dict) or &#34;status&#34; not in result:
+-        return False, True, &#34;malformed tool result&#34;
+-    status = result[&#34;status&#34;]
+-    if status == &#34;failed&#34;:
+-        return False, True, result.get(&#34;error&#34;, &#34;tool reported failure&#34;)
+-    if status in (&#34;not_found&#34;, &#34;rejected&#34;):
+-        return True, False, status
+-    if status != &#34;ok&#34;:
+-        return False, True, f&#34;unexpected status {status!r}&#34;
+-    if tool == &#34;lookup_order&#34;:
+-        order = result.get(&#34;order&#34;)
+-        if not isinstance(order, dict) or not {&#34;order_id&#34;, &#34;amount&#34;, &#34;status&#34;} &lt;= order.keys():
+-            return False, True, &#34;order record missing required fields&#34;
+-        if not isinstance(order[&#34;amount&#34;], (int, float)) or order[&#34;amount&#34;] &lt; 0:
+-            return False, True, &#34;order amount is invalid&#34;
+-    if tool == &#34;issue_refund&#34; and not isinstance(result.get(&#34;refund&#34;), dict):
+-        return False, True, &#34;refund confirmation missing&#34;
+-    return True, False, &#34;ok&#34;
+-
+-
+ @dataclass
+ class RefundDeskAgent:
+     llm: ChatModel
+@@ -165,21 +141,14 @@ class RefundDeskAgent:
+     def _execute_with_retries(self, name: str, args: dict[str, Any]) -&gt; dict[str, Any]:
+         func = TOOL_FUNCTIONS[name]
+         last_error = &#34;unknown error&#34;
+-        # One initial attempt plus MAX_RETRIES retries. Timeouts and failed or
+-        # malformed results are retried; not_found/rejected are final answers.
++        # One initial attempt plus MAX_RETRIES retries. Only timeouts are
++        # retried; any returned result goes straight back to the model.
+         for attempt in range(MAX_RETRIES + 1):
+             try:
+-                result = func(**args)
++                return func(**args)
+             except ToolTimeout as exc:
+                 last_error = str(exc)
+                 logger.debug(&#34;%s attempt %d timed out&#34;, name, attempt + 1)
+-                continue
+-            valid, retryable, reason = validate_tool_result(name, result)
+-            if valid:
+-                return result
+-            last_error = reason
+-            if not retryable:
+-                break
+         return {
+             &#34;status&#34;: &#34;error&#34;,
+             &#34;error&#34;: f&#34;{name} failed after {MAX_RETRIES} retries: {last_error}&#34;,
+@@ -203,10 +172,38 @@ class RefundDeskAgent:
+             if result.get(&#34;status&#34;) == &#34;ok&#34;:
+                 self.verified_orders[args[&#34;order_id&#34;]] = result[&#34;order&#34;]
+                 self.failed_lookups.discard(args[&#34;order_id&#34;])
+-            elif result.get(&#34;status&#34;) == &#34;error&#34;:
++            elif result.get(&#34;status&#34;) in (&#34;error&#34;, &#34;failed&#34;):
+                 self.failed_lookups.add(args[&#34;order_id&#34;])
+         return result
+ 
++    def _run_tool_calls(self, calls: list[ToolCall]) -&gt; list[dict[str, Any]]:
++        &#34;&#34;&#34;Run one response&#39;s tool calls in parallel; results keep call order.
++
++        Calls to the same tool run in order on one thread, so the per-tool fault
++        counters see the same sequence for the same task and seed. Lookups finish
++        before other tools start, so a refund in the same batch sees its lookup.
++        &#34;&#34;&#34;
++        results: dict[int, dict[str, Any]] = {}
++
++        def run_group(group: list[int]) -&gt; None:
++            for i in group:
++                results[i] = self._run_tool_call(calls[i])
++
++        lookups = [i for i, c in enumerate(calls) if c.name == &#34;lookup_order&#34;]
++        others: dict[str, list[int]] = {}
++        for i, c in enumerate(calls):
++            if c.name != &#34;lookup_order&#34;:
++                others.setdefault(c.name, []).append(i)
++        phases = [[lookups] if lookups else [], list(others.values())]
++        with ThreadPoolExecutor(max_workers=max(1, len(others))) as pool:
++            for groups in phases:
++                # Each thread gets a copy of this context so it sees the tool
++                # runtime and the current neatlogs span.
++                futures = [pool.submit(contextvars.copy_context().run, run_group, g) for g in groups]
++                for future in futures:
++                    future.result()
++        return [results[i] for i in range(len(calls))]
++
+     # -------------------------------------------------------------- main loop
+ 
+     def handle_turn(self, customer_message: str) -&gt; str:
+@@ -240,16 +237,14 @@ class RefundDeskAgent:
+             )
+             if not response.tool_calls:
+                 return response.text
+-            results = []
+-            for call in response.tool_calls:
+-                result = self._run_tool_call(call)
+-                results.append(
+-                    {
+-                        &#34;tool_call_id&#34;: call.id,
+-                        &#34;name&#34;: call.name,
+-                        &#34;content&#34;: json.dumps(result, sort_keys=True),
+-                        &#34;is_error&#34;: result.get(&#34;status&#34;) in (&#34;error&#34;, &#34;failed&#34;),
+-                    }
+-                )
++            results = [
++                {
++                    &#34;tool_call_id&#34;: call.id,
++                    &#34;name&#34;: call.name,
++                    &#34;content&#34;: json.dumps(result, sort_keys=True),
++                    &#34;is_error&#34;: result.get(&#34;status&#34;) in (&#34;error&#34;, &#34;failed&#34;),
++                }
++                for call, result in zip(response.tool_calls, self._run_tool_calls(response.tool_calls))
++            ]
+             self.history.append({&#34;role&#34;: &#34;tool_results&#34;, &#34;results&#34;: results})
+         return &#34;I&#39;m sorry, I couldn&#39;t finish handling your request. A human agent will follow up.&#34;
+diff --git a/src/refunddesk/tools.py b/src/refunddesk/tools.py
+index 9f67678..3dd2768 100644
+--- a/src/refunddesk/tools.py
++++ b/src/refunddesk/tools.py
+@@ -2,12 +2,15 @@
+ 
+ Each tool execution is one neatlogs TOOL span. Injected faults happen before the
+ tool touches the store, so a timed-out or failed call never has side effects.
++Tools may run on several threads at once; ``ToolRuntime.lock`` guards the call
++log, id counters, fault plan and every store read-modify-write.
+ &#34;&#34;&#34;
+ 
+ from __future__ import annotations
+ 
+ import contextvars
+ import itertools
++import threading
+ from dataclasses import dataclass, field
+ from typing import Any, Callable, TypedDict
+ 
+@@ -43,14 +46,17 @@ class ToolRuntime:
+     log: list[ToolLogEntry] = field(default_factory=list)
+     _seq: Any = field(default_factory=lambda: itertools.count(1))
+     _ids: Any = field(default_factory=lambda: itertools.count(1))
++    lock: threading.RLock = field(default_factory=threading.RLock)
+ 
+     def record(self, tool: str, args: dict[str, Any], outcome: str, result: Any = None) -&gt; None:
+-        self.log.append(
+-            {&#34;seq&#34;: next(self._seq), &#34;tool&#34;: tool, &#34;args&#34;: args, &#34;outcome&#34;: outcome, &#34;result&#34;: result}
+-        )
++        with self.lock:
++            self.log.append(
++                {&#34;seq&#34;: next(self._seq), &#34;tool&#34;: tool, &#34;args&#34;: args, &#34;outcome&#34;: outcome, &#34;result&#34;: result}
++            )
+ 
+     def new_id(self, prefix: str) -&gt; str:
+-        return f&#34;{prefix}-{next(self._ids):04d}&#34;
++        with self.lock:
++            return f&#34;{prefix}-{next(self._ids):04d}&#34;
+ 
+ 
+ _runtime: contextvars.ContextVar[ToolRuntime] = contextvars.ContextVar(&#34;refunddesk_tool_runtime&#34;)
+@@ -66,7 +72,8 @@ def current_runtime() -&gt; ToolRuntime:
+ 
+ def _maybe_inject_fault(tool: str, args: dict[str, Any]) -&gt; dict[str, Any] | None:
+     rt = current_runtime()
+-    fault = rt.faults.next_fault(tool)
++    with rt.lock:
++        fault = rt.faults.next_fault(tool)
+     if fault == &#34;timeout&#34;:
+         rt.record(tool, args, &#34;timeout&#34;)
+         raise ToolTimeout(f&#34;{tool} timed out&#34;)
+@@ -106,22 +113,23 @@ def issue_refund(order_id: str, amount: float, reason: str) -&gt; dict[str, Any]:
+     if (failure := _maybe_inject_fault(&#34;issue_refund&#34;, args)) is not None:
+         return failure
+     rt = current_runtime()
+-    state = rt.store.load()
+-    order = state[&#34;orders&#34;].get(order_id)
+-    if order is None:
+-        return _finish(&#34;issue_refund&#34;, args, {&#34;status&#34;: &#34;rejected&#34;, &#34;error&#34;: &#34;unknown order&#34;})
+-    remaining = round(order[&#34;amount&#34;] - order.get(&#34;refunded_amount&#34;, 0.0), 2)
+-    if amount &lt;= 0 or amount &gt; remaining:
+-        return _finish(
+-            &#34;issue_refund&#34;,
+-            args,
+-            {&#34;status&#34;: &#34;rejected&#34;, &#34;error&#34;: f&#34;amount must be &gt; 0 and &lt;= {remaining:.2f}&#34;},
+-        )
+-    refund = {&#34;refund_id&#34;: rt.new_id(&#34;RF&#34;), &#34;order_id&#34;: order_id, &#34;amount&#34;: round(amount, 2), &#34;reason&#34;: reason}
+-    state[&#34;refunds&#34;].append(refund)
+-    order[&#34;refunded_amount&#34;] = round(order.get(&#34;refunded_amount&#34;, 0.0) + amount, 2)
+-    order[&#34;status&#34;] = &#34;refunded&#34; if order[&#34;refunded_amount&#34;] &gt;= order[&#34;amount&#34;] else order[&#34;status&#34;]
+-    rt.store.save(state)
++    with rt.lock:
++        state = rt.store.load()
++        order = state[&#34;orders&#34;].get(order_id)
++        if order is None:
++            return _finish(&#34;issue_refund&#34;, args, {&#34;status&#34;: &#34;rejected&#34;, &#34;error&#34;: &#34;unknown order&#34;})
++        remaining = round(order[&#34;amount&#34;] - order.get(&#34;refunded_amount&#34;, 0.0), 2)
++        if amount &lt;= 0 or amount &gt; remaining:
++            return _finish(
++                &#34;issue_refund&#34;,
++                args,
++                {&#34;status&#34;: &#34;rejected&#34;, &#34;error&#34;: f&#34;amount must be &gt; 0 and &lt;= {remaining:.2f}&#34;},
++            )
++        refund = {&#34;refund_id&#34;: rt.new_id(&#34;RF&#34;), &#34;order_id&#34;: order_id, &#34;amount&#34;: round(amount, 2), &#34;reason&#34;: reason}
++        state[&#34;refunds&#34;].append(refund)
++        order[&#34;refunded_amount&#34;] = round(order.get(&#34;refunded_amount&#34;, 0.0) + amount, 2)
++        order[&#34;status&#34;] = &#34;refunded&#34; if order[&#34;refunded_amount&#34;] &gt;= order[&#34;amount&#34;] else order[&#34;status&#34;]
++        rt.store.save(state)
+     return _finish(&#34;issue_refund&#34;, args, {&#34;status&#34;: &#34;ok&#34;, &#34;refund&#34;: refund})
+ 
+ 
+@@ -131,10 +139,11 @@ def escalate_to_human(order_id: str, reason: str) -&gt; dict[str, Any]:
+     if (failure := _maybe_inject_fault(&#34;escalate_to_human&#34;, args)) is not None:
+         return failure
+     rt = current_runtime()
+-    state = rt.store.load()
+-    ticket = {&#34;ticket_id&#34;: rt.new_id(&#34;ESC&#34;), &#34;order_id&#34;: order_id, &#34;reason&#34;: reason}
+-    state[&#34;escalations&#34;].append(ticket)
+-    rt.store.save(state)
++    with rt.lock:
++        state = rt.store.load()
++        ticket = {&#34;ticket_id&#34;: rt.new_id(&#34;ESC&#34;), &#34;order_id&#34;: order_id, &#34;reason&#34;: reason}
++        state[&#34;escalations&#34;].append(ticket)
++        rt.store.save(state)
+     return _finish(&#34;escalate_to_human&#34;, args, {&#34;status&#34;: &#34;ok&#34;, &#34;ticket&#34;: ticket})
+ 
+ 
+@@ -144,10 +153,11 @@ def send_customer_email(to: str, subject: str, body: str) -&gt; dict[str, Any]:
+     if (failure := _maybe_inject_fault(&#34;send_customer_email&#34;, args)) is not None:
+         return failure
+     rt = current_runtime()
+-    state = rt.store.load()
+-    email = {&#34;message_id&#34;: rt.new_id(&#34;MSG&#34;), &#34;to&#34;: to, &#34;subject&#34;: subject, &#34;body&#34;: body}
+-    state[&#34;emails&#34;].append(email)
+-    rt.store.save(state)
++    with rt.lock:
++        state = rt.store.load()
++        email = {&#34;message_id&#34;: rt.new_id(&#34;MSG&#34;), &#34;to&#34;: to, &#34;subject&#34;: subject, &#34;body&#34;: body}
++        state[&#34;emails&#34;].append(email)
++        rt.store.save(state)
+     return _finish(&#34;send_customer_email&#34;, args, {&#34;status&#34;: &#34;ok&#34;, &#34;message_id&#34;: email[&#34;message_id&#34;]})
+ 
+ 
+diff --git a/tests/test_agent.py b/tests/test_agent.py
+index 236aad9..8bd2c61 100644
+--- a/tests/test_agent.py
++++ b/tests/test_agent.py
+@@ -7,7 +7,6 @@ from refunddesk.agent import (
+     RefundDeskAgent,
+     ToolArgumentError,
+     parse_tool_arguments,
+-    validate_tool_result,
+ )
+ from refunddesk.llm import ToolCall
+ 
+@@ -46,15 +45,6 @@ def test_parsing_accepts_valid():
+     assert parse_tool_arguments(call(&#34;get_refund_policy&#34;, &#34;&#34;)) == {}
+ 
+ 
+-def test_validate_tool_result():
+-    assert validate_tool_result(&#34;lookup_order&#34;, {&#34;status&#34;: &#34;failed&#34;})[:2] == (False, True)
+-    assert validate_tool_result(&#34;lookup_order&#34;, {&#34;status&#34;: &#34;not_found&#34;})[:2] == (True, False)
+-    assert validate_tool_result(&#34;lookup_order&#34;, {&#34;status&#34;: &#34;ok&#34;, &#34;order&#34;: {&#34;order_id&#34;: &#34;A&#34;}})[:2] == (False, True)
+-    assert validate_tool_result(&#34;lookup_order&#34;, &#34;garbage&#34;)[:2] == (False, True)
+-    good = {&#34;status&#34;: &#34;ok&#34;, &#34;order&#34;: {&#34;order_id&#34;: &#34;A&#34;, &#34;amount&#34;: 1.0, &#34;status&#34;: &#34;delivered&#34;}}
+-    assert validate_tool_result(&#34;lookup_order&#34;, good)[0]
+-
+-
+ def test_retries_until_success(make_runtime, scripted):
+     rt = make_runtime(faults=[{&#34;tool&#34;: &#34;lookup_order&#34;, &#34;kind&#34;: &#34;timeout&#34;, &#34;calls&#34;: [1, 2, 3]}])
+     agent = RefundDeskAgent(llm=scripted([]))
+@@ -63,8 +53,16 @@ def test_retries_until_success(make_runtime, scripted):
+     assert &#34;A1&#34; in agent.verified_orders
+ 
+ 
++def test_failed_result_is_returned_without_retry(make_runtime, scripted):
++    rt = make_runtime(faults=[{&#34;tool&#34;: &#34;lookup_order&#34;, &#34;kind&#34;: &#34;failed&#34;, &#34;calls&#34;: [1]}])
++    agent = RefundDeskAgent(llm=scripted([]))
++    assert agent._run_tool_call(call(&#34;lookup_order&#34;, {&#34;order_id&#34;: &#34;A1&#34;}))[&#34;status&#34;] == &#34;failed&#34;
++    assert [e[&#34;outcome&#34;] for e in rt.log] == [&#34;failed&#34;]
++    assert &#34;A1&#34; in agent.failed_lookups
++
++
+ def test_retries_exhausted_marks_lookup_failed(make_runtime, scripted):
+-    rt = make_runtime(faults=[{&#34;tool&#34;: &#34;lookup_order&#34;, &#34;kind&#34;: &#34;failed&#34;, &#34;always&#34;: True}])
++    rt = make_runtime(faults=[{&#34;tool&#34;: &#34;lookup_order&#34;, &#34;kind&#34;: &#34;timeout&#34;, &#34;always&#34;: True}])
+     agent = RefundDeskAgent(llm=scripted([]))
+     result = agent._run_tool_call(call(&#34;lookup_order&#34;, {&#34;order_id&#34;: &#34;A1&#34;}))
+     assert result[&#34;status&#34;] == &#34;error&#34;
+@@ -118,3 +116,37 @@ def test_history_window_cuts_at_user_messages(scripted):
+     window = agent._window()
+     assert window[0] == {&#34;role&#34;: &#34;user&#34;, &#34;content&#34;: &#34;2&#34;}
+     assert len(window) == 4
++
++
++def test_parallel_batch_runs_lookup_first_and_keeps_order(make_runtime, scripted):
++    rt = make_runtime()
++    llm = scripted([
++        [
++            (&#34;issue_refund&#34;, &#39;{&#34;order_id&#34;: &#34;A1&#34;, &#34;amount&#34;: 20.0, &#34;reason&#34;: &#34;broken&#34;}&#39;),
++            (&#34;lookup_order&#34;, &#39;{&#34;order_id&#34;: &#34;A1&#34;}&#39;),
++            (&#34;send_customer_email&#34;, &#39;{&#34;to&#34;: &#34;t@example.com&#34;, &#34;subject&#34;: &#34;s&#34;, &#34;body&#34;: &#34;b&#34;}&#39;),
++            (&#34;escalate_to_human&#34;, &#39;{&#34;order_id&#34;: &#34;BIG&#34;, &#34;reason&#34;: &#34;over limit&#34;}&#39;),
++        ],
++        &#34;Done.&#34;,
++    ])
++    agent = RefundDeskAgent(llm=llm)
++    agent.handle_turn(&#34;refund A1&#34;)
++    results = agent.history[2][&#34;results&#34;]
++    assert [r[&#34;name&#34;] for r in results] == [&#34;issue_refund&#34;, &#34;lookup_order&#34;, &#34;send_customer_email&#34;, &#34;escalate_to_human&#34;]
++    assert all(not r[&#34;is_error&#34;] for r in results)
++    assert rt.log[0][&#34;tool&#34;] == &#34;lookup_order&#34;
++    state = rt.store.load()
++    assert len(state[&#34;refunds&#34;]) == 1 and len(state[&#34;emails&#34;]) == 1 and len(state[&#34;escalations&#34;]) == 1
++
++
++def test_parallel_same_tool_calls_keep_fault_order(make_runtime, scripted):
++    rt = make_runtime(faults=[{&#34;tool&#34;: &#34;send_customer_email&#34;, &#34;kind&#34;: &#34;failed&#34;, &#34;calls&#34;: [2]}])
++    llm = scripted([
++        [(&#34;send_customer_email&#34;, f&#39;{{&#34;to&#34;: &#34;{n}@example.com&#34;, &#34;subject&#34;: &#34;s&#34;, &#34;body&#34;: &#34;b&#34;}}&#39;) for n in &#34;abc&#34;],
++        &#34;Done.&#34;,
++    ])
++    agent = RefundDeskAgent(llm=llm)
++    agent.handle_turn(&#34;email&#34;)
++    statuses = [json.loads(r[&#34;content&#34;])[&#34;status&#34;] for r in agent.history[2][&#34;results&#34;]]
++    assert statuses == [&#34;ok&#34;, &#34;failed&#34;, &#34;ok&#34;]
++    assert [e[&#34;to&#34;] for e in rt.store.load()[&#34;emails&#34;]] == [&#34;a@example.com&#34;, &#34;c@example.com&#34;]</pre>
+
+
+<h2>Trace IDs</h2>
+<p>Culprit run (neatlogs workflow <code>culprit</code>, session <code>ff50e3620fdd</code>):
+<code>d80e61a81918c7eb3ffd917a2509efb0</code>, <code>5eb9938ad68d8edd3170eeb54aba5133</code>, <code>03cd4982b4f1e9e2e203764819423b2a</code>, <code>b1556c00c1dae54668e264f26b6ba43a</code></p>
+<details><summary>456 victim task-run traces</summary><ul>
+<li>good <code>0479c273fb</code>: <code>1e67e3454c4f51ef38963de1df4c7193</code> <code>91b3e873d1c829366bf670fe8b30133c</code> <code>80c8ae95205794e8ae048df081701cfa</code> <code>d33941b08d905d9a19e66017125ef852</code> <code>7eb165d74e27662874da0dc09ccb854c</code> <code>363d86c0b2d5dfc936730fd5fe1c9292</code> <code>cb9c22e9b605322d6341597da5c8f10f</code> <code>b5106a4a5c7a9512742c9d3c69463fc7</code> <code>04b19a1926d26d78727cd83900ea31d0</code> <code>06cf342a7d52c1bd38e08929467b35fa</code> <code>7ea3227f7c1044b3938d170308a6413c</code> <code>e24c2bb7b2ae60bf82d982fe851a3f03</code> <code>7b1a3e44ab7f43d8dfe1d5a6621e0dc7</code> <code>0ac04a5c00286712412d3e42fc9a0b8a</code> <code>e8a13d2198421ddd85ca06250597377a</code> <code>94f7e39acc4ea9760239efc574bfc632</code> <code>80303af4b2f5c295fff78f2c26ecc1d4</code> <code>1dd28b900d0be2cdbeb4d9bb8c9e3985</code> <code>11a2348496e7262c7af6f6c4c753a28e</code> <code>af8eec66634bfd98ca3a13f7a0940372</code> <code>d1405f05546a8224eea6f41f68f02f91</code> <code>0e8cebb1544ee1a24e290e1f445002da</code> <code>2819f64520b801cc918ab1d4a850f642</code> <code>dfd0662f5768bd96ce7c520ac83b1033</code> <code>633e7dfb2ba7607f76f29562fd418e1b</code> <code>8e80ac9846cc3b9a15169faa812edb24</code> <code>d879756682c1c4863f90d503a2333935</code> <code>a854e59007af0b8a867ed599903a6fdc</code> <code>d16c56c1173ca304d8388b9cbcea6895</code> <code>e7b4f6e5626bb8e8783214a75525f0ad</code> <code>74d5e5d896647602b802a9bb20f6577d</code> <code>bd9d8a4ab1bbfa930ac9e8318d788351</code> <code>b516564a602c01ab537fe8e46f151140</code> <code>d29f1edce27b85c6acf5ded27ec5dd55</code> <code>2acbf9c5e258528c37452392d2185aa1</code> <code>76c9075d719d14114bc377a4ed8c878f</code> <code>411baa75b94a45d90121ba850a029209</code> <code>46160079687964df1524f3c8f6b406ad</code> <code>ea84a9fe85d0d4fdc5b26c61b5a587ce</code> <code>3c8f193b3bef9a312efd95b361475f85</code> <code>632a15317320aa729770a270bc54462e</code> <code>291bbdba2bb327071c4c74a225a5542f</code> <code>7aac63a96a8ec47e99b41617eae18ac8</code> <code>0f44c80302ef909f43e8686c379104b2</code> <code>444221117a7f543bd926ea016402efba</code> <code>c782e5362a2760e642653aede255b645</code> <code>969d12c8f69a7f51f98c24434de6c01e</code> <code>8454316e2bb9151c1f9d5966bed55a51</code> <code>c31d48a87a719bd4ce44fffb079a0799</code> <code>dc0e63d8f92ea6e5b7e66d502418fbc3</code> <code>b9f345df579fe8cfa9b4829ecb07b532</code> <code>f5b85ad868c5a731be1797db8fe1fa50</code> <code>f228d2d34c00c6cc12b479b2f7b64be6</code> <code>251b7f00cef067147dbcea192ba4e2ae</code> <code>b0be4c1c67cd225fbde62193931f7a3f</code> <code>1fdad3d229ad481d75845380def0a386</code> <code>858e1d9c295f8e65dd6aba308e0b8926</code> <code>e21ece72d664ed17c53bb5ffdf74c658</code> <code>e0cc528612ff5ebf6edb1e5bf18f6f8e</code> <code>ed5ae5a7a60de43bf190344f42e676b1</code> <code>517fcd247fdd748350643008af0e78a8</code> <code>5e4466d286eb368aaacb3d2cdd055094</code> <code>35e51ce6a69c08b7493b705034026e5f</code> <code>28e97f152f218419a6d2812b85bc6c57</code> <code>d1c945f6c506b698e79e02c317cce744</code> <code>cad7973faa119d709441175bf1938db3</code> <code>d0d6f2eaf92bba62ee1aae578d525999</code> <code>302dfeabe17721de5ee7a80ede3894c2</code> <code>add06060848546855b814420a4a20315</code> <code>4d6fda9d14d654e2d6e1956859204f7a</code> <code>f7c6a7d203c4283c10f706faf895f566</code> <code>aab6ac7d3b5ff33ec0bfd8fc55f94d5c</code> <code>636b2f15ac845a9027b44e5cb96abd2f</code> <code>9d0df7f25472ca6255fa214735729dc2</code> <code>10d585ad9cf525093e8b170c109fcae1</code> <code>3f6064d9c9c546d5626ee729ff74cfd6</code> <code>f38d48105f72aeda9cf3a531d5691d54</code> <code>745b8eb5716aede1da34d54c48d60433</code> </li><li>bad <code>f6511b8e6b</code>: <code>8ea18dbe3d713716a0fdb3e5e8f2ef95</code> <code>0a4071e00cd0b1fdb8391aff9de8728b</code> <code>cc7a4ed9bbd4ec42d0c328179d73a2f1</code> <code>31e20042ecb44811c6ca52e5fd23a79a</code> <code>157b4dab185e23ec179359d110736e64</code> <code>d39a78b51021d306a3450ad50d15f639</code> <code>730b9f52b6a7e1dfc78d3554bec700aa</code> <code>c3e85b6a3c08a49c029d19201a7e0b15</code> <code>c338ec459ad885392b413a121b7939b2</code> <code>394be7788f729526b4b029a943295b8c</code> <code>e47e3c19c9ee0de6e92dde4c24946315</code> <code>7368742aed1c7f49124e2d29b8b78e45</code> <code>db7aa0daad835dc9cc4ecc54c24a72fe</code> <code>f65c9ee12fff9adbb3fee8487fa1e251</code> <code>b418cbb9c113a24abb48246d983b3006</code> <code>e4f06927515a43105fd0124160749e0d</code> <code>3063ef2b1dd0685610994a9784b9c424</code> <code>9b3857055a7230eec5f41d1e1cb014a2</code> <code>e68900bdcd8f13b3f64fba5940b26fea</code> <code>75987173daa2fd703b38911c65ecb597</code> <code>300805f6124726f681a3fdbe43b4c3e8</code> <code>e77f4b84cf03a8265706f1dff706dcc9</code> <code>38e00b8d83aba5c77f562ba2c3e2357e</code> <code>e1a0394d2ca857ab9c4b1a6099cd7a14</code> <code>fd6cb2654b24fae036c7872a3476b0b9</code> <code>343fb97ed6e64d4313c332000b15cd27</code> <code>67a307901aff7f5d765065fac5476d35</code> <code>6812bc9110dd7f073a7d072cda83ab2e</code> <code>9ac91c5b957f7ec02ff0cbdbc3830246</code> <code>302a7d25adc5362b646b906058b2b2a7</code> <code>0ca6b791e422913bda026a80f4bd6c08</code> <code>a8e7eb82592bd963cbc3072c44131628</code> <code>eb18b79a65023748d97acf8a9f442eee</code> <code>c86cf4e5c44700542f96d09405ad2cf4</code> <code>463d3e700292cae7e45a20abc6092a84</code> <code>9064d631d579b0ef83d6a62b9315ec8a</code> <code>74f54bae2f727f40b15dcf4ac6e588d8</code> <code>8129358b40672cd9dfda55808671dd9d</code> <code>4856a76a3367e61b973cb1936a0f7535</code> <code>078717ab725b03f8b469fe6db69c53a6</code> <code>fdc68a78cbf3782c13777de368366491</code> <code>f7037b14394da385b2e29b6004b884ca</code> <code>3a308491e53668f52bec5d8fbee1e0d9</code> <code>91fc994e1b26b8c3c87b51864f8fdfc7</code> <code>0dd3c29cef7a506915554c11ac3e52f9</code> <code>95344391ca1cf27a92b57b1ddc77d5bb</code> <code>552c9912f4193aab42f9465c58931d6b</code> <code>678d8344f7abab296cb5712c7b01cace</code> <code>8e7c0c203388c8affcde6af87b4d95eb</code> <code>9949082b4375638b8560d198213b8e77</code> <code>a2060f0ebcdca0d308629a960206e2df</code> <code>e774a24f889cb58ae90ed8b670e55962</code> <code>9507f0936ae6afdca91fc7b280d2c56e</code> <code>1e7e405d19256b891b73ba8734fc5cbc</code> <code>b61d3c6f43237c8afcc28e2cc835f2d5</code> <code>9d30600cb1ae2af1bc12e9f28c435ab4</code> <code>ab3b97861cc5157b1638833e6d02b83e</code> <code>bfeb472cade308eb962202c5496f7ef8</code> <code>d56a9f28a97586d6907d3c48b15a211c</code> <code>74d9c5cd85f8339612a893034bb0361d</code> <code>0e503feadda323bfe3a0f79b2bbd8d43</code> <code>f4de88c2aae69b1b3c37df816320dc53</code> <code>963fba4be61aa407795c8814387652d9</code> <code>dd94cba44693a2406bfc7085921fd093</code> <code>f4afa56af62420a55420616e6511df00</code> <code>a93218a973432672aa900052bd73c38b</code> <code>77d7a7e982fe8eae072a44b4ec83745a</code> <code>f066131328740d930b932676c2592867</code> <code>b8f8b1d506773628ca30047606ecda74</code> <code>43c6826d6a6e7308dc99f110f0d29582</code> <code>de8a75a6652006d2f8eee4c85d30a0a0</code> <code>224c54a45da40c23b7e4088189ba8690</code> <code>30f08dfa352f1c727c32709284d25e17</code> <code>8d004b7ee61f91c8363fe17d46804d8d</code> <code>dea86b1ec62fe67dce02a5f8bbc20fec</code> <code>d7a340a684dbf16f76cf77809585318e</code> <code>576b48091dbb3a7b8f70af1f5c200c49</code> <code>3510723f57a40f4960dc54b66c8d538b</code> </li>
+<li><code>81c07532c4</code>: <code>b09d3e38f47c56720af5766494ca11cb</code> <code>79fab83f3cff8c6dfb5b6654486ce5b6</code> <code>ab81b0f62ea56979701b3934c6cf8e0f</code> <code>f5cf035f4df82b480e3d1f9630688b99</code> <code>9b2b0e15c47060c550399acba23a242f</code> <code>2aa38f0f3adfdd906be576114b206281</code> <code>4891d9e3fbf263a3a082b73f0be758ec</code> <code>c2d5f4ae3c252542fe253522efd4aff1</code> <code>dd279700c863abb174e656ac35496e78</code> <code>b7240dcfb3b7e46858bcc1957d07b6db</code> <code>238e8df099c0bd4d71e250d5c481b63b</code> <code>84d16233ff14f2752eecb80f2c8d9edd</code> <code>dc87c531d6ee95c597e9918fb36a1d16</code> <code>cb4dc98c0f4acf8213b4b583e4cdb122</code> <code>8719fd1470b896af96219e30eebacc52</code> <code>ca940ae033a70910b7afd38cd9ba33dd</code> <code>7087b3c1bb9708aa7941c585f2555410</code> <code>7e5e68325d6e5f85c49a527f5758e4de</code> <code>7f92ec7948c64876539316435b6f2ec4</code> <code>37a213baa1e0db284a5b75aba1570b0a</code> <code>8e16319b55e57aa374c464c849ba566d</code> </li><li><code>c9a132f01b</code>: <code>c2e25f40b55ac9954f8eb6b29fbbfd9a</code> <code>ed576546de4772e406e0d003f41dbe60</code> <code>7a84ce4f066d177f24ca642af1ade726</code> <code>49b95b8895676676d4affca87a31791e</code> <code>88fccec6f7e8e1aa560b209894726483</code> <code>f44d69462a0fe77fc8ae91a649a3fced</code> <code>ecdb2b0544f28f0cd2a41419529bedaf</code> <code>8fe9f938e1688a492d7e70293b106edc</code> <code>86fcec5631d8bbb416ec945ea2a4eef6</code> <code>8bfc6b328fc9c60ce1b2313c0a5e58cf</code> <code>fa891ecd0f1b3232f0bc5f3810193e7b</code> <code>675a49ab961dead849c42bb800a792c1</code> <code>d5750fbbb850402ffb8ff0f90ea682e8</code> <code>383f3fea1a52e17a07033586ff2cc29d</code> <code>f8f1ab5b556100e76659183025e73fdc</code> <code>54f1ac34b25a99221e136b2bb78c30f7</code> <code>f7b02f5efd5ce5d709b3e86bff9acf8e</code> <code>3b037205154e203ee42d4200c3eb2597</code> <code>49a5e29793476a0017c2b9fa3f687838</code> <code>311de53e439e5d84303b4f4978a6d97d</code> <code>622fa3c4018704f1ce249465065549bc</code> </li><li><code>8793325134</code>: <code>fa61f2382d1e21637e9b33189ca454da</code> <code>bd7bfdd870414a3ef53ea83ece9e24ef</code> <code>30c9c7e0ede4646c311072d1ac55fc47</code> <code>a7ef19c44ad8d9d794d3733316c470b2</code> <code>877dfc7c62fa1c49899f20b776a060d3</code> <code>caa3c61883661703d69a5d01789b84bd</code> <code>e667633414fe30add2e1bea1cafcfd9d</code> <code>b72335e23204df522e1c255d5b7c6fbd</code> <code>7e374fd69f158f7192cc03c6c634c4e3</code> <code>0ea1e227a66423a125d2cc985ce7d141</code> <code>5e6c5f7326437f948dbec5a6ed7e4b22</code> <code>e32a7ca7a712f2564357be9416d6c00f</code> <code>46bed2ccfbd414fc9a26ad0ff1761d75</code> <code>1555d1eb23b14aa8a87890946d336043</code> <code>7903a46711148548c971a05950722c1c</code> <code>12dc162ab4fd2ba6e9f7f9ff9c3139ce</code> <code>3d99d71887e50b3fa7137696ca1148d4</code> <code>471b85392848192b107512fec4c2b712</code> <code>ee5150c8a51d36cab4e68c5fd07450cb</code> <code>c2cbfe1c60725d84e85885b256039ff3</code> <code>2b38e348252439fb56cb0a9529bde58d</code> </li><li><code>397c42743b</code>: <code>dea4c9514ad0458e192f03ed28f139e7</code> <code>54dc6d56ace90b277cbaa27dd2932d2a</code> <code>be053a969183fd4547ffcaa8e08d3af1</code> <code>1c031a6510059b0dc02521f8ba05834a</code> <code>ce97263d1739d4d75a90b7211eebcc73</code> <code>27800e5ca0039653b33f50184588bccd</code> <code>1df0eea819e1ac6e5f9d69a3925e4961</code> <code>c9e51e2255f71396b76578b5b1707bed</code> <code>31a061e743922da525c14b5d2f3f7057</code> <code>c69fcb49012e99edf8b11ae359b8bb23</code> <code>3fc0d2cfa5a3e337048181f9f1e3cfe3</code> <code>73fbc65ea6cb33b24e7970c282eaf123</code> <code>8182b686a4bc880625b391d8c87500a6</code> <code>cdb7a262daffe051c0bc973564233ec6</code> <code>4e67459646b1f1bab2cbeb462bd0a5d1</code> <code>e6fc7eefb21bea6bb470822ef29ddd63</code> <code>1427b629b096f4cf18ac4f7ca96649c4</code> <code>75c98824bf86ab395f12575c95bdabca</code> <code>a5030062a752d93a8cd217201eb44ad2</code> <code>e5a06a62e23dff5af764d6aa6a703c15</code> <code>788f98104bb88bedc266f06df4955dd7</code> <code>d5b89796321e24228a31919b3c5e44d6</code> <code>01fa79c1e04ec58d7fb92eafebdee549</code> <code>5bbc46cc1dcb7a36da68c33e7dc3bfb6</code> <code>8ed5e2025ba54638e7d30ae3df13cb61</code> <code>618f0871daa6fb08d24a125c0d919012</code> <code>ae03508e8057a8e42526e1a4cae851e0</code> <code>4ceaa0bd59a71e436520d47b6a9829a6</code> <code>8b584463ee30e78707777b3d4aef108a</code> <code>8081cf375c41f18efea4bdc5ebb82a51</code> <code>63178b2ccf7974e1a4d7fa3c06769fb9</code> <code>fd4b023b3347f10fe3142afa258addbf</code> <code>61f51c0c1a679b6f9b80fa71c2dae9dd</code> <code>bad52a0e15d148912515125a62a83451</code> <code>3a1b9b05ad80472ab4a42e814e6cd0aa</code> <code>96f82e8840d5a7f41e8d5e25336f12f6</code> <code>21712fe0cf7e3ab032c01481504ad7d3</code> <code>e58e8a3524b53ad4c86c0deea2b6429b</code> <code>4936f5748e3f6741f0ee2d7c327a17bb</code> <code>1e88c2643100f394342dde375fd9f1d1</code> <code>206d0c1d25dc064487aeda73c1d1f07f</code> <code>f2c32a536d9e2b8b1f13803f411cfb8e</code> <code>4fe7688bf819f90769b2191e3e916637</code> <code>868a1abe672f69c0a9552457782deab3</code> <code>99ac163001c3754558e51d7cedfe1f4f</code> <code>b1ecddcb38dcb91cc032e9e635ea380a</code> <code>9033ba403a643b9f723a50eef894e509</code> <code>ce5067c2332230301849f746f612c5c7</code> <code>1d4b93c5b8d185af7526982a517ba671</code> <code>aeaace28066d929c88e6abe8b7ad9655</code> <code>5860164ef01228a4b6914998ce944ef8</code> <code>817b4b713114625df8ec3edd85e389a4</code> <code>4e6d9202874fa611b51ca68c667f51c3</code> <code>b90a2fa8cbee0abc9b6278f92f526727</code> <code>0f525f308cd48eec3532102fc45fb33e</code> <code>fb5d7014f6e958cd367070737fb3c075</code> <code>b39b487006faef90b33b9ebd0cfb23ea</code> <code>4253df4cc16993693705b62ae28d039a</code> <code>bc0f60d7dae733327578df488fc517dc</code> <code>d384ef31399dd0f76d36de1aee0594b7</code> <code>e1df3762bff50bb553eb0991f9d5fa4d</code> <code>1d84cffae627b82721d3dd1fc7857c55</code> <code>5373300dde04c5a2af18a1871300946f</code> <code>2ee8020320693a3629408ad6a45d4bdc</code> <code>1dc9360d3b490eb266d67e4230da8f80</code> <code>ee4e90fdcb8057c496253efccdb12463</code> <code>b34fad0190683e28751fab54eefb7027</code> <code>ee928e8df848b661f3bf7b5799e4ec1c</code> <code>d6c8bcc1369ce95a59b8704d9c2ec309</code> <code>a6725f9e8801f4da5fda00f93c0ca65f</code> <code>df2201f4cdec4f0aada34c3e1d1d4ed8</code> <code>20f5b6cbfe06fd536296615ac744a49d</code> <code>77656bb86fba29078f47e5042b3a1c50</code> <code>009d684ef217e752bd1247fd58d230ac</code> <code>48e836a37ee3ed5fb861e9f2f3f5794a</code> <code>c380008a6833d275bcb15926e60f53b3</code> <code>0abf3311574f8ef0533907416e3018af</code> <code>0bae01a66ea68e8831d4338c4007fda3</code> <code>a59e7ce5dde473386bf02076e56eaaae</code> <code>124224f0bb153ea25647d06972bde092</code> <code>1d54988d3e8b9e32c0aa5f1fef96d3d3</code> <code>1e398771b180ff4b8210e9f40ff8cb88</code> <code>dbc41b26b395940e4b3c45a5d0f99c85</code> <code>9a071e908f1d65c5a5fab0eadc18ee35</code> <code>bc5adff5bd202aa9e4577512f8166ecb</code> <code>69fbae2b141bc1b57a238e6dc4827b06</code> <code>2bfa5e90c145d82e5c139c588a432884</code> <code>cbdf7b505fdbfb54640e25a41a47bb29</code> <code>b02b6b8b920f6aef64aed2c13101a949</code> <code>41b13fac29ad4e20a71c3556d65adff1</code> <code>f9e2abfa18fab7ef8b48b92022fa41cf</code> <code>dea6348e403c9f728fa3c400e21333ae</code> <code>dd6446a270ee210a8eda31ffe8bfd012</code> <code>7a7b5ef3d914963c0b5c65e48a2bb153</code> <code>8f4ea2f89adcdd72501fe31d1ef70daa</code> <code>197d20553db2fa119b1fde87db5931f9</code> <code>e75e125ded8dddfd2d5e30e9708028b3</code> <code>7d6163cce6a14155a21f45e0eebf3dca</code> <code>2a09f3e45390828750e63b12ef278e6d</code> <code>1c9732abfe923dd6d3f16c9116832da5</code> <code>2dcf12e4e3f205958d004cc0231ae779</code> <code>14b864c145063a06f3eb14397f83631c</code> <code>8d8db9a2e256f4c7c35264e7945a42e6</code> <code>a8bdf786e367814b3711cbc5b78644c5</code> <code>32c7b4d86faba476ba8018d8ab97c551</code> </li><li><code>0479c273fb</code>: <code>33abec04b93c98cc287638b1e078ed10</code> <code>d7b07fb455b91aacacd5d47dcfba9659</code> <code>fd1a6cd21ed2a942e222c6ea0bcd59a4</code> <code>7b06684d5bf25b0bdfb1de379a310c9b</code> <code>daefc5269044b93692f4bbbc4407824a</code> <code>6bcbf9fa443a5f6ce803f441837fa205</code> <code>cc16e22538f0811d4da9193469d9cf15</code> <code>73db8216780b33f1a05cb6dc10555069</code> <code>0f05ad37b4d3d783a4ee809663525ef7</code> <code>5eb0a6456c79f90491fdff189604044e</code> <code>edc42d34acf0101500a94a801c4133f1</code> <code>fb67e329fce82646c78e60cbee679ac6</code> <code>2767f4ca40608af01d7aaefefb22127e</code> <code>a545d43e6b7f4f59638c07657d1ae0be</code> <code>065d35eafb12b1cd24bd2860c62531fc</code> <code>17a4bdd86da2cda2c6d59c37d2cec682</code> <code>833f108d919c4cf5f774ef1858786fe6</code> <code>4d61152492114f934e1f207e213f935e</code> </li><li><code>f6511b8e6b</code>: <code>f13e02876d531bcb22b32a0bdb3f46a6</code> <code>3f9a679eb02633a6850ceae194ba40b0</code> <code>24d5bfdcb161ea2c63f5e71f8ffc2ce3</code> <code>12718d6dd59768edc9b30f87c6e6d247</code> <code>e54db8585511e4d1fed4a48402b807b0</code> <code>97a1fc4e0e4f5498e1b44812ad5f9efa</code> <code>949ff0938814c172ae2f5eef2285f015</code> <code>35ad3106262d119bdc436fd27f9dd027</code> <code>749d3504cf49fb8ba5376d3bd0b94267</code> <code>19f7914a0c16d42ac747175b0ed77bb5</code> <code>c680ec5a8241686de4167199d83edc59</code> <code>2bc0c80385bd0f1f991c6ae30fe69f03</code> <code>9a5fe0267ee351644262b59e6c85c761</code> <code>00297545f96cadb77b4290566476cc76</code> <code>2286cf8be129cdf124b267bd0cf81a93</code> <code>8eb5647479e45667506f5f872cbf90dd</code> <code>356c027372648f45b132996d4f97f35d</code> <code>56f15238aa8f06c21c5b3788701f2a0f</code> <code>e37cf8552e5a4e7a3cbe0d0f71f772a0</code> <code>fc84c9a0772039cf6b31f0d0eaabce4d</code> <code>ae743adbe5f06c3eca704061ec687df3</code> <code>d6f7af48658c43438b4f1bb6781f1adf</code> <code>d0b968f5235560f876fc359be028cbfa</code> <code>0f6f070c06a527e6d577dcc51caf05c0</code> <code>11171801f575f93a4557ed047cfa87aa</code> <code>198d5765828d31494f24c1cd8066b401</code> <code>aa65bc5202aa724064d502c26877a813</code> <code>0326658d260d3458b3a2ea556ef2b35a</code> <code>4b9e772590934028d25ded611e15fdc4</code> <code>00b8e3c1df4659d527977c3b1a542ca7</code> <code>477ff74947c7ee43fa42537b7a8f5b67</code> <code>ad4bd9a15b025301465849bb74e621f3</code> <code>6c752eaad1569134f26193842e1703d7</code> <code>e2f450a864c4f368e66804032ea305a6</code> <code>dc3309f87521750844280a0dac24853d</code> <code>a5c01dcd4d208e00771ab05ecd064866</code> <code>32dc291dcf21632dc11bcfb7a4a79890</code> <code>d09956236780c6199cc613cb5a146317</code> <code>39fbd0b0c4663b93901dc4f47edd8a48</code> <code>4219b34349f0fc87a6899b11f1d6d1ec</code> <code>2faa165dce2436bb08866d9bb575f14e</code> <code>f2b3623bc7ac72e4d20e61dd3a16ac6a</code> <code>1b05882b23fc08e4dd83b4f5e56959a2</code> <code>280a31d72b491b3ddb587ef5a84d9cb2</code> <code>3c35a15fa3ef6b270181975e11077e7a</code> <code>59f0ab25e27f80e29af0dbc7c1cb9385</code> <code>6d0250c021bf81eaa1777c9cb6230405</code> <code>ee2a1f564d9d63d7bd4a3a58ff77446f</code> <code>d4c7256eb5ac3942223f7671192e440a</code> <code>c4a4267defcfba94543a284a6f42b318</code> <code>7cca5c2ddaefa6860dc5123d262d1ab8</code> <code>ccce4c9b83e4bc6f59f1eee2a2a3862d</code> <code>71ccaafbb242a4251b6dfe37d8378afd</code> <code>0437c13258bf2285a0f34cd5054f80ff</code> <code>18bd9883cfe22f16edd036e42f7cc51b</code> <code>283ff8520eb8287bfea168fc7f3b7831</code> <code>c0e8a7d44258f030f9b468c8485f652c</code> <code>34af144733bc6bd5a0febbf079b18cc2</code> <code>a1db9938f90599572ac034ae36b2cad1</code> <code>705b1aaf267855764f6281ef8d76ff61</code> <code>321f765126e6d23b35b26bce297ca5c8</code> <code>b0facdfd087cdea9d405cd04755981bf</code> <code>f72e9c94d001d342b6eaedeee5cea3c5</code> <code>5dd3f2b8c1fe2877605751d794231a56</code> <code>49ac72db23c2e2195a201c2a7a09ff70</code> <code>128b2a95e9df8af0facc3b4c85bb5f6a</code> <code>478c24fc44a6b9f11b0ad4379a4422c3</code> <code>f876d618b7885736c5e5b9c58d8d331b</code> <code>e62ca9298cb7da75649b4804ce3bb484</code> <code>022c9589249b1162defef2b1c5a4e11d</code> <code>e6aff8db09005c44f7d939237e712aeb</code> <code>8545b5f7d28ab3f702f3b971524e82e8</code> <code>66f68b22b954c5f267489611e0078a8e</code> <code>eb1e7c1570f51e21760b42b51f1afb07</code> <code>b334fa938eddb25a38e38d66a7ac6f7a</code> <code>b8aea0dffa23c8926ee82ab0e8787509</code> <code>01f8ceaad706d143e5402651d13b8d1f</code> <code>18327fc8ff4185744e59ce38886aa901</code> <code>24e33d773ca0dabff0503b14aeee9c03</code> <code>01af975c805bb2903b775ae08c81721b</code> <code>b83fd94056741e195d752eb70de30b12</code> <code>32c3fb5f45d5156acc9814192346953a</code> <code>61290a176f068da336515adbe3d89148</code> <code>90fb5eac641be64024530d8f11ed9854</code> <code>f1629353e40c9a539f83ff973252d2a2</code> <code>e2215b11ddbab72f4e8b4a3d027a9614</code> <code>ef1282b67d4f0615576a91fcd7a4315e</code> <code>cdb3d6d4a4eb344f8b298cf812fcb08d</code> <code>b15c652ed171cfc026acc81b51c256f4</code> <code>9dcacd8b84cf01d43cd2337df24aaafa</code> <code>880932792374958ac2458e89a23b39e0</code> <code>27e21b7c219f9446cebd29e07c13faae</code> <code>e19c6882548fac23a3fbb50b79315fde</code> <code>a3aee171f8081fccaa6b941998e7cf98</code> <code>c92f5ac6da1cf6d261632c3dd0742941</code> <code>1db43ce6c7bf77af205af39d128d17ff</code> <code>d6af723ad6bb9fae22b11898d7e5dcc6</code> <code>16bbb7f46cef6b8b708b0ee235690b9e</code> <code>eccef35abf611e6e267ec477d8c7b400</code> <code>1bd4c36ff6545b3b2c8cf40521fdb4ac</code> <code>93fc4507070a2228677c1b00cc1ba983</code> <code>c7f0ca15a467c9cee209fea22331db4d</code> <code>f312f3e597d3ff8d17f8bbd4ee027912</code> <code>1fb943b900ecca0bb07b7db4953d51ba</code> <code>ed2d172b75d1b489f12deeaf7f832647</code> <code>22cf5e8f5fa29fd272cb9aa26374bdaa</code> <code>b3aa141a7fc1ff49142b723eff3b6c28</code> <code>37f2646b88d9c39ca399fb8ca4e8330e</code> <code>cc1cfc756801101a18df35a7712b2884</code> <code>3d5a7d74521509d636bf8b45009c76eb</code> <code>469d5c292c66ad77cae44270b66415b4</code> <code>7a205a71f17098c74213d19369b3560c</code> <code>97cf3fe8b86cb1a716ef84f749e36c90</code> <code>40c68cca8370263924aa84665006daa5</code> </li>
+</ul></details>
+
+<h2>Costs</h2>
+<div class="wrap"><table>
+<tr><td>Victim runs executed</td><td class="num">456</td></tr>
+<tr><td>… measuring the ends</td><td class="num">156</td></tr>
+<tr><td>… bisecting</td><td class="num">300</td></tr>
+<tr><td>Reused from earlier runs (not paid again)</td><td class="num">0</td></tr>
+<tr><td>Victim cost</td><td class="num">$1.07</td></tr>
+<tr><td>Culprit LLM cost</td><td class="num">$0.0633</td></tr>
+<tr><td><b>Total</b></td><td class="num"><b>$1.13</b></td></tr>
+<tr><td>Per victim run</td><td class="num">$0.0024</td></tr>
+<tr><td>Wall time</td><td class="num">12.5 min</td></tr>
+</table></div>
+
+</main></body></html>

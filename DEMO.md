@@ -1,8 +1,7 @@
 # Demo script (≤ 3:00)
 
 This follows PRD §17. Every number on screen must come from `evidence/` (`RUNS.md`, `bench-v1.md`),
-`bench/strength.md`, or a command run on camera. The only **TODO** is the v2 benchmark, which the main
-session is producing. Don't record scene 5's v2 beat until it's filled.
+`bench/strength.md`, or a command run on camera. There are no TODOs left.
 
 Run IDs below are the real runs from [`evidence/RUNS.md`](evidence/RUNS.md). All of them are in the
 main checkout's ledger (`.culprit/ledger.sqlite`), so every command here is **free**: it reads the
@@ -71,7 +70,12 @@ Numbers: 78/78 → 57/78 (100% → 73%), run `ff50e3620fdd`, `evidence/RUNS.md`.
 
 ```bash
 cd $VICTIM && entire checkpoint explain 397c42743be8cd80ae1d1e30c058772c1bd16add; cd -
+# or, as Culprit itself stored it: open evidence/reports/report-978624283c27.html → "Intent"
 ```
+
+The v2 hero run `978624283c27` ran with the Entire CLI installed, so its report holds the full request
+from checkpoint `01M4JM8P2C4NDS2AAQ0MPVR8YR`. The v1 run `ff50e3620fdd` predates that, so its report
+falls back to the commit message.
 
 - Show the Intent: the request to make RefundDesk faster by running tool calls in parallel and
   dropping per-result validation, and the session's pushback before proceeding.
@@ -118,9 +122,9 @@ uv run culprit fix ff50e3620fdd
    1,140 victim runs, $2.70, 190 runs per scenario.
 4. **The change:** baselines were 156 of `hist/b`'s 240 runs, so v2 stages them (×1 screen, full k only
    where the ends differ) and reuses matching earlier results.
-5. **v2 numbers:** TODO from `evidence/bench-v2.md` (accuracy x/6, victim runs, cost, wall time). If the
-   real v2 bench isn't ready, show the fixture comparison instead and say "fixture":
-   510 → 430 → 335 → 270 victim runs (`evidence/v2-efficiency-fixture.md`).
+5. **v2 numbers** (`evidence/bench-v2.md`): still 6/6 correct, with **588 victim runs instead of 1,140
+   (−48%)**, **$1.51 instead of $2.70 (−44%)**, and 29 min 09 s instead of 49 min 27 s of run time. On the
+   hero branch alone: 240 → 164 runs. Only the baselines got cheaper; the bisect steps were unchanged.
 6. Investigate and Detections are not done (dashboard only, `BLOCKERS.md`). Leave them out unless they
    get done by hand before recording.
 
@@ -157,4 +161,4 @@ uv run culprit fix ff50e3620fdd
 | Fix on `hist/b` | 96/96 vs good 96/96; held-out 18/18 vs bad 15/18; `verified_fix`; 132 runs, $0.33 | `evidence/RUNS.md` |
 | Latency, good vs bad | 7,086 ms vs 7,138 ms median: no real speed-up to keep | `evidence/RUNS.md` |
 | Hero bug end to end | $1.13, 456 victim runs (sum of the three stages) | `evidence/RUNS.md` |
-| Benchmark v2 | TODO | `evidence/bench-v2.md` (main session) |
+| Benchmark v2 (staged, real victim) | 6/6 correct; 588 victim runs (−48%), $1.51 (−44%), 29 min 09 s | `evidence/bench-v2.md`, `evidence/RUNS.md` |

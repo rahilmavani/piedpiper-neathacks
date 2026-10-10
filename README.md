@@ -110,8 +110,20 @@ On the fixture victim, over 4 scenarios: **510 victim runs (v1) → 430 (v2) →
 → 270 (v2, both ends reused)**. Every run found the planted commit, and bisect runs were unchanged
 ([`evidence/v2-efficiency-fixture.md`](evidence/v2-efficiency-fixture.md)).
 
-TODO: the v2 benchmark on the real victim (`evidence/bench-v2.md`). Its numbers will replace this
-fixture-only comparison.
+**On the real victim** (GLM 5.3, all six branches, staging only, reuse off so nothing was copied from v1):
+
+| | v1 | v2 (staged) | Change |
+|---|---:|---:|---:|
+| Correct (`culprit bench`) | 6/6 | 6/6 | same |
+| Victim runs | 1,140 | 588 | **−48%** |
+| Cost | $2.70 | $1.51 | **−44%** |
+| Time (sum of run wall times) | 49 min 27 s | 29 min 09 s | −41% |
+
+Only the baselines got cheaper; the bisect steps ran exactly as many victim runs as in v1. Per branch:
+a 156 → 52, b 240 → 164, c 180 → 84, d 156 → 52, e 156 → 52, f 252 → 184
+([`evidence/bench-v1.md`](evidence/bench-v1.md), [`evidence/bench-v2.md`](evidence/bench-v2.md),
+[`evidence/RUNS.md`](evidence/RUNS.md)). Baseline reuse wasn't measured on the real victim: on our ledger it
+would copy v1's baselines and run almost nothing, which isn't a fair comparison.
 
 ## Setup
 

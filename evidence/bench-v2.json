@@ -1,0 +1,156 @@
+{
+  "tag": "v2",
+  "mode": "scored existing runs from `/Volumes/DevSSD/Projects/piedpiper-neathacks/.culprit/ledger.sqlite`",
+  "culprit": "e4a4add6c4f5f455a79e0f52390925dba0c2dcec",
+  "not_scored": [],
+  "accuracy": {
+    "correct": 6,
+    "scored": 6,
+    "unverified": 0,
+    "incomplete": 0
+  },
+  "rows": [
+    {
+      "run_id": "e937df6dadbb",
+      "status": "no_regression",
+      "culprit_sha": null,
+      "suspects": [],
+      "good_sha": "0479c273fbd3ef476425f5136c95a002749e043b",
+      "bad_sha": "6a2f05ad5b5ccf030ead0d4af7676a3320105fb6",
+      "victim_model": "z-ai/glm-5.3",
+      "victim_runs": 52,
+      "cost_usd": 0.125702,
+      "wall_s": 129.0,
+      "skipped": [],
+      "confidence": null,
+      "summary": "No significant regression to bisect: good 26/26 vs bad 26/26, one-sided Fisher p=1.0000 \u2265 0.05",
+      "traces": [
+        "051267132a5d2b6f3528dc050b8b5c9e"
+      ],
+      "scenario": "hist/a",
+      "outcome": "correct_no_regression",
+      "expected": "c4f24013472d39f3a27f927507b5d0dae61f20c7",
+      "note": ""
+    },
+    {
+      "run_id": "978624283c27",
+      "status": "found",
+      "culprit_sha": "397c42743be8cd80ae1d1e30c058772c1bd16add",
+      "suspects": [
+        "397c42743be8cd80ae1d1e30c058772c1bd16add"
+      ],
+      "good_sha": "0479c273fbd3ef476425f5136c95a002749e043b",
+      "bad_sha": "f6511b8e6bb0d072abf653b995f59b51233ce479",
+      "victim_model": "z-ai/glm-5.3",
+      "victim_runs": 164,
+      "cost_usd": 0.455308,
+      "wall_s": 496.0,
+      "skipped": [
+        "22a37dbfff51e2eabf16123746963d5425a1f7a7"
+      ],
+      "confidence": "95% Wilson",
+      "summary": "Culprit: 397c42743be8cd80ae1d1e30c058772c1bd16add 'perf(agent): run tool calls in parallel and drop per-result validation' (confidence: 95% Wilson)",
+      "traces": [
+        "a9ae3f8ce2b7283129b1e9074c3deac1"
+      ],
+      "scenario": "hist/b",
+      "outcome": "correct",
+      "expected": "397c42743be8cd80ae1d1e30c058772c1bd16add",
+      "note": ""
+    },
+    {
+      "run_id": "cd5641dd3a46",
+      "status": "found",
+      "culprit_sha": "acf3b7df9fb4bf83761787e5f16dbcebc6f004bd",
+      "suspects": [
+        "acf3b7df9fb4bf83761787e5f16dbcebc6f004bd"
+      ],
+      "good_sha": "0479c273fbd3ef476425f5136c95a002749e043b",
+      "bad_sha": "30960fe9d716e7fa16ac6b04f8ab92a5c57fbfa6",
+      "victim_model": "z-ai/glm-5.3",
+      "victim_runs": 84,
+      "cost_usd": 0.241557,
+      "wall_s": 283.0,
+      "skipped": [],
+      "confidence": "95% Wilson",
+      "summary": "Culprit: acf3b7df9fb4bf83761787e5f16dbcebc6f004bd 'perf(agent): shorten the history window to 6 messages' (confidence: 95% Wilson)",
+      "traces": [
+        "0a44a8ea2d4e463983afaf56eaf6d6c9"
+      ],
+      "scenario": "hist/c",
+      "outcome": "correct",
+      "expected": "acf3b7df9fb4bf83761787e5f16dbcebc6f004bd",
+      "note": ""
+    },
+    {
+      "run_id": "61217e8fb2ea",
+      "status": "no_regression",
+      "culprit_sha": null,
+      "suspects": [],
+      "good_sha": "0479c273fbd3ef476425f5136c95a002749e043b",
+      "bad_sha": "819d692b677eb4fde7d0af44f35dffd9fcdf3260",
+      "victim_model": "z-ai/glm-5.3",
+      "victim_runs": 52,
+      "cost_usd": 0.116457,
+      "wall_s": 162.0,
+      "skipped": [],
+      "confidence": null,
+      "summary": "No significant regression to bisect: good 26/26 vs bad 26/26, one-sided Fisher p=1.0000 \u2265 0.05",
+      "traces": [
+        "0d5cf2fae2214e6a4cf4c653c99a86a3"
+      ],
+      "scenario": "hist/d",
+      "outcome": "correct_no_regression",
+      "expected": "441058ed36ba050b8be09182076977aefe648e29",
+      "note": ""
+    },
+    {
+      "run_id": "57c1f7da7b61",
+      "status": "no_regression",
+      "culprit_sha": null,
+      "suspects": [],
+      "good_sha": "0479c273fbd3ef476425f5136c95a002749e043b",
+      "bad_sha": "255f40c54e0ecc27de99ef6459171d94f7e3fc5f",
+      "victim_model": "z-ai/glm-5.3",
+      "victim_runs": 52,
+      "cost_usd": 0.122784,
+      "wall_s": 169.0,
+      "skipped": [],
+      "confidence": null,
+      "summary": "No significant regression to bisect: good 26/26 vs bad 26/26, one-sided Fisher p=1.0000 \u2265 0.05",
+      "traces": [
+        "7deea3d2d7aa0623fb9d417beab6e822"
+      ],
+      "scenario": "hist/e",
+      "outcome": "correct_no_regression",
+      "expected": "8ae122d6ef08870b8663c98d009c54e3da5a4f41",
+      "note": ""
+    },
+    {
+      "run_id": "7caf109c2b88",
+      "status": "found",
+      "culprit_sha": "1777d44476fc5bfd298d96d296b9d97b6c80b258",
+      "suspects": [
+        "1777d44476fc5bfd298d96d296b9d97b6c80b258"
+      ],
+      "good_sha": "0479c273fbd3ef476425f5136c95a002749e043b",
+      "bad_sha": "3b0938b9da374a3045e588adfba25a7297a5624f",
+      "victim_model": "z-ai/glm-5.3",
+      "victim_runs": 184,
+      "cost_usd": 0.450493,
+      "wall_s": 510.0,
+      "skipped": [
+        "2ad118e301a4d6ac2e63ebf081bbc8b3f0b4ffc0"
+      ],
+      "confidence": "95% Wilson",
+      "summary": "Culprit: 1777d44476fc5bfd298d96d296b9d97b6c80b258 'perf(agent): disable tool-call retries' (confidence: 95% Wilson)",
+      "traces": [
+        "e8a5d2e5f9519344aab44e0bbfb7ca38"
+      ],
+      "scenario": "hist/f",
+      "outcome": "correct",
+      "expected": "1777d44476fc5bfd298d96d296b9d97b6c80b258",
+      "note": ""
+    }
+  ]
+}

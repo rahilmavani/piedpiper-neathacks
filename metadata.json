@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4JY4MX6XVBA39VNJVQFME6N",
+  "strategy": "manual-commit",
+  "branch": "fix/decision-gates",
+  "checkpoints_count": 8,
+  "files_touched": [
+    "src/culprit/entire.py",
+    "tests/test_entire_intent.py"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 12,
+    "cache_creation_tokens": 5711,
+    "cache_read_tokens": 2405641,
+    "output_tokens": 4606,
+    "api_call_count": 6
+  }
+}

@@ -1,0 +1,80 @@
+➜  piedpiper-neathacks git:(fix/decision-gates) culprit verify-trace ff50e3620fdd
+zsh: command not found: culprit
+
+---
+
+so while that is done give me the prompt I need to paste in other claude session after i run /branch branch-name and want to continue development in that session
+
+---
+
+i did not send in a new branch i opened a new session altogether
+
+---
+
+WHat should I answer to the other session?
+
+
+
+<pasted_content id="809e">
+culprit bench is built and tested on the free fixture. All 85 tests pass (17 of them new), and no paid runs were made. The changes are uncommitted in /Volumes/DevSSD/Projects/piedpiper-neathacks-dev on branch feat/bench. The main folder and the RefundDesk clone are untouched.
+
+What's done
+- bench/scenarios.yaml: six scenarios, each from good-v1.0 to origin/hist/<x>.
+- bench/ground_truth.json: for each branch it has the full culprit SHA, the branch head, the uninstallable commits and the responsible hunks (file and line range, from git show). It also has the intended-gain metric and a per-model "can the test suite see this bug" flag. I checked every position against git rev-list in the clone, using read-only git commands; all six match §5.2.
+- culprit bench --tag v1|v2: runs each scenario through the existing Orchestrator, one after another. If a run stops (budget or infra error), the bench moves on to the next scenario. Each run gets an outcome: correct, wrong, correct_no_regression, missed, no_regression_unverified, ambiguous, or incomplete. It writes evidence/bench-<tag>.md and a .json copy with victim runs, cost, wall time, skipped commits, run IDs, neatlogs trace IDs and Culprit's own commit SHA.
+- Leakage guard: refs are resolved to SHAs, and only the SHAs go to the Orchestrator. The ground truth is read only after runs finish, and bench refuses to run if its files are inside the victim repo. A test confirms that no scenario name or branch name ends up in the run's stored record.
+- Scoring existing runs: --score-runs ff50e3620fdd,<id> scores the runs you name, and --score-latest scores the latest finished run for each scenario. Runs are matched to scenarios by their recorded good and bad SHAs, and the ledger is opened read-only.
+- Fixture end-to-end test: one scenario contains a planted bug and one doesn't. The bench found the bug (skipping the uninstallable commit), and the clean range came back as no regression (p = 0.69). Accuracy 2/2.
+- Docs: updated HOW_IT_WORKS.md §14 and §15 (plus small fixes in §1, §6.1, §12, §16 and Appendix C) and added a hackathon.md entry.
+
+Decisions for you to check
+- No-regression results: a run that ends with "no regression" counts as correct only if ground truth says the bug can't be seen on that victim model. Only hist/b has been measured (visible on both GLM and Sonnet), so a no-regression result on a, c, d, e or f will show as no_regression_unverified and won't count toward accuracy.
+- Intended gain for a and e: I set it to null, because their claimed gains ("API consistency", "fewer rejected tool calls") aren't latency, tokens or cost.
+- Logs show SHAs: because only SHAs reach the run, the run log now shows SHAs instead of branch names.
+- Fixture traces: the CLI test on the fixture sent traces to neatlogs, as earlier fixture runs did. No model was called.
+
+Not done: hunk scoring and fix verification. The table says "not measured" for both, because there's no localiser or fixer yet.
+
+Questions
+1. Commit? Should I commit this on feat/bench?
+2. Score the other session's runs? Once the hist/a, c, d, e and f runs finish, I could run this from the dev worktree:
+   uv run culprit bench --tag v1 --score-latest --db /Volumes/DevSSD/Projects/piedpiper-neathacks/.culprit/ledger.sqlite
+   It opens that ledger read-only and writes nothing there, but it does read inside the .culprit/ folder you told me not to touch. Is that OK, or would you rather run it yourself?
+</pasted_content id="809e">
+
+---
+
+why shouldnt it push?
+
+---
+
+No i just copy pasted what you said earlier. From now you check the other branches and pushing/pulling and also testing. Just tell me what else can I delegate the other session if anything can be done parallely.
+
+---
+
+but since I gave it the good work. Answers reply you gave it is still working
+
+---
+
+<task-notification>
+<task-id>b2jtz8hmh</task-id>
+<tool-use-id>toolu_01ETnzSqLsHiNxDP7Ro4WvzA</tool-use-id>
+<output-file>/private/tmp/claude-501/-Volumes-DevSSD-Projects-piedpiper-neathacks/4ac0b432-44fe-4e72-9e87-270092b3ca58/tasks/b2jtz8hmh.output</output-file>
+<status>completed</status>
+<summary>Background command "Run Culprit sequentially on the five remaining history branches" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+[Image #3] session 2
+
+[Image #4] session 3
+
+both working still
+
+---
+
+1. Yes
+2. You go with whats recommended
+
+Also, whats the track of those 5 runs?

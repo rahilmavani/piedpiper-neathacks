@@ -401,7 +401,13 @@ uv run culprit run --repo ../refunddesk --good good-v1.0 --bad hist/b
 - Read the task names from the snapshot (top level only, so `heldout/` is excluded) and save them in the run's config.
 
 ### 7.4 Measure both ends (the baseline)
-- Run **every task × k** on the good commit and on the bad commit. With 26 tasks and k=3, that's 78 runs each, 156 total. **This is the most expensive part of a run.**
+- v1 ran **every task × k** on the good commit and on the bad commit. With 26 tasks and k=3, that's 78 runs each, 156 total. **This is the most expensive part of a run.**
+- **v2 (default) stages it** (`baseline.py`):
+  1. Every task runs ×1 on both ends.
+  2. Only tasks that didn't pass on both ends get the remaining k−1 repetitions, again on both ends.
+
+  Both ends always run the same set, and the gate below uses the runs actually made.
+- **v2 also reuses** (`reuse.py`) results that an earlier run measured at the same commit with the same suite SHA, victim model, eval module and k. Copied rows record their source run and aren't counted as spend again. `--no-reuse --no-staged` gives v1. Runs recorded before v2 resume as v1.
 - If either end fails to install, stop: "cannot bisect".
 - Compute each end's pass rate and 95% range.
 - **Safety gate:** a one-sided Fisher exact test asks whether good really passes more often than bad. If p ≥ 0.05 (`gate_alpha`), stop with status **`no_regression`**: Culprit refuses to hunt for a bug that might just be noise.
@@ -645,6 +651,13 @@ uv run culprit resume <run_id> [--budget-usd 6]
 
 # Check a run's neatlogs traces
 uv run culprit verify-trace <run_id>
+
+# Report (markdown + static HTML, default .culprit/reports/) and per-run costs for cfo.ai
+uv run culprit report <run_id>
+uv run culprit export-costs --format csv --out business/runs.csv
+
+# v1 vs v2 victim runs on the fixture ($0)
+uv run python scripts/v2_efficiency.py
 ```
 
 `culprit run` flags: `--good`, `--bad` (required), `--repo` (default `../refunddesk`), `--suite` (default `evals`), `--suite-ref` (default `main`), `--k` (3), `--budget-usd` (3.00), `--db`, `--workers` (4).
@@ -678,10 +691,11 @@ uv run python scripts/neatlogs_readback.py <results.jsonl>    # verify traces
 | Localiser: find the exact guilty lines | ❌ NOT BUILT |
 | Fixer: write a minimal fix; Verifier: prove it on held-out tasks | ❌ NOT BUILT |
 | AI-assisted task selection / planner | ❌ NOT BUILT (plain ranking used) |
-| Report (markdown/HTML) | ❌ NOT BUILT |
+| Report (markdown/HTML) | ✅ `culprit report <run_id>` |
+| v2 efficiency: staged + reused baselines | ✅ Fixture: 510 → 270 victim runs over 4 scenarios (`evidence/v2-efficiency-fixture.md`) |
 | `culprit bench` + ground truth, v1 vs v2 | ❌ NOT BUILT; this is the required before/after evidence |
 | neatlogs Detections / Investigate used to improve Culprit | ❌ Not done |
-| `export-costs` and the cfo.ai business plan | ❌ Not done |
+| `export-costs` and the cfo.ai business plan | ✅ `culprit export-costs --format csv`, `business/cfo-inputs.md`; ❌ cfo.ai entry by hand |
 | Demo video, README polish, X posts | ❌ Not done (Monday) |
 
 ---

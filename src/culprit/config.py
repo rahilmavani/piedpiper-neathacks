@@ -37,6 +37,10 @@ class Config:
     victim_provider: str = ""
     victim_model: str = ""
     task_ids: tuple[str, ...] = field(default_factory=tuple)
+    # v2 baseline (culprit.baseline): reuse earlier runs' baseline results for the same (commit, suite,
+    # victim model, k), and screen every task ×1 before running the full k only where the ends differ.
+    reuse_baselines: bool = True
+    staged_baseline: bool = True
 
     @property
     def suite_target(self) -> str:
@@ -52,4 +56,6 @@ class Config:
     def from_json(cls, text: str) -> Config:
         data = json.loads(text)
         data["task_ids"] = tuple(data.get("task_ids", ()))
+        for v2_flag in ("reuse_baselines", "staged_baseline"):  # a run started before v2 resumes as v1
+            data.setdefault(v2_flag, False)
         return cls(**data)

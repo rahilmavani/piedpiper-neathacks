@@ -82,6 +82,18 @@ Planned (from `PRD.md`); move items to "used" as they are integrated.
   - 240 victim runs, 0 infrastructure errors, **$0.60**, 12.5 min.
   - Intent fell back to the commit message and diff, because the `entire` CLI isn't installed on this machine. The leakage filter dropped 1 harmless line containing "seed".
 - **Moment worth screenshotting:** the run log, from `22a37dbfff install failed → SKIP` to `Culprit: 397c427…`, in four decisions.
+- **Done: v2 efficiency (branch `feat/v2-efficiency`, fixture only, $0).** This is the required before/after.
+  - **Staged baseline** (`culprit/baseline.py`): every task ×1 on both ends, then the full k only on tasks that didn't pass on both. Both ends run the same (task, repetition) set, and the Fisher gate uses the runs actually made.
+  - **Baseline reuse** (`culprit/reuse.py`): results at a commit are copied from an earlier run with the same commit SHA, suite SHA, victim provider and model, eval module and k. Each copied row records its source (`task_runs.reused_from_run` / `reused_from_id`, plus the `baseline_reuse` artifact) and isn't counted as spend again.
+  - **Victim runs per bisect, 4 fixture scenarios** (`scripts/v2_efficiency.py`, `evidence/v2-efficiency-fixture.md`): v1 510 → v2 430 (−16%) → v2 with the good end reused 335 (−34%) → v2 with both ends reused 270 (−47%). All 16 runs found the planted commit, and bisect runs were unchanged.
+  - **Projection for `hist/b`** (not measured): about 164 runs instead of 240.
+  - Runs recorded before v2 resume as v1. `culprit run --no-reuse --no-staged` gives v1.
+- **Done: M6 report and costs.**
+  - `culprit report <run_id>` writes markdown plus static HTML: verdict, baselines and gate, bisect timeline with Wilson intervals against the threshold, skips, intent, diff, trace IDs, costs and reuse provenance.
+  - `culprit export-costs --format csv` writes per-run cost, victim runs (executed/baseline/bisect/reused) and wall time.
+  - `business/cfo-inputs.md` holds the measured and projected unit costs, with pricing scenarios A/B/C labelled as hypotheses.
+  - 85 tests pass (17 new).
+- **Note for the next paid run:** with the current ledger, a v2 run on `good-v1.0..hist/b` (GLM 5.3, k=3, suite `ba86ed0`) would reuse *all* of `ff50e3620fdd`'s baseline runs. To measure staging alone, use `--no-reuse`. To show reuse, run it as is: the baseline then costs $0.
 
 ## Demo
 
@@ -89,7 +101,7 @@ Planned (from `PRD.md`); move items to "used" as they are integrated.
 
 ## Known limitations and next steps
 
-- Culprit hasn't been built yet. Next: M1 vertical slice per `PROMPTS.md` (Prompt C).
+- Culprit's localiser, fixer/verifier and `bench` aren't built yet. v2's real-victim savings are projected, not measured.
 
 ## Submission
 

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import contextvars
 import hashlib
+import json
 import statistics
 import time
 from collections.abc import Callable
@@ -15,7 +16,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, replace
 from pathlib import Path
 
-from culprit import gitops, sandbox, suite, tracing
+from culprit import baseline, gitops, sandbox, suite, tracing
 from culprit.bisect import BisectResult, Verdict, bisect, bounds
 from culprit.config import Config
 from culprit.entire import commit_intent
@@ -328,8 +329,7 @@ class Orchestrator:
         self.log(f"run {run_id}: {len(candidates)} commits in {cfg.good_ref}..{cfg.bad_ref}, "
                  f"{len(tasks)} tasks × {cfg.k}")
 
-        base = Baselines(self.evaluate(run_id, "baseline", good, tasks, range(cfg.k)),
-                         self.evaluate(run_id, "baseline", bad, tasks, range(cfg.k)))
+        base = baseline.measure(self, run_id, good, bad, tasks)
         if base.good.skipped or base.bad.skipped:
             return self._finish(run_id, "error", None, "good or bad ref failed to install; cannot bisect")
         ci_good = wilson(base.good.passes, base.good.n, cfg.z)
@@ -369,6 +369,8 @@ class Orchestrator:
             sp.output({"available": intent.available, "checkpoint_id": intent.checkpoint_id,
                        "source": intent.source, "lines_removed": intent.lines_removed})
         self.ledger.put_artifact(run_id, "intent", intent.text)
+        self.ledger.put_artifact(run_id, "intent_meta", json.dumps({
+            "source": intent.source, "checkpoint_id": intent.checkpoint_id, "lines_removed": intent.lines_removed}))
         self.ledger.put_artifact(run_id, "diff", gitops.diff(repo, result.first_bad))
         self.log(f"  intent source: {intent.source}; leakage filter removed {intent.lines_removed} lines")
         summary = f"Culprit: {result.first_bad} {gitops.subject(repo, result.first_bad)!r} (confidence: {confidence})"

@@ -3,6 +3,9 @@
 Every write is idempotent: steps are unique per (run_id, kind, commit_sha) and task runs per
 (step_id, task_id, repetition). Resume works by replaying the deterministic controller, which
 reuses any recorded step or task run instead of executing it again.
+
+A task run copied from an earlier run (culprit.reuse) keeps its measured cost but records where it
+came from (`reused_from_run`, `reused_from_id`). Those rows are never counted as spend again.
 """
 
 from __future__ import annotations
@@ -66,6 +69,8 @@ CREATE TABLE IF NOT EXISTS task_runs (
     tokens_out INTEGER,
     neatlogs_trace_id TEXT,
     error TEXT,
+    reused_from_run TEXT,
+    reused_from_id INTEGER,
     UNIQUE (step_id, task_id, repetition)
 );
 CREATE TABLE IF NOT EXISTS llm_calls (
@@ -121,6 +126,10 @@ class Ledger:
         for column in ("suite_source", "suite_sha", "good_sha", "bad_sha"):
             if column not in run_columns:
                 self.conn.execute(f"ALTER TABLE runs ADD COLUMN {column} TEXT")
+        task_columns = {r["name"] for r in self.conn.execute("PRAGMA table_info(task_runs)")}
+        for column, kind in (("reused_from_run", "TEXT"), ("reused_from_id", "INTEGER")):  # before reuse
+            if column not in task_columns:
+                self.conn.execute(f"ALTER TABLE task_runs ADD COLUMN {column} {kind}")
 
     @contextmanager
     def _tx(self) -> Iterator[sqlite3.Connection]:
@@ -174,7 +183,8 @@ class Ledger:
 
     def run_cost(self, run_id: str) -> float:
         victim = self.conn.execute(
-            "SELECT COALESCE(SUM(t.cost_usd), 0) FROM task_runs t JOIN steps s USING (step_id) WHERE s.run_id = ?",
+            "SELECT COALESCE(SUM(t.cost_usd), 0) FROM task_runs t JOIN steps s USING (step_id)"
+            " WHERE s.run_id = ? AND t.reused_from_run IS NULL",
             (run_id,),
         ).fetchone()[0]
         llm = self.conn.execute(
@@ -184,7 +194,9 @@ class Ledger:
 
     def total_cost(self) -> float:
         """Cost across every run in this ledger, for the global (event-wide) cap."""
-        victim = self.conn.execute("SELECT COALESCE(SUM(cost_usd), 0) FROM task_runs").fetchone()[0]
+        victim = self.conn.execute(
+            "SELECT COALESCE(SUM(cost_usd), 0) FROM task_runs WHERE reused_from_run IS NULL"
+        ).fetchone()[0]
         llm = self.conn.execute("SELECT COALESCE(SUM(cost_usd), 0) FROM llm_calls").fetchone()[0]
         return float(victim) + float(llm)
 
@@ -261,6 +273,19 @@ class Ledger:
                 (step_id, tr.task_id, tr.repetition, int(tr.passed), tr.cost_usd, tr.latency_ms,
                  tr.tokens_in, tr.tokens_out, tr.trace_id, tr.error),
             )
+
+    def copy_task_run(self, step_id: int, source_id: int, source_run: str) -> bool:
+        """Copy task run `source_id` into `step_id`, recording its origin. False if already present."""
+        with self._tx() as c:
+            cur = c.execute(
+                "INSERT INTO task_runs (step_id, task_id, repetition, passed, cost_usd, latency_ms, tokens_in,"
+                " tokens_out, neatlogs_trace_id, error, reused_from_run, reused_from_id)"
+                " SELECT ?, task_id, repetition, passed, cost_usd, latency_ms, tokens_in, tokens_out,"
+                " neatlogs_trace_id, error, ?, id FROM task_runs WHERE id = ?"
+                " ON CONFLICT (step_id, task_id, repetition) DO NOTHING",
+                (step_id, source_run, source_id),
+            )
+            return cur.rowcount > 0
 
     # llm calls / artifacts ----------------------------------------------------
     def record_llm_call(

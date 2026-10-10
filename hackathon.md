@@ -39,7 +39,17 @@ Planned (from `PRD.md`); move items to "used" as they are integrated.
 - **Finding worth posting:** the neatlogs read API returns no custom span attributes, so "is run_id on every span?" can't be verified from attributes alone. We also put the run context into each span's input JSON so the audit can prove it.
 - **Open question:** neatlogs priced a `claude-sonnet-5-5` call at $3/$15 per MTok, versus the $2/$10 list price Culprit uses. Both numbers are kept; to be raised with neatlogs.
 - **Moment worth screenshotting:** `culprit verify-trace` printing PASS with span counts that match the ledger exactly.
-- **Waiting on:** hour-1 gates against the real victim. `refunddesk` has no checkpointed commits and no `hist/b` yet, so M1's exit (finding R1 end to end) is blocked on Prompt R / R1.
+- **Entire gate on the victim (re-run when `refunddesk` got checkpointed commits): PASS with a fix.** `entire checkpoint explain <full sha>` on `819b630` (run from `../refunddesk`) exits 0, resolves checkpoint `01M4JDJRHCWGDWM9CBHTY5Z2M5`, and `--json` parses. However, its `## Intent` was `<task-notification>`, and on `4cfc31e` it was `*(no prompt recorded)*`. Culprit now falls back to the session's typed prompts from `--transcript`. A commit with no checkpoint (`595fd28`) still takes the message+diff fallback.
+- **Decisions (from the builder):** cost source of truth is Anthropic's list price ($2/$10 for `claude-sonnet-5-5`). neatlogs' $3/$15 is recorded in `BLOCKERS.md` and `evidence/neatlogs-cost-discrepancy.md` and not used. OpenRouter dropped; Anthropic only.
+- **Done (M2, on the fixture victim):**
+  - Wilson 95% decision rule against a threshold computed over the same task mix as the runs, with a baseline significance check (overlapping intervals → `no_regression`).
+  - Resampling: k more repetitions, then widen to more tasks. At the cap the point estimate decides and the step is flagged `low_confidence`, which is reflected in the run's confidence.
+  - Per-run and global ($75) budget caps that stop with the best current range; `culprit resume --budget-usd`.
+  - SIGKILL mid-step, then resume: 78 → 150 task runs, 0 duplicates.
+  - Recorded run `bcccdb9631a9` (trace `3498c9e1e497ed665200cfaba3a2cb86`) shows SKIP and INCONCLUSIVE → resample → widen → low_confidence in one run. All traces read back and PASS. 31 tests pass.
+- **Finding worth posting:** a commit whose real pass rate sits right at the threshold (0.6 vs 0.5) stays INCONCLUSIVE after doubling the sample (18/30, CI [0.42, 0.75]). Widening to more tasks moved the threshold to 0.64, because the extra tasks pass on both sides. Culprit says "low confidence" instead of pretending.
+- **Moment worth screenshotting:** the run log line `32/45 CI [0.57, 0.82] vs t=0.64 → INCONCLUSIVE → GOOD (low_confidence)`.
+- **Waiting on:** M1's real-victim exit (R1 end to end) and M2's "all six branches run" need `hist/a`…`hist/f`. `refunddesk` has no checkpointed commits and no `hist/b` yet, so M1's exit (finding R1 end to end) is blocked on Prompt R / R1.
 
 ## Demo
 

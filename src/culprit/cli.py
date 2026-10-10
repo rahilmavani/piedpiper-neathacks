@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 import typer
@@ -41,10 +42,15 @@ def resume(
     run_id: str,
     db: Path = typer.Option(DEFAULT_DB, help="Ledger path"),
     workers: int = typer.Option(4, help="Parallel victim task runs"),
+    budget_usd: float | None = typer.Option(None, help="Raise the per-run cost cap (e.g. after budget_exceeded)"),
 ) -> None:
     """Continue a run without re-executing completed steps."""
     ledger = Ledger(db)
-    cfg = Config.from_json(ledger.get_run(run_id)["config_json"])
+    row = ledger.get_run(run_id)
+    cfg = Config.from_json(row["config_json"])
+    if budget_usd is not None:
+        cfg = replace(cfg, budget_usd=budget_usd)
+        ledger.update_config(run_id, row["suite_hash"], cfg.to_json())
     outcome = Orchestrator(ledger, cfg, log=typer.echo, workers=workers).run(run_id)
     raise typer.Exit(0 if outcome.status in {"found", "no_regression"} else 1)
 

@@ -37,13 +37,30 @@ def probe_order(lo: int, hi: int) -> list[int]:
     return order
 
 
-def bisect(candidates: list[str], classify: Callable[[str], Verdict]) -> BisectResult:
-    """`candidates` is `git rev-list --first-parent --reverse good..bad`, so the last one is `bad`."""
+def bounds(candidates: list[str], tested: list[tuple[str, Verdict]]) -> tuple[int, int]:
+    """(index of last known GOOD, index of first known BAD); -1 is the good ref itself."""
+    pos = {sha: i for i, sha in enumerate(candidates)}
+    lo, hi = -1, len(candidates) - 1
+    for sha, verdict in tested:
+        if verdict == Verdict.GOOD:
+            lo = max(lo, pos[sha])
+        elif verdict == Verdict.BAD:
+            hi = min(hi, pos[sha])
+    return lo, hi
+
+
+def bisect(candidates: list[str], classify: Callable[[str], Verdict],
+           tested: list[tuple[str, Verdict]] | None = None) -> BisectResult:
+    """`candidates` is `git rev-list --first-parent --reverse good..bad`, so the last one is `bad`.
+
+    `tested` collects every verdict as it is made, so a caller that is interrupted (e.g. by the
+    budget cap) can still compute the current range with `bounds()`.
+    """
     if not candidates:
         raise ValueError("empty commit range: good and bad are the same commit")
-    lo, hi = -1, len(candidates) - 1
-    skipped: set[int] = set()
-    tested: list[tuple[str, Verdict]] = []
+    tested = [] if tested is None else tested
+    skipped = {candidates.index(sha) for sha, v in tested if v == Verdict.SKIP}
+    lo, hi = bounds(candidates, tested)
     while hi - lo > 1:
         untested = [i for i in probe_order(lo, hi) if i not in skipped]
         if not untested:
@@ -51,9 +68,9 @@ def bisect(candidates: list[str], classify: Callable[[str], Verdict]) -> BisectR
         idx = untested[0]
         verdict = classify(candidates[idx])
         tested.append((candidates[idx], verdict))
-        if verdict is Verdict.GOOD:
+        if verdict == Verdict.GOOD:
             lo = idx
-        elif verdict is Verdict.BAD:
+        elif verdict == Verdict.BAD:
             hi = idx
         else:
             skipped.add(idx)

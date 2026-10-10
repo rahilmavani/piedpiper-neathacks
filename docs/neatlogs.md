@@ -19,7 +19,8 @@ SDK `neatlogs` 1.4.26 (Python 3.12), CLI `neatlogs-cli` 0.2.0. SDK Doctor `--loc
 |---|---|---|---|---|
 | Bisect run (git, worktree, install, eval runs, decision, Entire) | `culprit run` | WORKFLOW + CHAIN + TOOL spans | `culprit verify-trace <run_id>` | **PASS (fixture victim)**: trace `3e8d50b4584b831185c65a33007c7533`, 151 spans, finalized; counts match the ledger (120 victim runs, 7 steps, 4 decisions, 1 SKIP) |
 | Bisect run, error path | `culprit run --suite <missing>` | same, status `ERROR` | `verify-trace` + `raw-spans` | **PASS**: trace `af423d7e5c1796cf4c7600dd29cc636b`, the failing span and the root are `ERROR` with type and message |
-| Resume | `culprit resume <run_id>` | new WORKFLOW root, same session | `verify-trace` lists every trace of the run | Implemented, not yet read back |
+| Resume after budget stop | `culprit resume <run_id> --budget-usd 3` | new WORKFLOW root, same session | `verify-trace` audits every trace of the run | **PASS (fixture)**: run `d08379ebcc1e`. Stopped trace `951b10cc654b91c53d3e6fc7dbca3c81` (90 victim runs, status ERROR from the cap exception) and resume trace `3be78f457d6c3d4ab106deca2680c9df` (60 new victim runs only) |
+| Noise-aware bisect (Wilson, resample, widen, low-confidence) | `culprit run` | `decision_rule` TOOL span per round, `evaluate_commit:resample:N` | `verify-trace` | **PASS (fixture)**: trace `3498c9e1e497ed665200cfaba3a2cb86`, 189 spans, 150 victim runs = ledger |
 | LLM call path (`culprit.llm`, Anthropic) | `scripts/llm_capture_check.py` | `wrap()` under an AGENT span | `traces spans list <id> --type LLM` | **PASS (fixture)**: trace `ffdf497989747bf30856935f187e6013`, LLM span parented under AGENT, 131/18 tokens match the SDK usage |
 | Planner, Task Selector (LLM), Localiser, Fixer | not built yet (M2–M5) | AGENT + LLM via `wrap()` | rerun the evidence loop after each milestone | Pending |
 | Victim runs launched by Culprit (`refunddesk` workflow) | `victim_eval_run` → `python -m refunddesk.eval` | traced by the victim; Culprit records the returned `trace_id` | read back by trace ID | Pending: `../refunddesk` doesn't have the agent yet |
@@ -30,6 +31,8 @@ SDK `neatlogs` 1.4.26 (Python 3.12), CLI `neatlogs-cli` 0.2.0. SDK Doctor `--loc
 
 - **Cost:** neatlogs reported $0.000663 for 131 in / 18 out on `claude-sonnet-5-5`, which matches $3/$15 per MTok. Culprit's ledger uses Anthropic's $2/$10 list price, which is the source of truth for all cost numbers and cfo.ai; neatlogs' cost figures are not used (see `BLOCKERS.md`).
 - **Root output fill-in:** when a root span has no output (for example after an exception, before the fix), the backend showed a child span's output in its place.
+
+- **SIGKILL:** a killed process cannot flush, so its trace never finalizes. The ledger still resumes it correctly (tested), and the resume gets its own finalized trace.
 
 ## Repeat the evidence loop
 

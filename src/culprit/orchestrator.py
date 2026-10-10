@@ -1,4 +1,4 @@
-"""Culprit's run loop: baselines → discriminating tasks → bisect → intent (PRD §7, §8.1).
+"""Culprit's run loop: baselines → discriminating tasks → noise-aware bisect → intent (PRD §7, §8).
 
 The loop is deterministic and memoised in the ledger, so running it again for an existing
 run_id resumes it: completed steps and task runs are reused, never re-executed.
@@ -15,12 +15,12 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 
 from culprit import gitops, sandbox, tracing
-from culprit.bisect import BisectResult, Verdict, bisect
+from culprit.bisect import BisectResult, Verdict, bisect, bounds
 from culprit.config import Config
 from culprit.entire import commit_intent
 from culprit.evalrunner import discover_tasks, run_task, victim_env
 from culprit.ledger import Ledger, TaskRun
-from culprit.stats import wilson
+from culprit.stats import Decision, decide, intervals_overlap, wilson
 
 Log = Callable[[str], None]
 
@@ -62,6 +62,17 @@ class Outcome:
     summary: str
 
 
+@dataclass(frozen=True)
+class Baselines:
+    good: StepResult
+    bad: StepResult
+
+    def threshold(self, runs: list[TaskRun]) -> float:
+        """Midpoint of the good and bad pass rates over the same task mix as `runs` (PRD §8.1 step 2)."""
+        g, b = self.good.task_rates(), self.bad.task_rates()
+        return sum((g[r.task_id] + b[r.task_id]) / 2 for r in runs) / len(runs)
+
+
 def suite_hash(tasks: list[str]) -> str:
     return hashlib.sha256("\n".join(tasks).encode()).hexdigest()[:16]
 
@@ -76,26 +87,20 @@ class Orchestrator:
         self.env = victim_env(self.repo)
 
     # one commit ---------------------------------------------------------------
-    def evaluate(
-        self, run_id: str, kind: str, sha: str, tasks: list[str], reps: int,
-        decide: Callable[[StepResult], str] | None = None,
-    ) -> StepResult:
+    def evaluate(self, run_id: str, kind: str, sha: str, tasks: list[str], reps: range) -> StepResult:
         with tracing.span(f"evaluate_commit:{kind}", "CHAIN", commit_sha=sha,
-                          input={"kind": kind, "tasks": tasks, "repetitions": reps}) as sp:
-            result = self._evaluate(run_id, kind, sha, tasks, reps, decide)
+                          input={"kind": kind, "tasks": tasks, "repetitions": [reps.start, reps.stop]}) as sp:
+            result = self._evaluate(run_id, kind, sha, tasks, reps)
             sp.output({"skipped": result.skipped, "passes": result.passes, "n": result.n})
             return result
 
-    def _evaluate(
-        self, run_id: str, kind: str, sha: str, tasks: list[str], reps: int,
-        decide: Callable[[StepResult], str] | None,
-    ) -> StepResult:
+    def _evaluate(self, run_id: str, kind: str, sha: str, tasks: list[str], reps: range) -> StepResult:
         existing = self.ledger.get_step(run_id, kind, sha)
         if existing is not None and existing["status"] == "skip":
             return StepResult(sha, True, [])
         step_id = self.ledger.open_step(run_id, kind, sha)
         done = self.ledger.task_runs(step_id)
-        todo = [(t, r) for t in tasks for r in range(reps) if (t, r) not in done]
+        todo = [(t, r) for t in tasks for r in reps if (t, r) not in done]
         if todo:
             worktree = self._worktree(sha)
             with tracing.span("uv_sync_locked", "TOOL", input={"worktree": worktree.name}) as sp:
@@ -106,13 +111,14 @@ class Orchestrator:
                 self.log(f"  {sha[:10]} install failed → SKIP")
                 return StepResult(sha, True, [])
             self._run_tasks(run_id, step_id, worktree, sha, todo)
-        runs = list(self.ledger.task_runs(step_id).values())
-        result = StepResult(sha, False, [r for r in runs if r.task_id in tasks and r.repetition < reps])
+        runs = [r for r in self.ledger.task_runs(step_id).values() if r.task_id in tasks and r.repetition in reps]
+        result = StepResult(sha, False, runs)
         low, high = wilson(result.passes, result.n, self.cfg.z)
-        latencies = [r.latency_ms for r in result.runs if r.latency_ms is not None]
+        latencies = [r.latency_ms for r in runs if r.latency_ms is not None]
         self.ledger.close_step(
-            step_id, "done", decision=decide(result) if decide else None, wilson_low=low, wilson_high=high,
-            n=result.n, passes=result.passes, cost_usd=sum(r.cost_usd or 0.0 for r in result.runs),
+            step_id, "done", decision=existing["decision"] if existing is not None else None,
+            wilson_low=low, wilson_high=high, n=result.n, passes=result.passes,
+            cost_usd=sum(r.cost_usd or 0.0 for r in runs),
             latency_ms_p50=statistics.median(latencies) if latencies else None,
         )
         return result
@@ -122,6 +128,12 @@ class Orchestrator:
             path = sandbox.add_worktree(self.repo, sha)
             sp.output({"worktree": path.name})
             return path
+
+    def _check_budget(self, run_id: str) -> None:
+        if self.ledger.run_cost(run_id) >= self.cfg.budget_usd:
+            raise BudgetExceeded(f"run cost reached the ${self.cfg.budget_usd:.2f} per-run cap")
+        if self.ledger.total_cost() >= self.cfg.global_budget_usd:
+            raise BudgetExceeded(f"ledger total reached the ${self.cfg.global_budget_usd:.2f} global cap")
 
     def _run_tasks(self, run_id: str, step_id: int, worktree: Path, sha: str, todo: list[tuple[str, int]]) -> None:
         """Workers only run subprocesses; ledger writes and budget checks stay on this thread."""
@@ -136,13 +148,58 @@ class Orchestrator:
 
         with ThreadPoolExecutor(max_workers=self.workers) as pool:
             for start in range(0, len(todo), self.workers):
-                if self.ledger.run_cost(run_id) >= self.cfg.budget_usd:
-                    raise BudgetExceeded(f"run cost reached the ${self.cfg.budget_usd:.2f} cap")
+                self._check_budget(run_id)
                 batch = todo[start : start + self.workers]
                 # Copy the context per task so each span parents under the current step.
                 futures = [pool.submit(contextvars.copy_context().run, one, item) for item in batch]
                 for fut in futures:
                     self.ledger.record_task_run(step_id, fut.result())
+
+    # noise-aware classification (PRD §8.1 step 4, §8.2) ------------------------------
+    def classify(self, run_id: str, sha: str, base: Baselines, subset: list[str], ranked: list[str]) -> Verdict:
+        """Wilson decision on D × k; INCONCLUSIVE → k more repetitions, then more tasks, up to the cap.
+
+        If the cap is reached and it is still inconclusive, the point estimate decides and the
+        step is flagged `low_confidence`.
+        """
+        first = self.evaluate(run_id, "bisect", sha, subset, range(self.cfg.k))
+        if first.skipped:
+            return Verdict.SKIP
+        runs, kind = list(first.runs), "bisect"
+        widened = [t for t in ranked if t not in subset][: self.cfg.discriminating_size]
+        plans = [(subset, range(self.cfg.k, 2 * self.cfg.k)), (widened, range(self.cfg.k))]
+        for round_ in range(self.cfg.max_resample_rounds + 1):
+            threshold = base.threshold(runs)
+            passes = sum(r.passed for r in runs)
+            decision, low, high = decide(passes, len(runs), threshold, self.cfg.z)
+            capped = round_ == self.cfg.max_resample_rounds or round_ >= len(plans) or not plans[round_][0]
+            final = decision is not Decision.INCONCLUSIVE or capped
+            with tracing.span("decision_rule", "TOOL", commit_sha=sha, input={
+                "passes": passes, "n": len(runs), "threshold": threshold, "z": self.cfg.z, "round": round_,
+            }) as sp:
+                if decision is Decision.INCONCLUSIVE and capped:
+                    verdict, flag = (Verdict.GOOD if passes / len(runs) >= threshold else Verdict.BAD), "low_confidence"
+                elif decision is Decision.INCONCLUSIVE:
+                    verdict, flag = None, None
+                else:
+                    verdict, flag = Verdict(decision.value), None
+                sp.output({"decision": decision, "wilson": [low, high], "verdict": verdict, "flag": flag})
+            step = self.ledger.get_step(run_id, kind, sha)
+            self.ledger.set_decision(step["step_id"], verdict or Decision.INCONCLUSIVE, flag, low, high,
+                                     len(runs), passes)
+            self.log(f"  {sha[:10]} {gitops.subject(self.repo, sha)[:44]!r}: {passes}/{len(runs)} "
+                     f"CI [{low:.2f}, {high:.2f}] vs t={threshold:.2f} → {decision}"
+                     + (f" → {verdict} ({flag})" if flag else ""))
+            if final:
+                return verdict  # type: ignore[return-value]
+            tasks, reps = plans[round_]
+            kind = f"resample:{round_ + 1}"
+            self.log(f"    resample {round_ + 1}: {len(tasks)} tasks × reps {reps.start}..{reps.stop - 1}")
+            extra = self.evaluate(run_id, kind, sha, tasks, reps)
+            if extra.skipped:  # cannot happen after a successful install, but stay safe
+                return Verdict.SKIP
+            runs += extra.runs
+        raise AssertionError("unreachable")
 
     # whole run -----------------------------------------------------------------
     def start(self) -> str:
@@ -162,10 +219,6 @@ class Orchestrator:
                 self.log(f"neatlogs trace {trace_id}")
             try:
                 outcome = self._run(run_id)
-            except BudgetExceeded as exc:
-                summary = f"Stopped: {exc}. Resume with a higher --budget-usd to continue."
-                self.ledger.finish_run(run_id, "budget_exceeded", None, None, summary)
-                outcome = Outcome(run_id, "budget_exceeded", None, summary)
             except Exception as exc:
                 self.ledger.finish_run(run_id, "error", None, None, f"{type(exc).__name__}: {exc}")
                 raise
@@ -187,43 +240,45 @@ class Orchestrator:
             good, bad = gitops.resolve(repo, cfg.good_ref), gitops.resolve(repo, cfg.bad_ref)
             candidates = gitops.first_parent_range(repo, good, bad)
             sp.output({"good": good, "bad": bad, "candidates": candidates})
+        tested: list[tuple[str, Verdict]] = []
+        try:
+            return self._bisect(run_id, good, bad, candidates, tested)
+        except BudgetExceeded as exc:
+            return self._budget_stop(run_id, exc, candidates, tested)
+
+    def _bisect(self, run_id: str, good: str, bad: str, candidates: list[str],
+                tested: list[tuple[str, Verdict]]) -> Outcome:
+        cfg, repo = self.cfg, self.repo
         tasks = self._ensure_tasks(run_id, good)
         self.log(f"run {run_id}: {len(candidates)} commits in {cfg.good_ref}..{cfg.bad_ref}, "
                  f"{len(tasks)} tasks × {cfg.k}")
 
-        base_good = self.evaluate(run_id, "baseline", good, tasks, cfg.k)
-        base_bad = self.evaluate(run_id, "baseline", bad, tasks, cfg.k)
-        if base_good.skipped or base_bad.skipped:
+        base = Baselines(self.evaluate(run_id, "baseline", good, tasks, range(cfg.k)),
+                         self.evaluate(run_id, "baseline", bad, tasks, range(cfg.k)))
+        if base.good.skipped or base.bad.skipped:
             return self._finish(run_id, "error", None, "good or bad ref failed to install; cannot bisect")
-        self.log(f"  good {base_good.passes}/{base_good.n}  bad {base_bad.passes}/{base_bad.n}")
-        if base_good.rate <= base_bad.rate:
+        ci_good = wilson(base.good.passes, base.good.n, cfg.z)
+        ci_bad = wilson(base.bad.passes, base.bad.n, cfg.z)
+        self.log(f"  good {base.good.passes}/{base.good.n} CI [{ci_good[0]:.2f}, {ci_good[1]:.2f}]  "
+                 f"bad {base.bad.passes}/{base.bad.n} CI [{ci_bad[0]:.2f}, {ci_bad[1]:.2f}]")
+        if base.good.rate <= base.bad.rate or intervals_overlap(ci_good, ci_bad):
             return self._finish(run_id, "no_regression", None,
-                                f"No regression to bisect: good {base_good.rate:.2f} ≤ bad {base_bad.rate:.2f}")
-        threshold = (base_good.rate + base_bad.rate) / 2
-        with tracing.span("select_discriminating_tasks", "TOOL", input={"threshold": threshold}) as sp:
-            subset = self.discriminating(base_good, base_bad)
-            sp.output({"tasks": subset})
-        self.log(f"  threshold {threshold:.2f}; discriminating tasks: {', '.join(subset)}")
+                                f"No significant regression to bisect: good {base.good.passes}/{base.good.n} "
+                                f"and bad {base.bad.passes}/{base.bad.n} have overlapping 95% intervals")
+        with tracing.span("select_discriminating_tasks", "TOOL", input={"size": cfg.discriminating_size}) as sp:
+            ranked = self.ranked_tasks(base)
+            subset = [t for t in ranked if base.good.task_rates()[t] > base.bad.task_rates()[t]]
+            subset = subset[: cfg.discriminating_size] or ranked[: cfg.discriminating_size]
+            sp.output({"tasks": subset, "ranked": ranked})
+        self.log(f"  discriminating tasks: {', '.join(subset)}")
 
-        def point_estimate(res: StepResult) -> Verdict:
-            return Verdict.GOOD if res.rate >= threshold else Verdict.BAD
-
-        def classify(sha: str) -> Verdict:
-            res = self.evaluate(run_id, "bisect", sha, subset, cfg.k, decide=point_estimate)
-            if res.skipped:
-                return Verdict.SKIP
-            with tracing.span("decision_rule", "TOOL", commit_sha=sha,
-                              input={"passes": res.passes, "n": res.n, "threshold": threshold}) as sp:
-                verdict = point_estimate(res)
-                sp.output({"verdict": verdict, "rule": "point-estimate"})
-            self.log(f"  {sha[:10]} {gitops.subject(repo, sha)[:50]!r}: {res.passes}/{res.n} → {verdict}")
-            return verdict
-
-        result = bisect(candidates, classify)
+        result = bisect(candidates, lambda sha: self.classify(run_id, sha, base, subset, ranked), tested)
+        low_conf = [s["commit_sha"][:10] for s in self.ledger.steps(run_id) if s["flags"] == "low_confidence"]
+        confidence = "95% Wilson" if not low_conf else f"low: point estimate decided {', '.join(low_conf)}"
         if result.first_bad is None:
             summary = f"Culprit is one of {len(result.suspects)} commits (skipped commits hide the boundary): " + \
                 ", ".join(s[:10] for s in result.suspects)
-            return self._finish(run_id, "ambiguous", result, summary)
+            return self._finish(run_id, "ambiguous", result, summary, confidence)
 
         with tracing.span("entire_checkpoint_explain", "TOOL", commit_sha=result.first_bad,
                           input={"sha": result.first_bad}) as sp:
@@ -233,15 +288,23 @@ class Orchestrator:
         self.ledger.put_artifact(run_id, "intent", intent.text)
         self.ledger.put_artifact(run_id, "diff", gitops.diff(repo, result.first_bad))
         self.log(f"  intent source: {intent.source}; leakage filter removed {intent.lines_removed} lines")
-        summary = f"Culprit: {result.first_bad} {gitops.subject(repo, result.first_bad)!r}"
-        return self._finish(run_id, "found", result, summary, confidence="point-estimate")
+        summary = f"Culprit: {result.first_bad} {gitops.subject(repo, result.first_bad)!r} (confidence: {confidence})"
+        return self._finish(run_id, "found", result, summary, confidence)
 
-    def discriminating(self, good: StepResult, bad: StepResult) -> list[str]:
+    def ranked_tasks(self, base: Baselines) -> list[str]:
         """Tasks ranked by pass-rate drop from good to bad (deterministic part of the Task Selector)."""
-        g, b = good.task_rates(), bad.task_rates()
-        ranked = sorted(((g[t] - b.get(t, 0.0), t) for t in g), key=lambda x: (-x[0], x[1]))
-        subset = [t for delta, t in ranked if delta > 0][: self.cfg.discriminating_size]
-        return subset or sorted(g)
+        g, b = base.good.task_rates(), base.bad.task_rates()
+        return [t for _, t in sorted(((g[t] - b.get(t, 0.0), t) for t in g), key=lambda x: (-x[0], x[1]))]
+
+    def _budget_stop(self, run_id: str, exc: BudgetExceeded, candidates: list[str],
+                     tested: list[tuple[str, Verdict]]) -> Outcome:
+        lo, hi = bounds(candidates, tested)
+        suspects = candidates[lo + 1 : hi + 1]
+        summary = (f"Stopped: {exc}. Best current range: {len(suspects)} commits "
+                   f"{suspects[0][:10]}..{suspects[-1][:10]}; tested {len(tested)} so far. "
+                   f"Resume with `culprit resume {run_id} --budget-usd <higher>` to continue.")
+        result = BisectResult(first_bad=None, suspects=suspects, tested=tested)
+        return self._finish(run_id, "budget_exceeded", result, summary)
 
     def _finish(self, run_id: str, status: str, result: BisectResult | None, summary: str,
                 confidence: str | None = None) -> Outcome:

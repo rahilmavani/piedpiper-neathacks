@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS steps (
     started_at TEXT NOT NULL,
     finished_at TEXT,
     error TEXT,
+    flags TEXT,
     UNIQUE (run_id, kind, commit_sha)
 );
 CREATE TABLE IF NOT EXISTS task_runs (
@@ -108,6 +109,9 @@ class Ledger:
         self.conn.row_factory = sqlite3.Row
         self.conn.execute("PRAGMA journal_mode=WAL")
         self.conn.executescript(SCHEMA)
+        columns = {r["name"] for r in self.conn.execute("PRAGMA table_info(steps)")}
+        if "flags" not in columns:  # ledgers created before M2
+            self.conn.execute("ALTER TABLE steps ADD COLUMN flags TEXT")
 
     @contextmanager
     def _tx(self) -> Iterator[sqlite3.Connection]:
@@ -161,6 +165,12 @@ class Ledger:
         ).fetchone()[0]
         return float(victim) + float(llm)
 
+    def total_cost(self) -> float:
+        """Cost across every run in this ledger, for the global (event-wide) cap."""
+        victim = self.conn.execute("SELECT COALESCE(SUM(cost_usd), 0) FROM task_runs").fetchone()[0]
+        llm = self.conn.execute("SELECT COALESCE(SUM(cost_usd), 0) FROM llm_calls").fetchone()[0]
+        return float(victim) + float(llm)
+
     # steps ----------------------------------------------------------------
     def get_step(self, run_id: str, kind: str, commit_sha: str) -> sqlite3.Row | None:
         return self.conn.execute(
@@ -197,6 +207,18 @@ class Ledger:
                 "UPDATE steps SET status = ?, decision = ?, wilson_low = ?, wilson_high = ?, n = ?, passes = ?,"
                 " cost_usd = ?, latency_ms_p50 = ?, error = ?, finished_at = ? WHERE step_id = ?",
                 (status, decision, wilson_low, wilson_high, n, passes, cost_usd, latency_ms_p50, error, _now(), step_id),
+            )
+
+    def set_decision(
+        self, step_id: int, decision: str, flags: str | None, wilson_low: float, wilson_high: float,
+        n: int, passes: int,
+    ) -> None:
+        """Decision over the commit's combined runs so far (initial step plus any resamples)."""
+        with self._tx() as c:
+            c.execute(
+                "UPDATE steps SET decision = ?, flags = ?, wilson_low = ?, wilson_high = ?, n = ?, passes = ?"
+                " WHERE step_id = ?",
+                (decision, flags, wilson_low, wilson_high, n, passes, step_id),
             )
 
     def steps(self, run_id: str) -> list[sqlite3.Row]:

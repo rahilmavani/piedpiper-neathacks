@@ -1,9 +1,11 @@
 """Builds a tiny throwaway victim repo for tests and local runs (no LLM, no network at eval time).
 
-The fake agent passes "fragile" tasks only while `VALIDATE = True`. Noise is deterministic per
-(task, seed), so the fixture exercises the bisect without spending money.
+"Fragile" tasks pass with probability `FRAGILE_PASS` (0.95 at good, 0.05 after the breaking
+commit, `--noisy-pass` on optional noisy commits before it). Noise is deterministic per (task, seed), so the
+fixture exercises the bisect, skip and resampling paths without spending money.
 
-    uv run python tests/fixtures/make_victim.py /tmp/victim --commits 14 --breaks-at 10 --unbuildable-at 7
+    uv run python tests/fixtures/make_victim.py /tmp/victim --commits 14 --breaks-at 10 --unbuildable-at 7 \
+        --noisy-from 8
 """
 
 from __future__ import annotations
@@ -24,11 +26,11 @@ package = false
 """
 
 AGENT = """\
-VALIDATE = {validate}
+FRAGILE_PASS = {p}
 """
 
 EVAL = '''\
-"""Fake eval runner with the same interface as the real one."""
+"""Fake eval runner with the same interface as the real one; each run costs a nominal $0.001."""
 import argparse, json, random, time
 
 from refunddesk import agent
@@ -42,10 +44,10 @@ def main() -> None:
     p.add_argument("--seed", type=int, default=0)
     a = p.parse_args()
     rng = random.Random(f"{{a.task}}:{{a.seed}}")
-    p_pass = 0.95 if (agent.VALIDATE or a.task not in FRAGILE) else 0.05
+    p_pass = agent.FRAGILE_PASS if a.task in FRAGILE else 0.95
     started = time.monotonic()
     passed = rng.random() < p_pass
-    print(json.dumps({{"passed": passed, "cost": 0.0, "latency_ms": (time.monotonic() - started) * 1000,
+    print(json.dumps({{"passed": passed, "cost": 0.001, "latency_ms": (time.monotonic() - started) * 1000,
                       "tokens": {{"in": 100, "out": 20}}, "trace_id": None}}))
 
 
@@ -63,7 +65,8 @@ def commit(repo: Path, msg: str) -> None:
     sh(repo, "git", "commit", "-q", "-m", msg)
 
 
-def build(path: Path, commits: int, breaks_at: int, unbuildable_at: int | None) -> Path:
+def build(path: Path, commits: int, breaks_at: int, unbuildable_at: int | None, noisy_from: int | None = None,
+          noisy_pass: float = 0.75) -> Path:
     path.mkdir(parents=True, exist_ok=False)
     sh(path, "git", "init", "-q", "-b", "main")
     sh(path, "git", "config", "user.email", "fixture@example.invalid")
@@ -71,7 +74,7 @@ def build(path: Path, commits: int, breaks_at: int, unbuildable_at: int | None) 
     pkg = path / "refunddesk"
     pkg.mkdir()
     (pkg / "__init__.py").write_text("")
-    (pkg / "agent.py").write_text(AGENT.format(validate=True))
+    (pkg / "agent.py").write_text(AGENT.format(p=0.95))
     (pkg / "eval.py").write_text(EVAL.format())
     (path / "pyproject.toml").write_text(PYPROJECT.format(deps=""))
     (path / ".gitignore").write_text(".venv/\n")
@@ -86,8 +89,11 @@ def build(path: Path, commits: int, breaks_at: int, unbuildable_at: int | None) 
     notes = path / "NOTES.md"
     for n in range(1, commits + 1):
         if n == breaks_at:
-            (pkg / "agent.py").write_text(AGENT.format(validate=False))
+            (pkg / "agent.py").write_text(AGENT.format(p=0.05))
             commit(path, "speed up tool handling")
+        elif noisy_from is not None and n == noisy_from:
+            (pkg / "agent.py").write_text(AGENT.format(p=noisy_pass))
+            commit(path, "tune tool timeouts")
         elif unbuildable_at is not None and n == unbuildable_at:
             (path / "pyproject.toml").write_text(PYPROJECT.format(deps='"requests==99.99.99"'))
             commit(path, "pin requests")
@@ -107,8 +113,10 @@ def main() -> None:
     p.add_argument("--commits", type=int, default=14)
     p.add_argument("--breaks-at", type=int, default=10)
     p.add_argument("--unbuildable-at", type=int, default=7)
+    p.add_argument("--noisy-from", type=int, default=None)
+    p.add_argument("--noisy-pass", type=float, default=0.75)
     a = p.parse_args()
-    print(build(a.path, a.commits, a.breaks_at, a.unbuildable_at))
+    print(build(a.path, a.commits, a.breaks_at, a.unbuildable_at, a.noisy_from, a.noisy_pass))
 
 
 if __name__ == "__main__":

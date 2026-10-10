@@ -22,6 +22,8 @@ class Config:
     k: int = 3
     z: float = 1.96
     budget_usd: float = 3.00
+    global_budget_usd: float = 75.00
+    max_resample_rounds: int = 2
     discriminating_size: int = 8
     install_timeout_s: int = 600
     task_timeout_s: int = 300

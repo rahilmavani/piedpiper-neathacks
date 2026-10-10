@@ -1,0 +1,35 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4JYK9V9RE9YKV0YCNYB48E8",
+  "strategy": "manual-commit",
+  "branch": "feat/bench",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "HOW_IT_WORKS.md",
+    "hackathon.md",
+    "src/culprit/cli.py",
+    "src/culprit/finished.py",
+    "src/culprit/fix.py",
+    "src/culprit/localise.py",
+    "src/culprit/sandbox.py",
+    "tests/fixtures/make_victim.py",
+    "tests/test_fix.py",
+    "tests/test_localise.py"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 54,
+    "cache_creation_tokens": 231447,
+    "cache_read_tokens": 3892112,
+    "output_tokens": 46826,
+    "api_call_count": 27
+  }
+}

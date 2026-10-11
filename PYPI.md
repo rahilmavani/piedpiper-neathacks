@@ -1,0 +1,62 @@
+# Culprit
+
+git bisect for AI agent behaviour. When your agent's eval suite gets worse, Culprit finds the commit
+that did it. Evals are noisy, so it runs each step several times, decides with 95% confidence
+intervals, and resamples when the answer is unclear. It then reads why the change was made, finds the
+responsible lines, and writes a fix that it verifies on held-out tasks.
+
+You bring your own model key. Culprit runs on your machine and only creates git worktrees under
+`.culprit/`; it never edits your checkout.
+
+## Install
+
+```bash
+uvx culprit-cli --help          # run without installing
+uv tool install culprit-cli     # or install the `culprit` command
+```
+
+Needs Python 3.12+, [uv](https://docs.astral.sh/uv/) and git.
+
+## What your agent's repo needs
+
+- **A git history** with a known-good ref (a tag or commit) and a worse one.
+- **A uv project with a committed `uv.lock`.** Each commit is installed with `uv sync --locked`; a
+  commit that won't install is skipped, as `git bisect skip` does.
+- **An eval suite**: one file per task in a directory (default `evals/`).
+- **An eval module** that runs one task and prints one JSON line:
+
+  ```bash
+  python -m myagent.eval --task refund_small_order --seed 0
+  # {"passed": true}          optional: "cost", "latency_ms", "tokens", "error"
+  ```
+
+## Set up and run
+
+```bash
+cd my-agent
+culprit init                                       # key, eval module and suite → .env and culprit.toml
+culprit run --good v1.0 --bad HEAD --budget-usd 3  # find the commit
+culprit fix <run_id>                               # localise the lines and verify a fix
+culprit report <run_id>                            # markdown and HTML report
+```
+
+`culprit init` asks for an Anthropic or OpenRouter key and saves it to `.env` (it adds `.env` and
+`.culprit/` to `.gitignore`). With an Anthropic key, Claude Sonnet 5.5 is used; otherwise GLM 5.3 via
+OpenRouter. Set `VICTIM_MODEL` or `CULPRIT_MODEL` to choose other models from the same provider.
+
+## Other commands
+
+| Command | What it answers |
+|---|---|
+| `culprit ci --base main --head HEAD` | Is this pull request a regression? Exit 0 clean, 1 regression (writes a PR comment), 2 undecided |
+| `culprit drift --ref v1.0` | Did the model change underneath us? Re-runs a recorded good ref with the same seeds |
+| `culprit audit --ref HEAD` | Which realistic regressions would our suite miss? Mutation testing for agents |
+| `culprit resume <run_id>` | Continue a stopped run, for example after it hit `--budget-usd` |
+
+## Cost
+
+You pay your model provider for your agent's runs and Culprit's own model calls. On our test agent
+(26 tasks, 3 runs each) a bisect cost between $0.04 and $0.41 depending on the model. `--budget-usd`
+is a hard cap; a run stops there and can be resumed.
+
+More: https://culprit-site.vercel.app

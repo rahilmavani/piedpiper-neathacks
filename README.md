@@ -150,6 +150,20 @@ a 156 → 52, b 240 → 164, c 180 → 84, d 156 → 52, e 156 → 52, f 252 →
 [`evidence/RUNS.md`](evidence/RUNS.md)). Baseline reuse wasn't measured on the real victim: on our ledger it
 would copy v1's baselines and run almost nothing, which isn't a fair comparison.
 
+## Use it on your own agent
+
+Culprit is packaged as `culprit-cli` (not yet published; build it with `uv build`). In your agent's repo:
+
+```bash
+uvx culprit-cli init                             # key → .env, eval module and suite → culprit.toml
+uvx culprit-cli run --good v1.0 --bad HEAD --budget-usd 3
+```
+
+Your repo needs a committed `uv.lock`, one file per task in `evals/`, and a module that runs one task
+and prints one JSON line with `passed` (see `PYPI.md`, which is also the package's PyPI page). An
+installed Culprit keeps its state in `.culprit/` of the directory it runs from; a clone of this repo
+keeps it next to the code, as before.
+
 ## Setup
 
 You need Python ≥ 3.12, [`uv`](https://docs.astral.sh/uv/), git, and (for intent) the

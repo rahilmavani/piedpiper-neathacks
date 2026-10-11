@@ -168,6 +168,11 @@ Planned (from `PRD.md`); move items to "used" as they are integrated.
   - `drift`: STABLE, 78/78 vs 78/78 the day before, $0.19.
   - `audit`: mutation score **4/8** for $1.80. It agrees with the hand-planted benchmark on every comparable category (validation, retries and history caught; prompt-rule and lenient-args removals missed) and finds 2 blind spots we hadn't planted (removing the code guard, a vague tool description). No mutant touched test scaffolding.
 - **Finding worth posting:** "We spent a day planting 6 bugs to learn our tests miss 3 of them. `culprit audit` found the same blind spots in 35 minutes for $1.80, plus two more, and told us which tests to add."
+- **Done: two more domains × two models.** Codex built OpsDesk and ClinicDesk to the same contract, with regressions calibrated to be visible only on a weaker model. Culprit got 21/24 correct with 0 wrong culprits, for $0.90 (`evidence/DOMAINS.md`).
+  - OpsDesk: 6/6 on GLM and 6/6 on Llama. b, d and e give "no regression" on GLM and the exact commit on Llama.
+  - ClinicDesk: 6/6 on GLM; 3/6 on Llama (missed a, b, d), because Llama passed 46% on the good version vs 78% in calibration, so the gate declined to guess.
+  - Added `--eval-module`, `scripts/import_answer_key.py` and `scripts/domains_json.py`; the ledger snapshot now relocates across three victim repos.
+- **Finding worth posting:** "Same commit, two verdicts, both right: removing a safety net is harmless for a strong model and a regression for a weak one. Culprit tells you which, per model. 54 bisects, 0 wrong commits."
 
 ## Demo
 

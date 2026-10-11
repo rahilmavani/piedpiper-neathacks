@@ -1,0 +1,158 @@
+{
+  "tag": "opsdesk-llama-3.1-8b",
+  "mode": "scored existing runs from `/Volumes/DevSSD/Projects/piedpiper-neathacks/.culprit/ledger.sqlite`",
+  "culprit": "829fa13366dd19eb0a402ed249e907ad41889552",
+  "not_scored": [],
+  "accuracy": {
+    "correct": 6,
+    "scored": 6,
+    "unverified": 0,
+    "incomplete": 0
+  },
+  "rows": [
+    {
+      "run_id": "c0641d8444e7",
+      "status": "found",
+      "culprit_sha": "95eca63dc4fd5bfa498bafe36392c6000801ee47",
+      "suspects": [
+        "95eca63dc4fd5bfa498bafe36392c6000801ee47"
+      ],
+      "good_sha": "6c09d9762d435f33d6b27660efcb6a3f01858a15",
+      "bad_sha": "d90fcb4cc216907186de3c1ffbe7360180615802",
+      "victim_model": "meta-llama/llama-3.1-8b-instruct",
+      "victim_runs": 124,
+      "cost_usd": 0.00702787,
+      "wall_s": 73.0,
+      "skipped": [
+        "387d69a45c7999638cf4f0b01829f1a539dc8143"
+      ],
+      "confidence": "95% Wilson",
+      "summary": "Culprit: 95eca63dc4fd5bfa498bafe36392c6000801ee47 'perf: reduce tool dispatch latency' (confidence: 95% Wilson)",
+      "traces": [
+        "032ccc6c206eb8b69a3e9ed8857df5ca"
+      ],
+      "scenario": "hist/a",
+      "outcome": "correct",
+      "expected": "95eca63dc4fd5bfa498bafe36392c6000801ee47",
+      "note": ""
+    },
+    {
+      "run_id": "cc521c355be3",
+      "status": "found",
+      "culprit_sha": "5a54888ae805bec8b0003be1b3a137431cbe18f8",
+      "suspects": [
+        "5a54888ae805bec8b0003be1b3a137431cbe18f8"
+      ],
+      "good_sha": "6c09d9762d435f33d6b27660efcb6a3f01858a15",
+      "bad_sha": "d6cd7886a31d4dc08966f2e0ad11bd8bbe89434c",
+      "victim_model": "meta-llama/llama-3.1-8b-instruct",
+      "victim_runs": 196,
+      "cost_usd": 0.01836501,
+      "wall_s": 166.0,
+      "skipped": [],
+      "confidence": "95% Wilson",
+      "summary": "Culprit: 5a54888ae805bec8b0003be1b3a137431cbe18f8 'refactor: streamline tool dispatch checks' (confidence: 95% Wilson)",
+      "traces": [
+        "16b4a73332577d826499d42232ad730b"
+      ],
+      "scenario": "hist/b",
+      "outcome": "correct",
+      "expected": "5a54888ae805bec8b0003be1b3a137431cbe18f8",
+      "note": ""
+    },
+    {
+      "run_id": "94b8cbcfa90c",
+      "status": "found",
+      "culprit_sha": "3262e8316a6e2ea0354b9d0df85d07c7f862efd3",
+      "suspects": [
+        "3262e8316a6e2ea0354b9d0df85d07c7f862efd3"
+      ],
+      "good_sha": "6c09d9762d435f33d6b27660efcb6a3f01858a15",
+      "bad_sha": "0b902b9b7fd1fa866c04991aa97a4986ab73b084",
+      "victim_model": "meta-llama/llama-3.1-8b-instruct",
+      "victim_runs": 156,
+      "cost_usd": 0.01770694,
+      "wall_s": 141.0,
+      "skipped": [],
+      "confidence": "95% Wilson",
+      "summary": "Culprit: 3262e8316a6e2ea0354b9d0df85d07c7f862efd3 'perf: bound incident prompt size' (confidence: 95% Wilson)",
+      "traces": [
+        "00ca98cd1b625ae100bdc0161cb4b15a"
+      ],
+      "scenario": "hist/c",
+      "outcome": "correct",
+      "expected": "3262e8316a6e2ea0354b9d0df85d07c7f862efd3",
+      "note": ""
+    },
+    {
+      "run_id": "45d96cbedd13",
+      "status": "found",
+      "culprit_sha": "55599763178f8e5441a9d7ae4315a50549253550",
+      "suspects": [
+        "55599763178f8e5441a9d7ae4315a50549253550"
+      ],
+      "good_sha": "6c09d9762d435f33d6b27660efcb6a3f01858a15",
+      "bad_sha": "b8f648cb7fe20c112f526744ac96f6df1e642133",
+      "victim_model": "meta-llama/llama-3.1-8b-instruct",
+      "victim_runs": 132,
+      "cost_usd": 0.00947098,
+      "wall_s": 95.0,
+      "skipped": [],
+      "confidence": "95% Wilson",
+      "summary": "Culprit: 55599763178f8e5441a9d7ae4315a50549253550 'refactor: accept numeric values at the tool boundary' (confidence: 95% Wilson)",
+      "traces": [
+        "f691100b5798ad7ba3c1057b335a842b"
+      ],
+      "scenario": "hist/d",
+      "outcome": "correct",
+      "expected": "55599763178f8e5441a9d7ae4315a50549253550",
+      "note": ""
+    },
+    {
+      "run_id": "9c55a7cc8f99",
+      "status": "found",
+      "culprit_sha": "afa31438c16e22238d66e2ddc4bc88164542647f",
+      "suspects": [
+        "afa31438c16e22238d66e2ddc4bc88164542647f"
+      ],
+      "good_sha": "6c09d9762d435f33d6b27660efcb6a3f01858a15",
+      "bad_sha": "1ab4311604ba45cd5a041e51125cc1b91b51c2e5",
+      "victim_model": "meta-llama/llama-3.1-8b-instruct",
+      "victim_runs": 138,
+      "cost_usd": 0.00935887,
+      "wall_s": 108.0,
+      "skipped": [],
+      "confidence": "95% Wilson",
+      "summary": "Culprit: afa31438c16e22238d66e2ddc4bc88164542647f 'refactor: simplify telemetry context assembly' (confidence: 95% Wilson)",
+      "traces": [
+        "52f3b1f8a4130b67bef2a8182e76f646"
+      ],
+      "scenario": "hist/e",
+      "outcome": "correct",
+      "expected": "afa31438c16e22238d66e2ddc4bc88164542647f",
+      "note": ""
+    },
+    {
+      "run_id": "bd8e36efeb29",
+      "status": "no_regression",
+      "culprit_sha": null,
+      "suspects": [],
+      "good_sha": "6c09d9762d435f33d6b27660efcb6a3f01858a15",
+      "bad_sha": "2739ba933e72d52d186680c038106e66a1b83d7c",
+      "victim_model": "meta-llama/llama-3.1-8b-instruct",
+      "victim_runs": 68,
+      "cost_usd": 0.00593408,
+      "wall_s": 52.0,
+      "skipped": [],
+      "confidence": null,
+      "summary": "No significant regression to bisect: good 32/34 vs bad 34/34, one-sided Fisher p=1.0000 \u2265 0.05",
+      "traces": [
+        "59a8c1250ceac6dab6755cd408cbd441"
+      ],
+      "scenario": "hist/f",
+      "outcome": "correct_no_regression",
+      "expected": "142e5fba53f00194e1066ed868085c8f4a860305",
+      "note": ""
+    }
+  ]
+}

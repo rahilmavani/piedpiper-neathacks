@@ -1,0 +1,148 @@
+{
+  "tag": "clinicdesk-llama-3.1-8b",
+  "mode": "scored existing runs from `/Volumes/DevSSD/Projects/piedpiper-neathacks/.culprit/ledger.sqlite`",
+  "culprit": "829fa13366dd19eb0a402ed249e907ad41889552",
+  "not_scored": [],
+  "accuracy": {
+    "correct": 3,
+    "scored": 6,
+    "unverified": 0,
+    "incomplete": 0
+  },
+  "rows": [
+    {
+      "run_id": "7d33e16f8324",
+      "status": "no_regression",
+      "culprit_sha": null,
+      "suspects": [],
+      "good_sha": "b753586e77438e3740342622e8f60247b4a06316",
+      "bad_sha": "3e722395f3adb5af9038db40f949a3320ed85c8d",
+      "victim_model": "meta-llama/llama-3.1-8b-instruct",
+      "victim_runs": 108,
+      "cost_usd": 0.01532324,
+      "wall_s": 254.0,
+      "skipped": [],
+      "confidence": null,
+      "summary": "No significant regression to bisect: good 24/54 vs bad 22/54, one-sided Fisher p=0.4229 \u2265 0.05",
+      "traces": [
+        "815824785f276496b6930c98c1bb7157"
+      ],
+      "scenario": "hist/a",
+      "outcome": "missed",
+      "expected": "cd35228cae410fbb4eaa9f886e93b7b39fdcc9c2",
+      "note": ""
+    },
+    {
+      "run_id": "c4937ce01a67",
+      "status": "no_regression",
+      "culprit_sha": null,
+      "suspects": [],
+      "good_sha": "b753586e77438e3740342622e8f60247b4a06316",
+      "bad_sha": "ac5205fd2ba5e87e301de2805cc1bd073dd3b7a6",
+      "victim_model": "meta-llama/llama-3.1-8b-instruct",
+      "victim_runs": 104,
+      "cost_usd": 0.015957381,
+      "wall_s": 391.0,
+      "skipped": [],
+      "confidence": null,
+      "summary": "No significant regression to bisect: good 26/52 vs bad 27/52, one-sided Fisher p=0.6525 \u2265 0.05",
+      "traces": [
+        "80ef3c51d921057558185ea5f4b32398"
+      ],
+      "scenario": "hist/b",
+      "outcome": "missed",
+      "expected": "72bdad2290d0b187f53fa95ae1d52e1cd6268d69",
+      "note": ""
+    },
+    {
+      "run_id": "6a07e1766790",
+      "status": "found",
+      "culprit_sha": "c972a0aac725ea8c90ed514f79414a7011fd746a",
+      "suspects": [
+        "c972a0aac725ea8c90ed514f79414a7011fd746a"
+      ],
+      "good_sha": "b753586e77438e3740342622e8f60247b4a06316",
+      "bad_sha": "b08aa7ea5c22b58250a23149ca7a453847350a49",
+      "victim_model": "meta-llama/llama-3.1-8b-instruct",
+      "victim_runs": 232,
+      "cost_usd": 0.046334426,
+      "wall_s": 797.0,
+      "skipped": [],
+      "confidence": "95% Wilson",
+      "summary": "Culprit: c972a0aac725ea8c90ed514f79414a7011fd746a 'refactor: streamline symptom keyword matching' (confidence: 95% Wilson)",
+      "traces": [
+        "be6abfcbd25b89852e67f0b7a61922c1"
+      ],
+      "scenario": "hist/c",
+      "outcome": "correct",
+      "expected": "c972a0aac725ea8c90ed514f79414a7011fd746a",
+      "note": ""
+    },
+    {
+      "run_id": "93d18871e3fe",
+      "status": "no_regression",
+      "culprit_sha": null,
+      "suspects": [],
+      "good_sha": "b753586e77438e3740342622e8f60247b4a06316",
+      "bad_sha": "17811020b1a25b33a3dc7b12710dcb9b6a8f8977",
+      "victim_model": "meta-llama/llama-3.1-8b-instruct",
+      "victim_runs": 140,
+      "cost_usd": 0.018946142,
+      "wall_s": 460.0,
+      "skipped": [],
+      "confidence": null,
+      "summary": "No significant regression to bisect: good 35/70 vs bad 29/70, one-sided Fisher p=0.1982 \u2265 0.05",
+      "traces": [
+        "f2a36b8650b6837c9b78257fa5b8dce9"
+      ],
+      "scenario": "hist/d",
+      "outcome": "missed",
+      "expected": "d82a9403607703bfce0bb881dd7ef82648c600c5",
+      "note": ""
+    },
+    {
+      "run_id": "3f6bf9ac7de9",
+      "status": "no_regression",
+      "culprit_sha": null,
+      "suspects": [],
+      "good_sha": "b753586e77438e3740342622e8f60247b4a06316",
+      "bad_sha": "81bf118cfe16b895fe6f27e7a5e8c28d3f62ec75",
+      "victim_model": "meta-llama/llama-3.1-8b-instruct",
+      "victim_runs": 108,
+      "cost_usd": 0.01501662,
+      "wall_s": 278.0,
+      "skipped": [],
+      "confidence": null,
+      "summary": "No significant regression to bisect: good 22/54 vs bad 18/54, one-sided Fisher p=0.2751 \u2265 0.05",
+      "traces": [
+        "1c10f0ecccaa4ef6b601177257d1ffb5"
+      ],
+      "scenario": "hist/e",
+      "outcome": "correct_no_regression",
+      "expected": "8b6efe30803fd20f880ac6c68513320c8485b113",
+      "note": ""
+    },
+    {
+      "run_id": "168dc7730e14",
+      "status": "no_regression",
+      "culprit_sha": null,
+      "suspects": [],
+      "good_sha": "b753586e77438e3740342622e8f60247b4a06316",
+      "bad_sha": "4e5dc63f9b90a67c6cabebfb5d5363208efd6b1d",
+      "victim_model": "meta-llama/llama-3.1-8b-instruct",
+      "victim_runs": 108,
+      "cost_usd": 0.01501937,
+      "wall_s": 101.0,
+      "skipped": [],
+      "confidence": null,
+      "summary": "No significant regression to bisect: good 20/54 vs bad 21/54, one-sided Fisher p=0.6540 \u2265 0.05",
+      "traces": [
+        "945a11038189cc19c87adde63b17f356"
+      ],
+      "scenario": "hist/f",
+      "outcome": "correct_no_regression",
+      "expected": "4e0d36c9da3cb37f55883677eb303bba9c645539",
+      "note": ""
+    }
+  ]
+}

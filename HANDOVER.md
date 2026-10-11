@@ -21,6 +21,7 @@ Written Sat 10 Oct 2026, 21:30 IST, by the second builder's session, for whoever
 | Entire | The "why" for the hero commit comes from checkpoint `01M4JM8P2C4NDS2AAQ0MPVR8YR` ("RefundDesk is too slow. Make it faster…"); Culprit's own commits are checkpointed | `evidence/reports/report-978624283c27.md` |
 | Victim-model comparison | Culprit is **6/6 on all four models** (GLM 5.3, Qwen 3.8 Flash, DeepSeek V4.1 Flash, Gemini 3.8 Flash; 24/24 bisects). Cost per bisect ranges from $0.040 (DeepSeek) to $0.413 (Gemini). Gemini can't see bug c. The comparison is these four models; a Sonnet 5.5 run is optional and not planned (`evidence/SONNET_RUN.md` if wanted later, ~$15–20) | `evidence/MODELS.md`, `evidence/models.json` |
 | cfo.ai | Business plan: pricing comparison, break-even and cash runway exports, built from measured cost per bisect ($0.252) | `business/cfo-plan.md`, `business/cfo-ai-*.xlsx` |
+| More domains | **OpsDesk** (incident response) and **ClinicDesk** (clinic front desk), each × GLM 5.3 and Llama 3.1 8B: **21/24 correct, 0 wrong culprits, $0.90**. The same commit gives "no regression" on GLM and "found" on Llama when it removes a safety net only the weaker model needs. ClinicDesk on Llama missed 3, because Llama passed only 46% on the good version | `evidence/DOMAINS.md`, `evidence/domains.json` |
 | Tests | **156 pass** (`uv run pytest -q`, ~100 s, free, no network) | |
 
 **Left to do (Monday 12 Oct):** the demo video (≤ 3 min), #neatHack posts, and the X quote-post of the official neatlogs post with team, project, repo and demo link. The submission window is **Mon 12 Oct, 19:00–23:55 IST**. See §9.
@@ -99,7 +100,10 @@ cp .env.example .env
 cp .env ../piedpiper-neathacks-refunddesk/.env   # only needed to run RefundDesk by hand
 
 # 3. Get the recorded runs (the ledger is gitignored; a snapshot is committed)
-uv run python scripts/relocate_ledger.py evidence/ledger-snapshot.sqlite .culprit/ledger.sqlite ../piedpiper-neathacks-refunddesk
+git clone https://github.com/ayushgml/opsdesk.git ../opsdesk          # the two extra victim domains
+git clone https://github.com/ayushgml/clinicdesk.git ../clinicdesk
+uv run python scripts/relocate_ledger.py evidence/ledger-snapshot.sqlite .culprit/ledger.sqlite \
+    ../piedpiper-neathacks-refunddesk opsdesk=../opsdesk clinicdesk=../clinicdesk
 
 # 4. Check
 uv run pytest -q                                   # 156 pass, free

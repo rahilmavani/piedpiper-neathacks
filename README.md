@@ -47,6 +47,10 @@ Infrastructure failures (429, 5xx, timeouts) are retried and never counted again
 caps stop a run with the best current range. `culprit resume` continues any stopped run without
 redoing finished work.
 
+## More domains and models
+
+Beyond RefundDesk, Culprit was run on two more victim agents built the same way: **OpsDesk** (incident response) and **ClinicDesk** (clinic front desk), each on GLM 5.3 and Llama 3.1 8B. It scored **21/24 correct, with 0 wrong culprits, for $0.90**. When a planted commit removes a safety net that only the weaker model needs, the right verdict depends on the model: "no regression" on GLM, and the exact commit on Llama. Culprit got both. The three misses are ClinicDesk on Llama, where Llama passed only 46% even on the good version, so the gate declined to guess. Across all 54 scored bisect runs, Culprit has named 0 wrong commits. Details: [`evidence/DOMAINS.md`](evidence/DOMAINS.md); the four-model RefundDesk comparison is in [`evidence/MODELS.md`](evidence/MODELS.md).
+
 ## Beyond bisect: three more ways to use it
 
 The same machinery (pinned suite, worktrees, the Fisher gate, the ledger) answers three more questions.

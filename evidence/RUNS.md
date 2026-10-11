@@ -113,6 +113,39 @@ Latency caveat: the planted "make it faster" commit didn't make the agent measur
 
 So the audit agrees with the hand-planted results on every category where they're comparable, and finds two blind spots we hadn't planted. Each miss comes with a concrete task to add (see the report). The guard-only and prompt-only removals are invisible because they back each other up: each passes while the other is still there.
 
+## Two more domains × two victim models (11 Oct, Culprit `3afa407`, `--no-reuse`, k = 3)
+
+Summary and analysis: `evidence/DOMAINS.md`; chart data: `evidence/domains.json`. Answer keys: `bench/opsdesk/`, `bench/clinicdesk/`.
+
+| Domain | Model | Branch | Expected visible | Result | Found | Outcome | Victim runs | Cost | Run |
+|---|---|---|---|---|---|---|---:|---:|---|
+| OpsDesk | GLM 5.3 | hist/a | yes | found | `95eca63` | correct | 124 | $0.033 | `a8f7546313ac` |
+| OpsDesk | GLM 5.3 | hist/b | no | no_regression | – | correct_no_regression | 60 | $0.019 | `4675ccf9d5e2` |
+| OpsDesk | GLM 5.3 | hist/c | yes | found | `3262e83` | correct | 156 | $0.066 | `dac65a670075` |
+| OpsDesk | GLM 5.3 | hist/d | no | no_regression | – | correct_no_regression | 60 | $0.019 | `a72192519026` |
+| OpsDesk | GLM 5.3 | hist/e | no | no_regression | – | correct_no_regression | 60 | $0.018 | `53d35e7a4ba8` |
+| OpsDesk | GLM 5.3 | hist/f | no | no_regression | – | correct_no_regression | 60 | $0.018 | `1394a1e20fc9` |
+| OpsDesk | Llama 3.1 8B | hist/a | yes | found | `95eca63` | correct | 124 | $0.007 | `c0641d8444e7` |
+| OpsDesk | Llama 3.1 8B | hist/b | yes | found | `5a54888` | correct | 196 | $0.018 | `cc521c355be3` |
+| OpsDesk | Llama 3.1 8B | hist/c | yes | found | `3262e83` | correct | 156 | $0.018 | `94b8cbcfa90c` |
+| OpsDesk | Llama 3.1 8B | hist/d | yes | found | `5559976` | correct | 132 | $0.009 | `45d96cbedd13` |
+| OpsDesk | Llama 3.1 8B | hist/e | yes | found | `afa3143` | correct | 138 | $0.009 | `9c55a7cc8f99` |
+| OpsDesk | Llama 3.1 8B | hist/f | no | no_regression | – | correct_no_regression | 68 | $0.006 | `bd8e36efeb29` |
+| ClinicDesk | GLM 5.3 | hist/a | yes | found | `cd35228` | correct | 140 | $0.120 | `b913470fa932` |
+| ClinicDesk | GLM 5.3 | hist/b | yes | found | `72bdad2` | correct | 124 | $0.175 | `6e1fe876ad3e` |
+| ClinicDesk | GLM 5.3 | hist/c | no | no_regression | – | correct_no_regression | 64 | $0.071 | `f7af25b9e923` |
+| ClinicDesk | GLM 5.3 | hist/d | no | no_regression | – | correct_no_regression | 64 | $0.058 | `2a7f301b4378` |
+| ClinicDesk | GLM 5.3 | hist/e | no | no_regression | – | correct_no_regression | 60 | $0.051 | `bcb12aebabce` |
+| ClinicDesk | GLM 5.3 | hist/f | no | no_regression | – | correct_no_regression | 60 | $0.054 | `0bbfbbae2721` |
+| ClinicDesk | Llama 3.1 8B | hist/a | yes | no_regression | – | missed | 108 | $0.015 | `7d33e16f8324` |
+| ClinicDesk | Llama 3.1 8B | hist/b | yes | no_regression | – | missed | 104 | $0.016 | `c4937ce01a67` |
+| ClinicDesk | Llama 3.1 8B | hist/c | yes | found | `c972a0a` | correct | 232 | $0.046 | `6a07e1766790` |
+| ClinicDesk | Llama 3.1 8B | hist/d | yes | no_regression | – | missed | 140 | $0.019 | `93d18871e3fe` |
+| ClinicDesk | Llama 3.1 8B | hist/e | no | no_regression | – | correct_no_regression | 108 | $0.015 | `3f6bf9ac7de9` |
+| ClinicDesk | Llama 3.1 8B | hist/f | no | no_regression | – | correct_no_regression | 108 | $0.015 | `168dc7730e14` |
+
+Totals: 21/24 correct, 3 missed (ClinicDesk on Llama: a, b, d), 0 wrong culprits; 2,646 victim runs, $0.90. Two repos ran in parallel.
+
 ## Checks (scripts, not Culprit runs)
 
 | Date (IST) | Check | Refs | Tasks × seeds | Result | Runs | Cost | Errors |

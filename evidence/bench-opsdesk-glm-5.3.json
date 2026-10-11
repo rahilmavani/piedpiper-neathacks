@@ -1,0 +1,152 @@
+{
+  "tag": "opsdesk-glm-5.3",
+  "mode": "scored existing runs from `/Volumes/DevSSD/Projects/piedpiper-neathacks/.culprit/ledger.sqlite`",
+  "culprit": "829fa13366dd19eb0a402ed249e907ad41889552",
+  "not_scored": [],
+  "accuracy": {
+    "correct": 6,
+    "scored": 6,
+    "unverified": 0,
+    "incomplete": 0
+  },
+  "rows": [
+    {
+      "run_id": "a8f7546313ac",
+      "status": "found",
+      "culprit_sha": "95eca63dc4fd5bfa498bafe36392c6000801ee47",
+      "suspects": [
+        "95eca63dc4fd5bfa498bafe36392c6000801ee47"
+      ],
+      "good_sha": "6c09d9762d435f33d6b27660efcb6a3f01858a15",
+      "bad_sha": "d90fcb4cc216907186de3c1ffbe7360180615802",
+      "victim_model": "z-ai/glm-5.3",
+      "victim_runs": 124,
+      "cost_usd": 0.032605630000000003,
+      "wall_s": 110.0,
+      "skipped": [
+        "387d69a45c7999638cf4f0b01829f1a539dc8143"
+      ],
+      "confidence": "95% Wilson",
+      "summary": "Culprit: 95eca63dc4fd5bfa498bafe36392c6000801ee47 'perf: reduce tool dispatch latency' (confidence: 95% Wilson)",
+      "traces": [
+        "15f9520b232ffe9b9cda43f7a8b89177"
+      ],
+      "scenario": "hist/a",
+      "outcome": "correct",
+      "expected": "95eca63dc4fd5bfa498bafe36392c6000801ee47",
+      "note": ""
+    },
+    {
+      "run_id": "4675ccf9d5e2",
+      "status": "no_regression",
+      "culprit_sha": null,
+      "suspects": [],
+      "good_sha": "6c09d9762d435f33d6b27660efcb6a3f01858a15",
+      "bad_sha": "d6cd7886a31d4dc08966f2e0ad11bd8bbe89434c",
+      "victim_model": "z-ai/glm-5.3",
+      "victim_runs": 60,
+      "cost_usd": 0.01914924,
+      "wall_s": 67.0,
+      "skipped": [],
+      "confidence": null,
+      "summary": "No significant regression to bisect: good 30/30 vs bad 30/30, one-sided Fisher p=1.0000 \u2265 0.05",
+      "traces": [
+        "18fc48edcca01bbf50118319c71c75db"
+      ],
+      "scenario": "hist/b",
+      "outcome": "correct_no_regression",
+      "expected": "5a54888ae805bec8b0003be1b3a137431cbe18f8",
+      "note": ""
+    },
+    {
+      "run_id": "dac65a670075",
+      "status": "found",
+      "culprit_sha": "3262e8316a6e2ea0354b9d0df85d07c7f862efd3",
+      "suspects": [
+        "3262e8316a6e2ea0354b9d0df85d07c7f862efd3"
+      ],
+      "good_sha": "6c09d9762d435f33d6b27660efcb6a3f01858a15",
+      "bad_sha": "0b902b9b7fd1fa866c04991aa97a4986ab73b084",
+      "victim_model": "z-ai/glm-5.3",
+      "victim_runs": 156,
+      "cost_usd": 0.06565386,
+      "wall_s": 182.0,
+      "skipped": [],
+      "confidence": "95% Wilson",
+      "summary": "Culprit: 3262e8316a6e2ea0354b9d0df85d07c7f862efd3 'perf: bound incident prompt size' (confidence: 95% Wilson)",
+      "traces": [
+        "8e0e86d7d3c746959e2b71ee170722d7"
+      ],
+      "scenario": "hist/c",
+      "outcome": "correct",
+      "expected": "3262e8316a6e2ea0354b9d0df85d07c7f862efd3",
+      "note": ""
+    },
+    {
+      "run_id": "a72192519026",
+      "status": "no_regression",
+      "culprit_sha": null,
+      "suspects": [],
+      "good_sha": "6c09d9762d435f33d6b27660efcb6a3f01858a15",
+      "bad_sha": "b8f648cb7fe20c112f526744ac96f6df1e642133",
+      "victim_model": "z-ai/glm-5.3",
+      "victim_runs": 60,
+      "cost_usd": 0.01873692,
+      "wall_s": 69.0,
+      "skipped": [],
+      "confidence": null,
+      "summary": "No significant regression to bisect: good 30/30 vs bad 30/30, one-sided Fisher p=1.0000 \u2265 0.05",
+      "traces": [
+        "36fcde769d581386439c6b5f5011162f"
+      ],
+      "scenario": "hist/d",
+      "outcome": "correct_no_regression",
+      "expected": "55599763178f8e5441a9d7ae4315a50549253550",
+      "note": ""
+    },
+    {
+      "run_id": "53d35e7a4ba8",
+      "status": "no_regression",
+      "culprit_sha": null,
+      "suspects": [],
+      "good_sha": "6c09d9762d435f33d6b27660efcb6a3f01858a15",
+      "bad_sha": "1ab4311604ba45cd5a041e51125cc1b91b51c2e5",
+      "victim_model": "z-ai/glm-5.3",
+      "victim_runs": 60,
+      "cost_usd": 0.01812982,
+      "wall_s": 65.0,
+      "skipped": [],
+      "confidence": null,
+      "summary": "No significant regression to bisect: good 30/30 vs bad 30/30, one-sided Fisher p=1.0000 \u2265 0.05",
+      "traces": [
+        "b8460e37dfd6dd629a7600b0cad54476"
+      ],
+      "scenario": "hist/e",
+      "outcome": "correct_no_regression",
+      "expected": "afa31438c16e22238d66e2ddc4bc88164542647f",
+      "note": ""
+    },
+    {
+      "run_id": "1394a1e20fc9",
+      "status": "no_regression",
+      "culprit_sha": null,
+      "suspects": [],
+      "good_sha": "6c09d9762d435f33d6b27660efcb6a3f01858a15",
+      "bad_sha": "2739ba933e72d52d186680c038106e66a1b83d7c",
+      "victim_model": "z-ai/glm-5.3",
+      "victim_runs": 60,
+      "cost_usd": 0.0182598,
+      "wall_s": 67.0,
+      "skipped": [],
+      "confidence": null,
+      "summary": "No significant regression to bisect: good 30/30 vs bad 30/30, one-sided Fisher p=1.0000 \u2265 0.05",
+      "traces": [
+        "47e0c9c087768324520eca810bc90089"
+      ],
+      "scenario": "hist/f",
+      "outcome": "correct_no_regression",
+      "expected": "142e5fba53f00194e1066ed868085c8f4a860305",
+      "note": ""
+    }
+  ]
+}

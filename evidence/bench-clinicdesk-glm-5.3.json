@@ -1,0 +1,150 @@
+{
+  "tag": "clinicdesk-glm-5.3",
+  "mode": "scored existing runs from `/Volumes/DevSSD/Projects/piedpiper-neathacks/.culprit/ledger.sqlite`",
+  "culprit": "829fa13366dd19eb0a402ed249e907ad41889552",
+  "not_scored": [],
+  "accuracy": {
+    "correct": 6,
+    "scored": 6,
+    "unverified": 0,
+    "incomplete": 0
+  },
+  "rows": [
+    {
+      "run_id": "b913470fa932",
+      "status": "found",
+      "culprit_sha": "cd35228cae410fbb4eaa9f886e93b7b39fdcc9c2",
+      "suspects": [
+        "cd35228cae410fbb4eaa9f886e93b7b39fdcc9c2"
+      ],
+      "good_sha": "b753586e77438e3740342622e8f60247b4a06316",
+      "bad_sha": "3e722395f3adb5af9038db40f949a3320ed85c8d",
+      "victim_model": "z-ai/glm-5.3",
+      "victim_runs": 140,
+      "cost_usd": 0.1198309263,
+      "wall_s": 239.0,
+      "skipped": [],
+      "confidence": "95% Wilson",
+      "summary": "Culprit: cd35228cae410fbb4eaa9f886e93b7b39fdcc9c2 'perf: reduce service retry latency' (confidence: 95% Wilson)",
+      "traces": [
+        "d0ebdc58324e3005162049ad0e684377"
+      ],
+      "scenario": "hist/a",
+      "outcome": "correct",
+      "expected": "cd35228cae410fbb4eaa9f886e93b7b39fdcc9c2",
+      "note": ""
+    },
+    {
+      "run_id": "6e1fe876ad3e",
+      "status": "found",
+      "culprit_sha": "72bdad2290d0b187f53fa95ae1d52e1cd6268d69",
+      "suspects": [
+        "72bdad2290d0b187f53fa95ae1d52e1cd6268d69"
+      ],
+      "good_sha": "b753586e77438e3740342622e8f60247b4a06316",
+      "bad_sha": "ac5205fd2ba5e87e301de2805cc1bd073dd3b7a6",
+      "victim_model": "z-ai/glm-5.3",
+      "victim_runs": 124,
+      "cost_usd": 0.1750584702,
+      "wall_s": 348.0,
+      "skipped": [],
+      "confidence": "95% Wilson",
+      "summary": "Culprit: 72bdad2290d0b187f53fa95ae1d52e1cd6268d69 'perf: bound conversation context per request' (confidence: 95% Wilson)",
+      "traces": [
+        "f2aa0a45c4ce80f1bb10415c8891012a"
+      ],
+      "scenario": "hist/b",
+      "outcome": "correct",
+      "expected": "72bdad2290d0b187f53fa95ae1d52e1cd6268d69",
+      "note": ""
+    },
+    {
+      "run_id": "f7af25b9e923",
+      "status": "no_regression",
+      "culprit_sha": null,
+      "suspects": [],
+      "good_sha": "b753586e77438e3740342622e8f60247b4a06316",
+      "bad_sha": "b08aa7ea5c22b58250a23149ca7a453847350a49",
+      "victim_model": "z-ai/glm-5.3",
+      "victim_runs": 64,
+      "cost_usd": 0.07126408,
+      "wall_s": 139.0,
+      "skipped": [],
+      "confidence": null,
+      "summary": "No significant regression to bisect: good 32/32 vs bad 29/32, one-sided Fisher p=0.1190 \u2265 0.05",
+      "traces": [
+        "3b51cda098b0bfd14fad46d7ed4b672e"
+      ],
+      "scenario": "hist/c",
+      "outcome": "correct_no_regression",
+      "expected": "c972a0aac725ea8c90ed514f79414a7011fd746a",
+      "note": ""
+    },
+    {
+      "run_id": "2a7f301b4378",
+      "status": "no_regression",
+      "culprit_sha": null,
+      "suspects": [],
+      "good_sha": "b753586e77438e3740342622e8f60247b4a06316",
+      "bad_sha": "17811020b1a25b33a3dc7b12710dcb9b6a8f8977",
+      "victim_model": "z-ai/glm-5.3",
+      "victim_runs": 64,
+      "cost_usd": 0.0584415898,
+      "wall_s": 144.0,
+      "skipped": [],
+      "confidence": null,
+      "summary": "No significant regression to bisect: good 32/32 vs bad 29/32, one-sided Fisher p=0.1190 \u2265 0.05",
+      "traces": [
+        "a101974cfdb13ddd50cecec04d0df796"
+      ],
+      "scenario": "hist/d",
+      "outcome": "correct_no_regression",
+      "expected": "d82a9403607703bfce0bb881dd7ef82648c600c5",
+      "note": ""
+    },
+    {
+      "run_id": "bcb12aebabce",
+      "status": "no_regression",
+      "culprit_sha": null,
+      "suspects": [],
+      "good_sha": "b753586e77438e3740342622e8f60247b4a06316",
+      "bad_sha": "81bf118cfe16b895fe6f27e7a5e8c28d3f62ec75",
+      "victim_model": "z-ai/glm-5.3",
+      "victim_runs": 60,
+      "cost_usd": 0.0511858041,
+      "wall_s": 121.0,
+      "skipped": [],
+      "confidence": null,
+      "summary": "No significant regression to bisect: good 30/30 vs bad 30/30, one-sided Fisher p=1.0000 \u2265 0.05",
+      "traces": [
+        "46d0a69b133496d63d39c33f227751ef"
+      ],
+      "scenario": "hist/e",
+      "outcome": "correct_no_regression",
+      "expected": "8b6efe30803fd20f880ac6c68513320c8485b113",
+      "note": ""
+    },
+    {
+      "run_id": "0bbfbbae2721",
+      "status": "no_regression",
+      "culprit_sha": null,
+      "suspects": [],
+      "good_sha": "b753586e77438e3740342622e8f60247b4a06316",
+      "bad_sha": "4e5dc63f9b90a67c6cabebfb5d5363208efd6b1d",
+      "victim_model": "z-ai/glm-5.3",
+      "victim_runs": 60,
+      "cost_usd": 0.054484139,
+      "wall_s": 125.0,
+      "skipped": [],
+      "confidence": null,
+      "summary": "No significant regression to bisect: good 30/30 vs bad 30/30, one-sided Fisher p=1.0000 \u2265 0.05",
+      "traces": [
+        "ddfb156b6063b83f504eadff119a8bcc"
+      ],
+      "scenario": "hist/f",
+      "outcome": "correct_no_regression",
+      "expected": "4e0d36c9da3cb37f55883677eb303bba9c645539",
+      "note": ""
+    }
+  ]
+}

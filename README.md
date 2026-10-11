@@ -47,6 +47,22 @@ Infrastructure failures (429, 5xx, timeouts) are retried and never counted again
 caps stop a run with the best current range. `culprit resume` continues any stopped run without
 redoing finished work.
 
+## Beyond bisect: three more ways to use it
+
+The same machinery (pinned suite, worktrees, the Fisher gate, the ledger) answers three more questions.
+All three are built and tested on the fixture victim. None has a real-victim run yet.
+
+| Command | The question | How it works |
+|---|---|---|
+| **`culprit ci --base <ref> --head <ref>`** | Does this pull request regress the agent? | Runs the gate on the PR's range. Clean → exit 0. Regressed → bisects to the culprit, names the responsible hunk (optionally a verified fix with `--fix`), writes a PR comment and exits 1. Infrastructure problems exit 2 and never blame a commit. The suite comes from the PR's base, so a PR can't pass by editing its own tests. Workflow: [`examples/github-action/culprit.yml`](examples/github-action/culprit.yml) |
+| **`culprit comment <run_id>`** | What would that PR comment say? | Renders the comment for any finished run from the ledger alone: $0, no network. Try it on the hero run, `ff50e3620fdd` |
+| **`culprit drift --ref <known-good ref>`** | Did *we* break it, or did the model or provider change underneath us? | Re-runs a known-good commit **now**, with the same suite snapshot, model, k and seeds as its recorded baseline, and compares the two with Fisher tests in both directions: `drifted`, `stable` or `improved`, with per-task changes. If the same code got worse, bisecting your history won't help |
+| **`culprit audit --ref <ref>`** | Which realistic regressions would our eval suite **miss**? | Mutation testing for agents. Eight regression patterns (drop result validation, disable retries, shrink history, drop a prompt rule, remove a code guard, lenient tool args, half-done rename, vague tool description) become concrete edits: a model proposes them, or you supply your own `--patches`. Each is applied in a throwaway worktree, never committed. The suite runs on each, and every mutant is caught or **missed**; each miss comes with an idea for a task that would catch it. The eval harness itself is never offered for mutation |
+
+Why `audit` matters: on our own benchmark, **3 of the 6 regressions we planted by hand were invisible to
+the suite** (see [Honesty note](#honesty-note-the-bugs-are-planted)). `culprit audit` finds such blind
+spots automatically, before a real regression slips through.
+
 ## Results so far (benchmark v1, real victim)
 
 Six planted-bug branches of RefundDesk (see [the honesty note](#honesty-note-the-bugs-are-planted)).
@@ -176,6 +192,13 @@ uv run culprit report <run_id>                      # .culprit/reports/report-<r
 uv run culprit verify-trace <run_id>                # audit the run's neatlogs traces
 uv run culprit bench --tag v1 --score-latest        # score runs against bench/ground_truth.json
 uv run culprit export-costs --format csv --out business/runs.csv
+
+# Beyond bisect
+uv run culprit comment ff50e3620fdd                 # the PR comment for a finished run ($0)
+uv run culprit ci --base <ref> --head <ref> [--fix] # PR regression gate; exit 0/1/2 (costs money)
+uv run culprit drift --ref good-v1.0                # same code, same seeds, now vs then (costs money)
+uv run culprit audit --list                         # the mutation operators
+uv run culprit audit --ref good-v1.0 --out evidence/audit.md   # eval blind spots (costs money)
 ```
 
 `culprit run --no-reuse --no-staged` reproduces v1's baseline behaviour.

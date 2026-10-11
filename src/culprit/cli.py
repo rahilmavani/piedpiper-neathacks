@@ -243,6 +243,128 @@ def export_costs(
         typer.echo(f"{len(rows)} runs → {out}")
 
 
+def _victim_config(repo: Path, ref: str, suite: str, suite_ref: str, k: int, budget_usd: float,
+                   **extra: object) -> Config:
+    try:
+        victim = providers.select("VICTIM_MODEL")
+    except providers.ProviderError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(2) from exc
+    return Config(repo=str(repo.resolve()), good_ref=ref, bad_ref=ref, suite=suite, suite_ref=suite_ref, k=k,
+                  budget_usd=budget_usd, victim_provider=victim.name, victim_model=victim.model, **extra)
+
+
+REPO_OPTION = typer.Option(PROJECT_ROOT.parent / "refunddesk", "--repo", envvar="CULPRIT_VICTIM_REPO",
+                           help="Victim repo (only worktrees are created)")
+
+
+@app.command()
+def drift(
+    ref: str = typer.Option(..., help="A known-good ref whose baseline is already recorded in the ledger"),
+    against: str | None = typer.Option(None, help="Compare with this run's recorded baseline (default: the oldest)"),
+    repo: Path = REPO_OPTION,
+    k: int = typer.Option(3, help="Repetitions per task (must match the recorded baseline)"),
+    budget_usd: float = typer.Option(2.00, help="Hard cost cap for the check"),
+    db: Path = typer.Option(DEFAULT_DB, help="Ledger path"),
+    workers: int = typer.Option(4, help="Parallel victim task runs"),
+) -> None:
+    """Did we break it, or did the world change? Re-run a known-good ref now and compare it with its record."""
+    from culprit.drift import DriftError, drift_run
+
+    cfg = _victim_config(repo, ref, "evals", "main", k, budget_usd)
+    try:
+        result = drift_run(Ledger(db), cfg, ref, log=typer.echo, workers=workers, against=against)
+    except DriftError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(2) from exc
+    raise typer.Exit({"stable": 0, "improved": 0, "drifted": 1}.get(result.status, 2))
+
+
+@app.command()
+def audit(
+    ref: str = typer.Option("HEAD", help="The version of the agent to mutate"),
+    operators: str | None = typer.Option(None, help="Comma-separated mutation operators (default: all); "
+                                         "see `culprit audit --list`"),
+    patches: Path | None = typer.Option(None, help="A directory of your own *.patch mutants (no model calls)"),
+    run_id: str | None = typer.Option(None, "--run-id", help="Resume this audit run (stored mutants are reused)"),
+    repo: Path = REPO_OPTION,
+    suite: str = typer.Option("evals", help="Suite directory in the victim, or a directory on disk"),
+    suite_ref: str = typer.Option("main", help="Victim ref whose suite judges every mutant"),
+    k: int = typer.Option(3, help="Repetitions per task"),
+    budget_usd: float = typer.Option(3.00, help="Hard cost cap for the audit"),
+    out: Path | None = typer.Option(None, help="Write the markdown report here"),
+    list_operators: bool = typer.Option(False, "--list", help="List the mutation operators and exit"),
+    db: Path = typer.Option(DEFAULT_DB, help="Ledger path"),
+    workers: int = typer.Option(4, help="Parallel victim task runs"),
+) -> None:
+    """Which realistic regressions would your eval suite miss? Mutation testing for agents."""
+    from culprit import audit as a
+
+    if list_operators:
+        for op in a.OPERATORS:
+            typer.echo(f"{op.name:24} {op.title}: {op.instruction}")
+        raise typer.Exit(0)
+    cfg = _victim_config(repo, ref, suite, suite_ref, k, budget_usd)
+    try:
+        result = a.audit_run(Ledger(db), cfg, ref, log=typer.echo, workers=workers,
+                             operators=operators.split(",") if operators else None, patches=patches, run_id=run_id)
+    except (a.AuditError, KeyError) as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(2) from exc
+    markdown = a.to_markdown(result)
+    if out is not None:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(markdown)
+        typer.echo(f"report → {out}")
+    raise typer.Exit(0 if result.status == "audited" else 2)
+
+
+@app.command()
+def ci(
+    base: str = typer.Option(..., help="The PR's base (known good)"),
+    head: str = typer.Option(..., help="The PR's head"),
+    repo: Path = REPO_OPTION,
+    suite: str = typer.Option("evals", help="Suite directory in the victim, or a directory on disk"),
+    suite_ref: str = typer.Option("main", help="Victim ref whose suite judges every commit"),
+    k: int = typer.Option(3, help="Repetitions per task"),
+    budget_usd: float = typer.Option(3.00, help="Hard cost cap for the gate and bisect"),
+    localise: bool = typer.Option(True, help="Name the responsible hunk when a culprit is found"),
+    fix: bool = typer.Option(False, help="Also propose and verify a fix (costs more)"),
+    comment_file: Path = typer.Option(Path("culprit-comment.md"), "--comment-file", help="PR comment (markdown)"),
+    db: Path = typer.Option(DEFAULT_DB, help="Ledger path"),
+    workers: int = typer.Option(4, help="Parallel victim task runs"),
+) -> None:
+    """Regression gate for a pull request. Exit 0 clean, 1 regression (comment names the culprit), 2 stopped."""
+    from culprit.ci import ci_run
+
+    cfg = replace(_victim_config(repo, base, suite, suite_ref, k, budget_usd), good_ref=base, bad_ref=head)
+    result = ci_run(Ledger(db), cfg, log=typer.echo, workers=workers, localise=localise, fix=fix)
+    comment_file.write_text(result.comment)
+    typer.echo(f"{result.status}: comment → {comment_file}")
+    raise typer.Exit(result.exit_code)
+
+
+@app.command()
+def comment(
+    run_id: str,
+    db: Path = typer.Option(DEFAULT_DB, help="Ledger path"),
+    out: Path | None = typer.Option(None, help="Write here instead of stdout"),
+) -> None:
+    """The pull-request comment for a finished run, from the ledger alone ($0, no network)."""
+    from culprit.ci import comment as render
+
+    try:
+        text = render(Ledger(db, readonly=True), run_id)
+    except KeyError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(2) from exc
+    if out is None:
+        typer.echo(text, nl=False)
+    else:
+        out.write_text(text)
+        typer.echo(f"comment → {out}")
+
+
 def main() -> None:
     load_dotenv(PROJECT_ROOT / ".env")
     tracing.init()

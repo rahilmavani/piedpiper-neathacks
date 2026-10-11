@@ -1,0 +1,67 @@
+# Culprit as a pull-request regression gate for an agent repo.
+#
+# Copy to .github/workflows/culprit.yml in YOUR AGENT'S repository (not in Culprit's).
+# On every PR: run the eval suite at the base and at the head; if the head is significantly worse,
+# bisect the PR's commits, name the responsible hunk, and post the result as a PR comment.
+# The check fails only on a real regression (exit 1); infrastructure problems exit 2 and never blame a commit.
+#
+# Needs repository secrets: OPENROUTER_API_KEY (or ANTHROPIC_API_KEY) and, optionally, NEATLOGS_API_KEY.
+# Your agent repo must expose Culprit's eval contract: `python -m <module> --task <id> --seed <n>`
+# printing one JSON line with passed/cost/latency/tokens/trace_id (see Culprit's README).
+
+name: culprit
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  regression-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out the agent repo with full history (bisect needs the PR's commits)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: agent
+
+      - name: Check out Culprit
+        uses: actions/checkout@v4
+        with:
+          repository: rahilmavani/piedpiper-neathacks
+          path: culprit
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Run the regression gate
+        id: gate
+        working-directory: culprit
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          NEATLOGS_API_KEY: ${{ secrets.NEATLOGS_API_KEY }}
+        run: |
+          uv sync --locked
+          set +e
+          uv run culprit ci \
+            --repo ../agent \
+            --base ${{ github.event.pull_request.base.sha }} \
+            --head ${{ github.event.pull_request.head.sha }} \
+            --suite-ref ${{ github.event.pull_request.base.sha }} \
+            --budget-usd 3 \
+            --comment-file ../culprit-comment.md
+          echo "exit=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Post the result on the pull request
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr comment ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --body-file culprit-comment.md
+
+      - name: Fail the check on a regression
+        if: steps.gate.outputs.exit != '0'
+        run: exit ${{ steps.gate.outputs.exit }}

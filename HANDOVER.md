@@ -177,7 +177,14 @@ uv run culprit bench --tag vN [--score-runs id,...|--score-latest]   # score aga
 uv run culprit export-costs --format csv --out business/runs.csv
 uv run python scripts/strength_check.py <victim> good-v1.0,origin/hist/a ALL 3-5   # visibility check (paid)
 DEMO_PAUSE=1 bash scripts/demo_replay.sh                             # $0 hero replay, offline
+uv run culprit comment ff50e3620fdd                                  # PR comment for a finished run, $0
+uv run culprit ci --base <ref> --head <ref> [--fix]                  # PR regression gate (paid)
+uv run culprit drift --ref good-v1.0                                 # did the model drift? (paid)
+uv run culprit audit --ref good-v1.0 --out evidence/audit.md         # eval blind spots (paid)
 ```
+
+`ci`, `comment`, `drift` and `audit` were added on 11 Oct (README "Beyond bisect"). They're tested on the
+fixture only; no real-victim run yet.
 
 **Costs on GLM 5.3:** about $0.0024 per victim run; a v2 bisect costs $0.12–0.46; the full hero investigation (v1 bisect + localise + fix) was $1.13. Spent so far: about $5.59 on GLM (checks $0.85, v1 $2.70, v2 $1.51, localise + fix $0.53; `evidence/RUNS.md`), plus about $2–3 of Sonnet 5.5 runs by the first builder (`HOW_IT_WORKS.md` §13). Per-run caps: `--budget-usd` (default $3); the global cap is $75 across the ledger.
 

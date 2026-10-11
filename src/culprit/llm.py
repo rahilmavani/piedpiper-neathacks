@@ -60,12 +60,17 @@ def _complete(system: str, messages: list[dict[str, str]], max_tokens: int) -> t
     return _complete_openrouter(chosen, system, messages, max_tokens)
 
 
+def _anthropic_client():
+    import anthropic
+
+    return anthropic.Anthropic(base_url=providers.ANTHROPIC_BASE_URL,
+                               api_key=os.environ[providers.KEY_VARS[providers.ANTHROPIC]])
+
+
 def _complete_anthropic(
     chosen: providers.Provider, system: str, messages: list[dict[str, str]], max_tokens: int
 ) -> tuple[str, Usage]:
-    import anthropic
-
-    client = tracing.wrap(anthropic.Anthropic())
+    client = tracing.wrap(_anthropic_client())
     resp = client.messages.create(model=chosen.model, max_tokens=max_tokens, system=system, messages=messages)
     if resp.stop_reason == "refusal":
         raise LLMError("model refused the request")

@@ -1,9 +1,22 @@
 [project]
-name = "culprit"
+name = "culprit-cli"
 version = "0.1.0"
-description = "Add your description here"
+description = "git bisect for AI agent behaviour: find the commit that made your agent worse, with statistics, and verify a fix."
+readme = "PYPI.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
 authors = [
-    { name = "rahilmavani", email = "mavanirahil6@gmail.com" }
+    { name = "rahilmavani", email = "mavanirahil6@gmail.com" },
+    { name = "Ayush", email = "ayushgml@gmail.com" },
+]
+keywords = ["llm", "agents", "evals", "git-bisect", "regression"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Software Development :: Testing",
 ]
 requires-python = ">=3.12"
 dependencies = [
@@ -17,12 +30,19 @@ dependencies = [
     "typer>=0.27.3",
 ]
 
+[project.urls]
+Homepage = "https://culprit-site.vercel.app"
+
 [project.scripts]
 culprit = "culprit:main"
+culprit-cli = "culprit:main"  # so `uvx culprit-cli` works without --from
 
 [build-system]
 requires = ["uv_build>=0.11.7,<0.12.0"]
 build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "culprit"  # the distribution is culprit-cli; the import name and command stay culprit
 
 [dependency-groups]
 dev = [

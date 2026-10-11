@@ -8,7 +8,10 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-STATE_DIR = Path(os.environ.get("CULPRIT_STATE_DIR", PROJECT_ROOT / ".culprit"))
+# A clone of this repo keeps its state next to the code. An installed package keeps it in the directory
+# Culprit is run from, normally the agent's repo next to its culprit.toml.
+SOURCE_CHECKOUT = (PROJECT_ROOT / "pyproject.toml").is_file() and (PROJECT_ROOT / "src" / "culprit").is_dir()
+STATE_DIR = Path(os.environ.get("CULPRIT_STATE_DIR", (PROJECT_ROOT if SOURCE_CHECKOUT else Path.cwd()) / ".culprit"))
 WORKTREE_DIR = STATE_DIR / "worktrees"
 DEFAULT_DB = STATE_DIR / "ledger.sqlite"
 

@@ -1,0 +1,80 @@
+now I want to find out the real world use cases of this app. Lets discuss.
+
+---
+
+1. SOunds good
+2. Sounds good
+3. Neatlogs already does investigation and stuff
+4. Sounds good because I was about to ask another branched session to run the tests with respect to different models(sonnet and GLM is already done) I need a run with at least 3 more models. I want to benchmark for all 5. And then later show it as a graph or something on the demo website we will make.
+5. Yes this is really good
+6. Sounds good
+
+---
+
+claude sonnet my teammate will do in his laptop and session once I do the other 3 you suggested.
+
+---
+
+Instead of Luna can I put 6.1 sol?
+
+---
+
+okay so 6.1 luna?
+
+---
+
+so I dont want to use GPT. Give me all the list of models in openrrouter with esitmated cost and I will pick up the 3 i want.
+
+---
+
+gemini, deepseek and qwen
+
+---
+
+While that is running I want to talk about the usecases thing we were talking about.
+
+---
+
+I want to build from these usecases whatever is not already built.
+
+---
+
+yes queue it
+
+---
+
+So I think all models are almost catchign the same things. I want to make a couple of repos that some models miss and some dont. Somehting like that. I want to give codex the job of creating two other domain repos. like one domain we have of refunddesk. give me the prompts
+
+---
+
+So I think all models are almost catchign the same things. I want to make a couple of repos that some models miss and some dont. Somehting like that. I want to give codex the job of creating two other domain repos. like one domain we have of refunddesk. give me the prompts
+
+
+
+<pasted_content id="ffe0">
+Here's where each model is:
+
+qwen 3.8 flash: about two-thirds done
+- Strength check finished, for $0.23 total, about 3× cheaper than GLM. It sees the same three bugs GLM does:
+
+| Branch              | Pass rate (good 78/78)              | Visible? |
+|---------------------|-------------------------------------|----------|
+| a (rename)          | 78/78                               | no       |
+| b (hero)            | 57/78 (p ≈ 0)                       | yes      |
+| c (history window)  | 72/78 (p = 0.014)                   | yes      |
+| d (prompt)          | 77/78 (one flaky failure, p = 0.50) | no       |
+| e (lenient parsing) | 78/78                               | no       |
+| f (retries → 0)     | 48/78 (p ≈ 0)                       | yes      |
+
+- Bisects: hist/a gave no regression (correct), and hist/b found 397c427 (correct). It's on hist/c now, with d, e and f to go.
+- It's slower than GLM: the hist/b bisect alone took 18 minutes.
+
+deepseek v4.1 flash and gemini 3.8 flash: just started
+Their strength checks began at 13:30, about a minute ago, so nothing to report yet. Each takes roughly 25–30 minutes for the strength check plus a similar time for the bisects. Expect all three to finish around 14:30.
+
+So far spend is low: qwen is at about $0.23 plus the bisects, well inside the budget.
+</pasted_content id="ffe0">
+
+---
+
+For calibration I want both of the things to be done via GLM. BUt i already sent your prompts. I can steer the thing

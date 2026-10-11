@@ -6,7 +6,7 @@ GLM 5.3, Qwen 3.8 Flash, DeepSeek V4.1 Flash and Gemini 3.8 Flash were benchmark
 
 ## 0. Prerequisites
 
-- Both repos cloned side by side and up to date (`git pull` in each). See `HANDOVER.md` §4.
+- Both repos cloned side by side and up to date (`git pull` in each, on `main`). See `HANDOVER.md` §4.
 - In `piedpiper-neathacks/.env`:
   - `ANTHROPIC_API_KEY=...`. With this key set, Culprit and RefundDesk use `claude-sonnet-5-5` automatically.
   - `VICTIM_MODEL` empty, or exactly `claude-sonnet-5-5`.
@@ -45,8 +45,9 @@ uv run culprit bench --tag claude-sonnet-5-5 --score-runs <id_a>,<id_b>,<id_c>,<
 sqlite3 .culprit/ledger.sqlite ".backup evidence/models/claude-sonnet-5-5-ledger.sqlite" \
   && sqlite3 evidence/models/claude-sonnet-5-5-ledger.sqlite "pragma journal_mode=DELETE;"   # latencies for the charts
 uv run python scripts/models_json.py        # should now list 5 models
-uv run culprit export-costs --format csv --out business/runs.csv
 ```
+
+- **Don't run `culprit export-costs` here.** Your ledger doesn't hold the other machine's runs, so it would overwrite `business/runs.csv` with an incomplete version. The main session regenerates it after merging.
 
 - The first command records which bugs Sonnet can see, in `bench/ground_truth.json`. It must come before scoring.
 - `bench` writes `evidence/bench-claude-sonnet-5-5.md` and `.json`.
@@ -56,7 +57,14 @@ uv run culprit export-costs --format csv --out business/runs.csv
 
 1. `evidence/MODELS.md`: add a Sonnet row to each table, copying the numbers from the `claude-sonnet-5-5` entry in `evidence/models.json`. Don't round in our favour.
 2. `evidence/RUNS.md`: add a "Claude Sonnet 5.5" table with the six runs, the same columns as the other models.
-3. Run the tests and check the exit code (`uv run pytest -q; echo $?` must print 0). Then commit `evidence/`, `bench/ground_truth.json` and `business/runs.csv`, and push to `main`.
+3. `evidence/MODELS.md` currently says a Sonnet run is "optional and not planned". Replace that sentence: it now covers five models.
+4. Run the tests and check the exit code (`uv run pytest -q; echo $?` must print 0).
+5. Commit `evidence/` and `bench/ground_truth.json` **on a branch**, and push the branch, not `main`. Other sessions are writing to `main`, and the main session merges your branch:
+   ```bash
+   git switch -c feat/sonnet-benchmark
+   git add evidence bench/ground_truth.json && git commit -m "evidence: Claude Sonnet 5.5 victim-model benchmark"
+   git push -u origin feat/sonnet-benchmark
+   ```
 
 ## Notes
 

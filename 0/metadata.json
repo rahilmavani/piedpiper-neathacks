@@ -1,0 +1,85 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4NQKX6QAG4P6393GPJ68HEQ",
+  "session_id": "14df2c91-d5a6-4378-8ecb-08500a467ebb",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-11T14:59:38.044445Z",
+  "branch": "feat/package",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "PYPI.md",
+    "src/culprit/cli.py",
+    "tests/test_onboard.py"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-opus-5-5",
+  "turn_id": "c18dccc4fd15",
+  "checkpoint_transcript_start": 3281,
+  "transcript_lines_at_start": 3281,
+  "compact_transcript_start": 672,
+  "token_usage": {
+    "input_tokens": 8,
+    "cache_creation_tokens": 3833,
+    "cache_read_tokens": 877557,
+    "output_tokens": 2948,
+    "api_call_count": 3
+  },
+  "skill_events_version": 1,
+  "skill_events": [
+    {
+      "id": "claude-skill-toolu_01SRSgEDBJ5manoRB72AH3XN",
+      "event_type": "tool_invocation",
+      "skill": {
+        "name": "claude-api"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "skill_tool_use",
+        "confidence": "explicit"
+      },
+      "turn_id": "d7da5d76f77b",
+      "transcript_anchor": {
+        "unit": "line",
+        "start": 68,
+        "end": 69,
+        "entry_ids": [
+          "a77921ef-bcb2-4b50-bd9f-e43ae93e7fa3"
+        ],
+        "tool_use_id": "toolu_01SRSgEDBJ5manoRB72AH3XN"
+      },
+      "native": {
+        "tool_name": "Skill",
+        "tool_use_id": "toolu_01SRSgEDBJ5manoRB72AH3XN"
+      },
+      "collapse": {
+        "target": "tool_pair",
+        "label": "Skill: claude-api",
+        "default_collapsed": true
+      }
+    }
+  ],
+  "session_metrics": {
+    "turn_count": 4
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-11T14:59:37.777849Z",
+    "agent_lines": 410,
+    "agent_removed": 40,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 410,
+    "total_lines_changed": 450,
+    "agent_percentage": 100,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}

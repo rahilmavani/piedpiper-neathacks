@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4MWXXR398AK242VNBEDQC0X",
   "strategy": "manual-commit",
   "branch": "feat/use-cases",
-  "checkpoints_count": 8,
+  "checkpoints_count": 13,
   "files_touched": [
     "HANDOVER.md",
     "README.md",
@@ -26,13 +26,20 @@
       "compact_transcript": "/0/transcript.jsonl",
       "content_hash": "/0/content_hash.txt",
       "prompt": ""
+    },
+    {
+      "metadata": "/1/metadata.json",
+      "transcript": "/1/full.jsonl",
+      "compact_transcript": "/1/transcript.jsonl",
+      "content_hash": "/1/content_hash.txt",
+      "prompt": "/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 726,
-    "cache_creation_tokens": 1792855,
-    "cache_read_tokens": 166289463,
-    "output_tokens": 313430,
-    "api_call_count": 357
+    "input_tokens": 1394,
+    "cache_creation_tokens": 3524198,
+    "cache_read_tokens": 311240440,
+    "output_tokens": 583502,
+    "api_call_count": 685
   }
 }

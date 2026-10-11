@@ -1,0 +1,38 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4NBYZZRBJP5BQMH2SDCJM60",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 3,
+  "files_touched": [
+    "evidence/DOMAINS.md",
+    "evidence/RUNS.md",
+    "evidence/bench-clinicdesk-glm-5.3.json",
+    "evidence/bench-clinicdesk-glm-5.3.md",
+    "evidence/bench-clinicdesk-llama-3.1-8b.json",
+    "evidence/bench-clinicdesk-llama-3.1-8b.md",
+    "evidence/bench-opsdesk-glm-5.3.json",
+    "evidence/bench-opsdesk-glm-5.3.md",
+    "evidence/bench-opsdesk-llama-3.1-8b.json",
+    "evidence/bench-opsdesk-llama-3.1-8b.md",
+    "evidence/domains.json",
+    "scripts/domains_json.py",
+    "scripts/relocate_ledger.py"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 40,
+    "cache_creation_tokens": 886072,
+    "cache_read_tokens": 14960888,
+    "output_tokens": 18580,
+    "api_call_count": 19
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4NBYZZRBJP5BQMH2SDCJM60",
+  "session_id": "1ee87e8f-0109-48a8-98f6-74750237c799",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-11T11:35:56.130802Z",
+  "branch": "main",
+  "checkpoints_count": 3,
+  "save_step_count": 2,
+  "files_touched": [
+    "evidence/DOMAINS.md",
+    "evidence/RUNS.md",
+    "evidence/bench-clinicdesk-glm-5.3.json",
+    "evidence/bench-clinicdesk-glm-5.3.md",
+    "evidence/bench-clinicdesk-llama-3.1-8b.json",
+    "evidence/bench-clinicdesk-llama-3.1-8b.md",
+    "evidence/bench-opsdesk-glm-5.3.json",
+    "evidence/bench-opsdesk-glm-5.3.md",
+    "evidence/bench-opsdesk-llama-3.1-8b.json",
+    "evidence/bench-opsdesk-llama-3.1-8b.md",
+    "evidence/domains.json",
+    "scripts/domains_json.py",
+    "scripts/relocate_ledger.py"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-opus-5-5",
+  "turn_id": "1c7f7baa993a",
+  "checkpoint_transcript_start": 2610,
+  "transcript_lines_at_start": 2610,
+  "compact_transcript_start": 501,
+  "token_usage": {
+    "input_tokens": 40,
+    "cache_creation_tokens": 886072,
+    "cache_read_tokens": 14960888,
+    "output_tokens": 18580,
+    "api_call_count": 19
+  },
+  "skill_events_version": 1,
+  "skill_events": [
+    {
+      "id": "claude-skill-toolu_01SRSgEDBJ5manoRB72AH3XN",
+      "event_type": "tool_invocation",
+      "skill": {
+        "name": "claude-api"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "skill_tool_use",
+        "confidence": "explicit"
+      },
+      "turn_id": "30f96e454c18",
+      "transcript_anchor": {
+        "unit": "line",
+        "start": 68,
+        "end": 69,
+        "entry_ids": [
+          "a77921ef-bcb2-4b50-bd9f-e43ae93e7fa3"
+        ],
+        "tool_use_id": "toolu_01SRSgEDBJ5manoRB72AH3XN"
+      },
+      "native": {
+        "tool_name": "Skill",
+        "tool_use_id": "toolu_01SRSgEDBJ5manoRB72AH3XN"
+      },
+      "collapse": {
+        "target": "tool_pair",
+        "label": "Skill: claude-api",
+        "default_collapsed": true
+      }
+    }
+  ],
+  "session_metrics": {
+    "turn_count": 23
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-11T11:35:55.902813Z",
+    "agent_lines": 1494,
+    "agent_removed": 16,
+    "human_added": 41,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 1535,
+    "total_lines_changed": 1552,
+    "agent_percentage": 97.29381443298969,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 454,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 1494,
+      "agent_lines_removed": 16
+    }
+  ]
+}

@@ -164,6 +164,10 @@ Planned (from `PRD.md`); move items to "used" as they are integrated.
   - **`culprit audit --ref <ref>`**: mutation testing for agents. 8 regression operators turned into exact edits by a model (or your own patches), each applied in a throwaway worktree. Each mutant is reported as caught, missed or invalid, with a task idea for every miss. The eval harness is never offered for mutation.
 - **Finding worth posting:** our hand-planted benchmark showed 3 of 6 regressions were invisible to the suite. `culprit audit` makes finding those blind spots a command instead of a day of work.
 - **Moment worth screenshotting:** `culprit comment ff50e3620fdd`: a complete PR comment for the hero bug, generated for $0.
+- **Measured: the first real drift check and audit** (GLM 5.3).
+  - `drift`: STABLE, 78/78 vs 78/78 the day before, $0.19.
+  - `audit`: mutation score **4/8** for $1.80. It agrees with the hand-planted benchmark on every comparable category (validation, retries and history caught; prompt-rule and lenient-args removals missed) and finds 2 blind spots we hadn't planted (removing the code guard, a vague tool description). No mutant touched test scaffolding.
+- **Finding worth posting:** "We spent a day planting 6 bugs to learn our tests miss 3 of them. `culprit audit` found the same blind spots in 35 minutes for $1.80, plus two more, and told us which tests to add."
 
 ## Demo
 

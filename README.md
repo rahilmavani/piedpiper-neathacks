@@ -50,7 +50,10 @@ redoing finished work.
 ## Beyond bisect: three more ways to use it
 
 The same machinery (pinned suite, worktrees, the Fisher gate, the ledger) answers three more questions.
-All three are built and tested on the fixture victim. None has a real-victim run yet.
+All are built and tested on the fixture victim. `drift` and `audit` also have one real run each on RefundDesk (GLM 5.3, 11 Oct; `evidence/RUNS.md`):
+
+- **`culprit drift --ref good-v1.0`: STABLE.** 78/78 now vs 78/78 the day before, for $0.19.
+- **`culprit audit --ref good-v1.0`: mutation score 4/8, for $1.80.** It caught dropped validation, disabled retries, a shrunk history and a half-done rename. It missed a removed prompt rule, a removed code guard, lenient argument parsing and a vague tool description, each with a suggested task to add. It agrees with our hand-planted results on every comparable category and finds two blind spots we hadn't planted ([report](evidence/audit-refunddesk-glm.md)).
 
 | Command | The question | How it works |
 |---|---|---|

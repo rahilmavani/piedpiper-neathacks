@@ -42,7 +42,8 @@ MAX_FILE_CHARS = 20000
 MAX_SOURCE_CHARS = 60000
 # The eval harness must never be mutated: a change to the grader is not an agent regression. Only offered
 # files can be edited, so excluding these makes it impossible, not just discouraged.
-DEFAULT_EXCLUDE = ("*eval.py", "*checks.py", "*tasks.py", "*suite.py", "*grader*.py", "*judge*.py")
+DEFAULT_EXCLUDE = ("*eval.py", "*checks.py", "*tasks.py", "*suite.py", "*grader*.py", "*judge*.py",
+                   "*fault*.py")  # fault injectors are test scaffolding, not the agent
 
 
 @dataclass(frozen=True)
@@ -329,7 +330,7 @@ def to_markdown(r: AuditResult) -> str:
     missed = [m for m in r.mutants if m.verdict == "missed"]
     if missed:
         lines += ["", "## Blind spots", ""]
-        lines += [f"- **{m.title or m.name}**: {m.summary}. Add: {m.task_idea or 'a task that exercises this'}"
+        lines += [f"- **{m.title or m.name}**: {m.summary.rstrip('.')}. Add: {m.task_idea or 'a task that exercises this'}"
                   for m in missed]
     invalid = [m for m in r.mutants if m.verdict == "invalid"]
     if invalid:

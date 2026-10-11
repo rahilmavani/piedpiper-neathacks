@@ -91,6 +91,28 @@ Resumed runs had stopped on the OpenRouter key's $10 limit (`infra_error`, nothi
 
 Latency caveat: the planted "make it faster" commit didn't make the agent measurably faster (baseline median latency good 7086 ms vs bad 7138 ms; time is dominated by model calls, and the tools are mocks). The "intended gain kept" gate passed (fix 7992 ms vs bad 9288 ms over the verify runs), but there was no real speed-up to keep.
 
+## Drift check and blind-spot audit (11 Oct, GLM 5.3, code `c173861`)
+
+| Date (IST) | Run | Command | Result | Victim runs | Cost | Time |
+|---|---|---|---|---:|---:|---:|
+| 11 Oct 14:47 | `7d302133d9f5` | `culprit drift --ref good-v1.0` | **STABLE**: 78/78 now vs 78/78 in run `ff50e3620fdd` (10 Oct), p = 1.00 both ways. Same code, suite, model and seeds: GLM didn't drift overnight | 78 | $0.19 | 3.4 min |
+| 11 Oct 14:50 | `463cde6de95a` | `culprit audit --ref good-v1.0 --suite-ref ba86ed0` | **Mutation score 4/8**: 4 realistic regressions caught, 4 missed (`evidence/audit-refunddesk-glm.md`). Baseline 78/78 reused from earlier runs (78 rows, $0) | 624 | $1.80 ($1.53 victim + $0.27 for 8 GLM proposals) | 35 min |
+
+**Did the audit rediscover what we found by hand?** It made its own changes (GLM proposed the edits), so they aren't identical to the planted ones, but they fall into the same categories:
+
+| Regression type | Planted by hand (GLM, `bench/strength.md`) | Found by `culprit audit` |
+|---|---|---|
+| Drop tool-result validation | `hist/b`: visible | **caught** (61/78) |
+| Disable retries | `hist/f`: visible | **caught** (53/78) |
+| Shrink the history window | `hist/c` (24 → 6): visible, 72/78 | **caught** (24 → 3): 72/78 |
+| Drop the >$500 rule from the prompt | `hist/d`: invisible (the rule survived, and a code guard blocks large refunds anyway) | **missed**: the mutant removed the rule; the code guard still blocks, so the suite can't see it |
+| Lenient tool-argument parsing | `hist/e`: invisible | **missed** |
+| Rename a tool parameter | `hist/a`: a *complete* rename, invisible | a *half-done* rename (schema says `recipient`, code reads `to`): **caught**, 15/78. A different change, so not a contradiction |
+| Remove the code-level $500 guard | not planted | **missed: a new blind spot** |
+| Vague tool description | not planted | **missed: a new blind spot** |
+
+So the audit agrees with the hand-planted results on every category where they're comparable, and finds two blind spots we hadn't planted. Each miss comes with a concrete task to add (see the report). The guard-only and prompt-only removals are invisible because they back each other up: each passes while the other is still there.
+
 ## Checks (scripts, not Culprit runs)
 
 | Date (IST) | Check | Refs | Tasks × seeds | Result | Runs | Cost | Errors |

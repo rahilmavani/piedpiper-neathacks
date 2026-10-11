@@ -155,7 +155,7 @@ would copy v1's baselines and run almost nothing, which isn't a fair comparison.
 Culprit is packaged as `culprit-cli` (not yet published; build it with `uv build`). In your agent's repo:
 
 ```bash
-uvx culprit-cli init                             # key → .env, eval module and suite → culprit.toml
+uvx culprit-cli init                             # keys (saved once for you), eval module and suite
 uvx culprit-cli run --good v1.0 --bad HEAD --budget-usd 3
 ```
 

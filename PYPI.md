@@ -34,19 +34,25 @@ Needs Python 3.12+, [uv](https://docs.astral.sh/uv/) and git.
 
 ```bash
 cd my-agent
-culprit init                                       # key, eval module and suite → .env and culprit.toml
+culprit init                                       # your keys (once), eval module and suite
 culprit run --good v1.0 --bad HEAD --budget-usd 3  # find the commit
 culprit fix <run_id>                               # localise the lines and verify a fix
 culprit report <run_id>                            # markdown and HTML report
 ```
 
-`culprit init` asks for an Anthropic or OpenRouter key and saves it to `.env` (it adds `.env` and
-`.culprit/` to `.gitignore`). With an Anthropic key, Claude Sonnet 5.5 is used; otherwise GLM 5.3 via
-OpenRouter. Set `VICTIM_MODEL` or `CULPRIT_MODEL` to choose other models from the same provider.
+## Keys
 
-From your repo's `.env`, Culprit itself reads only `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY`,
-`VICTIM_MODEL` and `CULPRIT_MODEL`. Set anything else, such as `NEATLOGS_API_KEY` for tracing, in your
-shell. Your agent's own runs get the whole `.env`.
+`culprit init` asks once for an Anthropic or OpenRouter key, and optionally a neatlogs key for
+tracing. It saves them in `~/.config/culprit/credentials.env`, readable only by you, so every repo you
+set up uses them. Run `culprit init --keys` to change them.
+
+To override a saved key, set it in your repo's `.env` (for that repo only) or in your shell. The shell
+wins, then the repo's `.env`, then the saved setup. The settings Culprit reads are `ANTHROPIC_API_KEY`,
+`OPENROUTER_API_KEY`, `NEATLOGS_API_KEY`, `VICTIM_MODEL` and `CULPRIT_MODEL`. It ignores everything
+else in a repo's `.env`, but your agent's own runs get the whole file.
+
+With an Anthropic key, Claude Sonnet 5.5 is used; otherwise GLM 5.3 via OpenRouter. Set
+`VICTIM_MODEL` or `CULPRIT_MODEL` to choose other models from the same provider.
 
 Run Culprit only on repos you trust. It runs the repo's code at every commit it tests, just as running
 its test suite would.

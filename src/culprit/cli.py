@@ -399,9 +399,10 @@ def init(
     suite_ref: str | None = typer.Option(None, help="Ref whose suite judges every commit (default: current branch)"),
     check: bool | None = typer.Option(None, "--check/--no-check", help="Run one task to check its output "
                                       "(calls your model once) (default: ask; no with --yes)"),
+    keys: bool = typer.Option(False, "--keys", help="Ask for the keys again, even if they are already set"),
     yes: bool = typer.Option(False, "--yes", "-y", help="Accept the defaults without asking"),
 ) -> None:
-    """Set up your agent's repo: model key, eval module and suite, saved to culprit.toml and .env."""
+    """Set up Culprit: your keys (saved once for all your repos) and this repo's eval module and suite."""
     from culprit import onboard
     from culprit.project import FILENAME, write
 
@@ -418,23 +419,31 @@ def init(
         typer.echo("  warning: no uv.lock. Culprit installs each commit with `uv sync --locked`, so commit a "
                    "uv.lock (run `uv lock`) or every commit will be skipped.")
 
-    keys = onboard.key_status(root)
-    if keys:
-        typer.echo("  model key: " + ", ".join(f"{name} ({where})" for name, where in keys.items()))
-    elif yes:
-        typer.echo("error: no model key. Set ANTHROPIC_API_KEY or OPENROUTER_API_KEY, or run without --yes",
-                   err=True)
+    providers.load_settings(root)
+    model_keys = [name for name in onboard.KEY_NAMES.values() if providers.source(name)]
+    if yes and not model_keys:
+        typer.echo("error: no model key. Run `culprit init` without --yes to save one, or set ANTHROPIC_API_KEY "
+                   "or OPENROUTER_API_KEY", err=True)
         raise typer.Exit(2)
-    else:
+    to_save: dict[str, str] = {}
+    if not yes and (keys or not model_keys):
         provider = ""
         while provider not in onboard.KEY_NAMES:
-            provider = typer.prompt(f"Which provider do you have a key for? ({' or '.join(onboard.KEY_NAMES)})",
+            provider = typer.prompt(f"Which provider is your model key for? ({' or '.join(onboard.KEY_NAMES)})",
                                     default="openrouter").strip().lower()
         name = onboard.KEY_NAMES[provider]
-        value = typer.prompt(f"{name}", hide_input=True).strip()
-        path = onboard.save_key(root, name, value)
-        typer.echo(f"  saved {name} to {path} (readable only by you)")
-    providers.load_repo_env(root / ".env")
+        to_save[name] = typer.prompt(name, hide_input=True).strip()
+    if not yes and (keys or not providers.source("NEATLOGS_API_KEY")):
+        to_save["NEATLOGS_API_KEY"] = typer.prompt("NEATLOGS_API_KEY for tracing (optional; Enter to skip)",
+                                                   default="", show_default=False, hide_input=True).strip()
+    if any(to_save.values()):
+        path = providers.save_settings(to_save)
+        typer.echo(f"  saved {', '.join(k for k, v in to_save.items() if v)} to {path} (readable only by you)")
+        for name in (k for k, v in to_save.items() if v and providers.source(k) != providers.SAVED):
+            typer.echo(f"  note: {name} is also set in your {providers.source(name)}, which takes precedence")
+    for name in providers.SETTING_VARS:
+        if providers.source(name):
+            typer.echo(f"  {name}: from {providers.source(name)}")
     try:
         victim = providers.select("VICTIM_MODEL")
         typer.echo(f"  your agent will run on {victim.model} via {victim.name} during a bisect")
@@ -475,14 +484,15 @@ def init(
         typer.echo(("  check passed: " if result.ok else "  check FAILED: ") + result.message)
         if not result.ok:
             raise typer.Exit(1)
-    typer.echo(f"\nReady. From {root}:\n  culprit run --good <a good tag or commit> --bad HEAD --budget-usd 3\n"
+    typer.echo(f"\nReady. Change keys with `culprit init --keys`, or override them in the shell or this repo's "
+               f".env. From {root}:\n  culprit run --good <a good tag or commit> --bad HEAD --budget-usd 3\n"
                f"Commit {FILENAME} so your team and CI use the same settings.")
 
 
 def main() -> None:
-    # Keys: the environment wins, then the model keys and models (only those) from the current directory's
-    # .env, then, in a clone of this repo, all of Culprit's own .env. Nothing overrides a variable already set.
-    providers.load_repo_env(Path.cwd() / ".env")
+    # Settings: the shell wins, then the current repo's .env, then what `culprit init` saved (see
+    # culprit.providers). A clone of this repo also loads its own .env, the developers' setup.
+    providers.load_settings(Path.cwd())
     if SOURCE_CHECKOUT:
         load_dotenv(PROJECT_ROOT / ".env")
     tracing.init()

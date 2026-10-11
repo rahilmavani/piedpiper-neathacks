@@ -40,24 +40,68 @@ class ProviderError(RuntimeError):
     pass
 
 
-# What Culprit's own process takes from the .env of the repo it runs in. Nothing else is read from it:
-# variables such as HTTPS_PROXY with SSL_CERT_FILE, an SDK's base URL or NEATLOGS_CLI would let a cloned
-# repo route Culprit's calls, with the user's keys, through another server or run another program. The
-# agent's own runs still get that whole .env (culprit.evalrunner.victim_env); they are the repo's code.
-REPO_ENV_VARS = ("ANTHROPIC_API_KEY", "OPENROUTER_API_KEY", "VICTIM_MODEL", "CULPRIT_MODEL")
+# Settings Culprit reads, from three places; the first that sets one wins:
+#   1. the shell environment,
+#   2. the .env of the repo Culprit runs in (to override for one repo),
+#   3. what `culprit init` saved for this user (settings_path(), readable only by them).
+# Only these names are read from 2 and 3. Anything else in a repo's .env (HTTPS_PROXY with SSL_CERT_FILE,
+# an SDK's base URL, NEATLOGS_CLI) could route Culprit's calls, with the user's keys, through another
+# server or run another program, so it is ignored. The agent's own runs still get that whole .env
+# (culprit.evalrunner.victim_env): they are the repo's own code.
+SETTING_VARS = ("ANTHROPIC_API_KEY", "OPENROUTER_API_KEY", "NEATLOGS_API_KEY", "VICTIM_MODEL", "CULPRIT_MODEL")
+REPO_ENV, SAVED = "repo .env", "culprit init"
+_loaded: dict[str, tuple[str, str]] = {}  # name -> (where it came from, value)
 
 
-def load_repo_env(path: Path) -> list[str]:
-    """Set the allowed variables from `path` that aren't already set; returns their names."""
+def settings_path() -> Path:
+    base = os.environ.get("XDG_CONFIG_HOME") or str(Path.home() / ".config")
+    return Path(base) / "culprit" / "credentials.env"
+
+
+def _load(path: Path, source: str) -> None:
     if not path.is_file():
-        return []
+        return
     from dotenv import dotenv_values
 
     values = dotenv_values(path)
-    loaded = [name for name in REPO_ENV_VARS if values.get(name) and not os.environ.get(name)]
-    for name in loaded:
-        os.environ[name] = values[name]
-    return loaded
+    for name in SETTING_VARS:
+        if values.get(name) and not os.environ.get(name):
+            os.environ[name] = values[name]
+            _loaded[name] = (source, values[name])
+
+
+def load_settings(repo: Path) -> None:
+    """Fill unset settings from the repo's .env, then from the saved setup. Never overrides the shell."""
+    _load(repo / ".env", REPO_ENV)
+    _load(settings_path(), SAVED)
+
+
+def source(name: str) -> str | None:
+    """Where the current value of `name` came from: "shell", REPO_ENV or SAVED; None if unset."""
+    value = os.environ.get(name)
+    if not value:
+        return None
+    where, loaded = _loaded.get(name, ("shell", None))
+    return where if loaded == value else "shell"
+
+
+def save_settings(values: dict[str, str]) -> Path:
+    """Merge `values` into the saved setup; the file is readable only by the user."""
+    path = settings_path()
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    from dotenv import dotenv_values
+
+    current = {k: v for k, v in dotenv_values(path).items() if v} if path.is_file() else {}
+    current.update({k: v for k, v in values.items() if v})
+    path.touch(mode=0o600)
+    path.chmod(0o600)
+    path.write_text("# Saved by `culprit init`. The shell and a repo's .env override these.\n"
+                    + "".join(f"{k}={v}\n" for k, v in current.items()))
+    for name, value in values.items():  # this process uses what was just saved, unless the shell overrides it
+        if value and source(name) in {None, SAVED}:
+            os.environ[name] = value
+            _loaded[name] = (SAVED, value)
+    return path
 
 
 @dataclass(frozen=True)

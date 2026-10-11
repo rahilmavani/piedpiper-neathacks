@@ -1,22 +1,18 @@
-"""`culprit init`: set up an agent's repo for Culprit (key, eval module, suite) and check it once.
+"""`culprit init`: set up an agent's repo for Culprit (eval module, suite) and check it once.
 
 Everything here is a plain function so it can be tested without prompts; the CLI asks the questions.
 """
 
 from __future__ import annotations
 
-import os
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-
-from dotenv import dotenv_values
 
 from culprit.evalrunner import _parse_output, discover_tasks, victim_env
 from culprit.providers import Provider
 
 KEY_NAMES = {"anthropic": "ANTHROPIC_API_KEY", "openrouter": "OPENROUTER_API_KEY"}
-IGNORED = (".env", ".culprit/")
 SKIP_DIRS = {".git", ".venv", "venv", ".culprit", "node_modules", "__pycache__", ".tox", "build", "dist"}
 
 
@@ -56,34 +52,12 @@ def eval_modules(repo: Path) -> list[str]:
     return [module for _, module in sorted(set(found))]
 
 
-def key_status(repo: Path) -> dict[str, str]:
-    """Which model keys are set, and where: the environment or the repo's .env."""
-    in_file = dotenv_values(repo / ".env") if (repo / ".env").is_file() else {}
-    status = {}
-    for name in KEY_NAMES.values():
-        if os.environ.get(name):
-            status[name] = "environment"
-        elif in_file.get(name):
-            status[name] = ".env"
-    return status
-
-
-def save_key(repo: Path, name: str, value: str) -> Path:
-    """Set `name` in the repo's .env (replacing an earlier value), readable only by the owner."""
-    path = repo / ".env"
-    lines = path.read_text().splitlines() if path.is_file() else []
-    lines = [line for line in lines if not line.split("=", 1)[0].strip().removeprefix("export ").strip() == name]
-    lines.append(f"{name}={value}")
-    path.write_text("\n".join(lines) + "\n")
-    path.chmod(0o600)
-    return path
-
-
 def ignore_local_files(repo: Path) -> list[str]:
-    """Add .env and .culprit/ to .gitignore if missing; returns what was added."""
+    """Add .culprit/ (run state) and, if the repo has one, .env to .gitignore; returns what was added."""
     path = repo / ".gitignore"
     present = {line.strip() for line in path.read_text().splitlines()} if path.is_file() else set()
-    missing = [entry for entry in IGNORED if entry not in present and entry.rstrip("/") not in present]
+    wanted = [".culprit/"] + ([".env"] if (repo / ".env").is_file() else [])
+    missing = [entry for entry in wanted if entry not in present and entry.rstrip("/") not in present]
     if missing:
         text = path.read_text() if path.is_file() else ""
         prefix = "" if not text or text.endswith("\n") else "\n"

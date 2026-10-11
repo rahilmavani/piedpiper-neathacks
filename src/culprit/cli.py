@@ -434,7 +434,7 @@ def init(
         value = typer.prompt(f"{name}", hide_input=True).strip()
         path = onboard.save_key(root, name, value)
         typer.echo(f"  saved {name} to {path} (readable only by you)")
-    load_dotenv(root / ".env")
+    providers.load_repo_env(root / ".env")
     try:
         victim = providers.select("VICTIM_MODEL")
         typer.echo(f"  your agent will run on {victim.model} via {victim.name} during a bisect")
@@ -480,9 +480,9 @@ def init(
 
 
 def main() -> None:
-    # Keys: the environment wins, then the .env of the current directory's repo, then (in a clone of this
-    # repo) Culprit's own .env. load_dotenv never overrides a variable that is already set.
-    load_dotenv(Path.cwd() / ".env")
+    # Keys: the environment wins, then the model keys and models (only those) from the current directory's
+    # .env, then, in a clone of this repo, all of Culprit's own .env. Nothing overrides a variable already set.
+    providers.load_repo_env(Path.cwd() / ".env")
     if SOURCE_CHECKOUT:
         load_dotenv(PROJECT_ROOT / ".env")
     tracing.init()

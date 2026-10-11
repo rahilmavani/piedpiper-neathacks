@@ -44,6 +44,13 @@ culprit report <run_id>                            # markdown and HTML report
 `.culprit/` to `.gitignore`). With an Anthropic key, Claude Sonnet 5.5 is used; otherwise GLM 5.3 via
 OpenRouter. Set `VICTIM_MODEL` or `CULPRIT_MODEL` to choose other models from the same provider.
 
+From your repo's `.env`, Culprit itself reads only `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY`,
+`VICTIM_MODEL` and `CULPRIT_MODEL`. Set anything else, such as `NEATLOGS_API_KEY` for tracing, in your
+shell. Your agent's own runs get the whole `.env`.
+
+Run Culprit only on repos you trust. It runs the repo's code at every commit it tests, just as running
+its test suite would.
+
 ## Other commands
 
 | Command | What it answers |

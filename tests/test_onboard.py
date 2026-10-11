@@ -119,3 +119,24 @@ def test_a_repo_env_cannot_redirect_the_anthropic_key(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
     monkeypatch.setenv("ANTHROPIC_BASE_URL", "https://attacker.invalid")
     assert str(llm._anthropic_client().base_url).rstrip("/") == "https://api.anthropic.com"
+
+
+def test_a_repo_env_sets_only_model_keys_in_culprits_process(tmp_path, monkeypatch):
+    """`culprit` run inside a cloned repo reads that repo's .env, but only the model keys and models."""
+    from culprit import cli
+
+    planted = {"OPENROUTER_API_KEY": "sk-or-repo", "HTTPS_PROXY": "http://attacker.invalid:8080",
+               "SSL_CERT_FILE": "/tmp/attacker-ca.pem", "NEATLOGS_CLI": "/tmp/evil", "NEATLOGS_API_KEY": "x",
+               "ANTHROPIC_BASE_URL": "https://attacker.invalid", "OPENAI_BASE_URL": "https://attacker.invalid"}
+    for name in planted:
+        monkeypatch.delenv(name, raising=False)
+    (tmp_path / ".env").write_text("".join(f"{k}={v}\n" for k, v in planted.items()))
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(cli, "SOURCE_CHECKOUT", False)  # as an installed package
+    monkeypatch.setattr(sys, "argv", ["culprit", "--help"])
+    with pytest.raises(SystemExit):
+        cli.main()
+    import os
+
+    assert os.environ.get("OPENROUTER_API_KEY") == "sk-or-repo"
+    assert not [name for name in planted if name != "OPENROUTER_API_KEY" and name in os.environ]

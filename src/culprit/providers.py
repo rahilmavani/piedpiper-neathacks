@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from pathlib import Path
 
 ANTHROPIC = "anthropic"
 OPENROUTER = "openrouter"
@@ -37,6 +38,26 @@ PRICES = {
 
 class ProviderError(RuntimeError):
     pass
+
+
+# What Culprit's own process takes from the .env of the repo it runs in. Nothing else is read from it:
+# variables such as HTTPS_PROXY with SSL_CERT_FILE, an SDK's base URL or NEATLOGS_CLI would let a cloned
+# repo route Culprit's calls, with the user's keys, through another server or run another program. The
+# agent's own runs still get that whole .env (culprit.evalrunner.victim_env); they are the repo's code.
+REPO_ENV_VARS = ("ANTHROPIC_API_KEY", "OPENROUTER_API_KEY", "VICTIM_MODEL", "CULPRIT_MODEL")
+
+
+def load_repo_env(path: Path) -> list[str]:
+    """Set the allowed variables from `path` that aren't already set; returns their names."""
+    if not path.is_file():
+        return []
+    from dotenv import dotenv_values
+
+    values = dotenv_values(path)
+    loaded = [name for name in REPO_ENV_VARS if values.get(name) and not os.environ.get(name)]
+    for name in loaded:
+        os.environ[name] = values[name]
+    return loaded
 
 
 @dataclass(frozen=True)

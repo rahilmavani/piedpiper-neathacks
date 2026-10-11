@@ -155,3 +155,15 @@ def test_a_repo_env_sets_only_culprits_settings_in_its_process(tmp_path, monkeyp
 
     assert os.environ.get("OPENROUTER_API_KEY") == "sk-or-repo"
     assert not [name for name in planted if name != "OPENROUTER_API_KEY" and name in os.environ]
+
+
+def test_settings_from_a_repo_env_are_announced(tmp_path, monkeypatch, capsys):
+    from culprit import cli
+
+    monkeypatch.delenv("NEATLOGS_API_KEY", raising=False)
+    (tmp_path / ".env").write_text("NEATLOGS_API_KEY=someone-elses\n")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, "argv", ["culprit", "--help"])
+    with pytest.raises(SystemExit):
+        cli.main()
+    assert f"culprit: using NEATLOGS_API_KEY from {tmp_path / '.env'}" in capsys.readouterr().err

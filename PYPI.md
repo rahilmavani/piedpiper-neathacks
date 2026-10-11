@@ -49,7 +49,8 @@ set up uses them. Run `culprit init --keys` to change them.
 To override a saved key, set it in your repo's `.env` (for that repo only) or in your shell. The shell
 wins, then the repo's `.env`, then the saved setup. The settings Culprit reads are `ANTHROPIC_API_KEY`,
 `OPENROUTER_API_KEY`, `NEATLOGS_API_KEY`, `VICTIM_MODEL` and `CULPRIT_MODEL`. It ignores everything
-else in a repo's `.env`, but your agent's own runs get the whole file.
+else in a repo's `.env`, but your agent's own runs get the whole file. When a repo's `.env` supplies one of
+these settings, Culprit prints which ones, so a cloned repo can't switch your keys silently.
 
 With an Anthropic key, Claude Sonnet 5.5 is used; otherwise GLM 5.3 via OpenRouter. Set
 `VICTIM_MODEL` or `CULPRIT_MODEL` to choose other models from the same provider.

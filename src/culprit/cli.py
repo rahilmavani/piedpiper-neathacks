@@ -493,6 +493,11 @@ def main() -> None:
     # Settings: the shell wins, then the current repo's .env, then what `culprit init` saved (see
     # culprit.providers). A clone of this repo also loads its own .env, the developers' setup.
     providers.load_settings(Path.cwd())
+    # A repo's .env can override the saved keys, so say when it does: in a repo you didn't write, that
+    # .env decides whose account Culprit's calls and traces go to.
+    from_repo = [n for n in providers.SETTING_VARS if providers.source(n) == providers.REPO_ENV]
+    if from_repo and not (SOURCE_CHECKOUT and Path.cwd().resolve() == PROJECT_ROOT):
+        typer.echo(f"culprit: using {', '.join(from_repo)} from {Path.cwd() / '.env'}", err=True)
     if SOURCE_CHECKOUT:
         load_dotenv(PROJECT_ROOT / ".env")
     tracing.init()

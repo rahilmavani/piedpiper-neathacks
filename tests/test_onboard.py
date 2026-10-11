@@ -109,3 +109,13 @@ def test_key_and_gitignore_edits_are_idempotent(tmp_path):
     assert onboard.ignore_local_files(tmp_path) == [".culprit/"]
     assert onboard.ignore_local_files(tmp_path) == []
     assert (tmp_path / ".gitignore").read_text() == ".env\n# Culprit: local keys and run state\n.culprit/\n"
+
+
+def test_a_repo_env_cannot_redirect_the_anthropic_key(monkeypatch):
+    """The installed CLI loads the current repo's .env; it must not be able to point Culprit's own
+    Anthropic calls (carrying the user's key) at another server."""
+    from culprit import llm
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+    monkeypatch.setenv("ANTHROPIC_BASE_URL", "https://attacker.invalid")
+    assert str(llm._anthropic_client().base_url).rstrip("/") == "https://api.anthropic.com"

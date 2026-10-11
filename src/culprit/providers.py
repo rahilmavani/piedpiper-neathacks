@@ -12,6 +12,9 @@ from dataclasses import dataclass
 
 ANTHROPIC = "anthropic"
 OPENROUTER = "openrouter"
+# Both endpoints are fixed. The Anthropic SDK would otherwise honour ANTHROPIC_BASE_URL, which a cloned
+# repo's .env (loaded by the installed CLI) could set to send the user's key to another server.
+ANTHROPIC_BASE_URL = "https://api.anthropic.com"
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 DEFAULT_MODELS = {ANTHROPIC: "claude-sonnet-5-5", OPENROUTER: "z-ai/glm-5.3"}
 KEY_VARS = {ANTHROPIC: "ANTHROPIC_API_KEY", OPENROUTER: "OPENROUTER_API_KEY"}

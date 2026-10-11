@@ -1,0 +1,38 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4MWXXR398AK242VNBEDQC0X",
+  "strategy": "manual-commit",
+  "branch": "feat/use-cases",
+  "checkpoints_count": 8,
+  "files_touched": [
+    "HANDOVER.md",
+    "README.md",
+    "examples/github-action/culprit.yml",
+    "hackathon.md",
+    "src/culprit/audit.py",
+    "src/culprit/ci.py",
+    "src/culprit/cli.py",
+    "src/culprit/drift.py",
+    "src/culprit/standalone.py",
+    "tests/fixtures/make_victim.py",
+    "tests/test_audit.py",
+    "tests/test_ci.py",
+    "tests/test_drift.py"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 726,
+    "cache_creation_tokens": 1792855,
+    "cache_read_tokens": 166289463,
+    "output_tokens": 313430,
+    "api_call_count": 357
+  }
+}

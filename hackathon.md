@@ -155,6 +155,16 @@ Planned (from `PRD.md`); move items to "used" as they are integrated.
   - `--replay` is new on `localise` and `fix`: no key needed and nothing may be spent. A victim batch or model call the ledger doesn't hold fails the stage before anything is written.
   - Tests: the guard blocks connects and DNS but not local sockets; a recorded fixture story replays with fake keys present and leaves the source ledger byte-identical; replay refuses unrecorded work. 141 tests pass.
 
+### 2026-10-11
+
+- **Done: three new modes from the use-case discussion** (branch `feat/use-cases`, fixture only, $0). Each is a run in the ledger like any other, so caps, resume, traces and export-costs apply.
+  - **`culprit ci`**: a PR regression gate. Exit 0 clean, 1 regression (bisect, then localise and optionally fix), 2 stopped. The suite comes from the PR's base. Example workflow in `examples/github-action/`.
+  - **`culprit comment <run_id>`**: the PR comment from the ledger alone. Rendered for the real hero run at $0: base 78/78 → head 57/78, culprit `397c427`, the two responsible hunks, and the verified patch.
+  - **`culprit drift --ref <ref>`**: same commit, suite, model and seeds, re-measured now and compared with Fisher in both directions (`drifted` / `stable` / `improved`).
+  - **`culprit audit --ref <ref>`**: mutation testing for agents. 8 regression operators turned into exact edits by a model (or your own patches), each applied in a throwaway worktree. Each mutant is reported as caught, missed or invalid, with a task idea for every miss. The eval harness is never offered for mutation.
+- **Finding worth posting:** our hand-planted benchmark showed 3 of 6 regressions were invisible to the suite. `culprit audit` makes finding those blind spots a command instead of a day of work.
+- **Moment worth screenshotting:** `culprit comment ff50e3620fdd`: a complete PR comment for the hero bug, generated for $0.
+
 ## Demo
 
 - *Pending.* No demo URL yet.

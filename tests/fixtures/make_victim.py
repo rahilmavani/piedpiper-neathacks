@@ -71,6 +71,8 @@ def main() -> None:
         return
     rng = random.Random(f"{{a.task}}:{{a.seed}}")
     p_pass = agent.FRAGILE_PASS if a.task in FRAGILE else 0.95
+    # Simulated model drift, set by tests: every task's pass rate scaled, whatever the commit.
+    p_pass *= float(os.environ.get("FIXTURE_MODEL_QUALITY", "1"))
     passed = rng.random() < p_pass
     # Latency follows the tool timeout knob, so a "faster" commit has a measurable intended gain.
     print(json.dumps({{"passed": passed, "cost": 0.001, "latency_ms": agent.TOOL_TIMEOUT_S * 10.0,

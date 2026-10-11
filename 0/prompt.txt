@@ -1,0 +1,38 @@
+now I want to find out the real world use cases of this app. Lets discuss.
+
+---
+
+1. SOunds good
+2. Sounds good
+3. Neatlogs already does investigation and stuff
+4. Sounds good because I was about to ask another branched session to run the tests with respect to different models(sonnet and GLM is already done) I need a run with at least 3 more models. I want to benchmark for all 5. And then later show it as a graph or something on the demo website we will make.
+5. Yes this is really good
+6. Sounds good
+
+---
+
+claude sonnet my teammate will do in his laptop and session once I do the other 3 you suggested.
+
+---
+
+Instead of Luna can I put 6.1 sol?
+
+---
+
+okay so 6.1 luna?
+
+---
+
+so I dont want to use GPT. Give me all the list of models in openrrouter with esitmated cost and I will pick up the 3 i want.
+
+---
+
+gemini, deepseek and qwen
+
+---
+
+While that is running I want to talk about the usecases thing we were talking about.
+
+---
+
+I want to build from these usecases whatever is not already built.

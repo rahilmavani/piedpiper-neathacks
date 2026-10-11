@@ -1,0 +1,13 @@
+yes
+
+---
+
+<task-notification>
+<summary>Commit security review found: untrusted-config-injection in src/culprit/cli.py</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<summary>Commit security review found: incomplete-fix / credential exfiltration via repo .env in src/culprit/llm.py</summary>
+</task-notification>

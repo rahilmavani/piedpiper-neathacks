@@ -55,6 +55,33 @@ Per branch, victim runs v1 → v2: a 156 → 52, b 240 → 164, c 180 → 84, d 
 
 Not measured: baseline reuse (`--reuse`, on by default). On this ledger it would copy both ends' baselines from v1 and run almost nothing, which isn't a fair comparison. The fixture measurement is in `evidence/v2-efficiency-fixture.md`.
 
+## Victim-model comparison (11 Oct; Culprit v2, `--no-reuse`, suite `ba86ed0`)
+
+Full write-up: `evidence/MODELS.md`. Data for the charts: `evidence/models.json`. The three models ran in parallel, each in its own `CULPRIT_STATE_DIR`. All 18 bisects were scored with `culprit bench`, and every model got **6/6**.
+
+| Model | Run | Branch | Outcome | Found | Victim runs | Cost | Resumed | Culprit trace |
+|---|---|---|---|---|---:|---:|---|---|
+| DeepSeek V4.1 Flash | `65ee52ef08c3` | hist/a | correct_no_regression | – | 52 | $0.019 |  | `90479185e8c79606a813e2f1b3e3c51f` |
+| DeepSeek V4.1 Flash | `2797e84bcc15` | hist/b | correct | `397c427` | 132 | $0.061 | yes | `ab7ca70945db8f49e6e480be99c8b14e`, `0525ff4ee71c39e3036f72b350da63dd` |
+| DeepSeek V4.1 Flash | `8ace75bdc6fa` | hist/c | correct | `acf3b7d` | 84 | $0.050 | yes | `1ed9ecf5db5c9adc82a167879f00904b`, `00e5b5dd82cd18d09c2ca824d9d17e42` |
+| DeepSeek V4.1 Flash | `57052ac18acd` | hist/d | correct_no_regression | – | 52 | $0.020 | yes | `2ca268d78f103e7b4f459bca648e5c37`, `a4379b5a105e816407353eacb29fe152` |
+| DeepSeek V4.1 Flash | `25ed0ebed07b` | hist/e | correct_no_regression | – | 52 | $0.018 | yes | `9de99829157165820397dc596a9bb383`, `81744d53c39ad9bd4c04e1e76947aea2` |
+| DeepSeek V4.1 Flash | `e2473ed6f0e9` | hist/f | correct | `1777d44` | 164 | $0.070 | yes | `2befe2af221e7cc25e6a6df87c5de430`, `240a1ce7064d085e7f619365ae255af0` |
+| Gemini 3.8 Flash | `60285a42358c` | hist/a | correct_no_regression | – | 52 | $0.220 |  | `9f3ceaf2c99784e7e3432096f8d64de2` |
+| Gemini 3.8 Flash | `30e9f8e6a19f` | hist/b | correct | `397c427` | 164 | $0.754 | yes | `746ca0b749797e297f5547e478ed0bd1`, `b39fa42d12e819f97458524f226cd8e7` |
+| Gemini 3.8 Flash | `41056dd52750` | hist/c | correct_no_regression | – | 60 | $0.277 | yes | `36809df50226a6e209ce0b5c55306df2`, `5dfedce15a4f595914697b13c04a1974` |
+| Gemini 3.8 Flash | `0e6caa11ae4b` | hist/d | correct_no_regression | – | 52 | $0.209 | yes | `5e6c179396ee175a9865068631fb57ef`, `fa3674d92725acdc0adf380ce173bc9e` |
+| Gemini 3.8 Flash | `48f6b3ba137a` | hist/e | correct_no_regression | – | 52 | $0.216 | yes | `30a6a5aa5cbe1b599e4789a8d4228e00`, `e21504878d16210d0197dbb0cc361a80` |
+| Gemini 3.8 Flash | `9656aba229d2` | hist/f | correct | `1777d44` | 180 | $0.801 | yes | `8f37061827261bf09d3f4f77f84593d5`, `64fedbb69b7f7633fe0d233a8f854227` |
+| Qwen 3.8 Flash | `aeb5eafc26cd` | hist/a | correct_no_regression | – | 52 | $0.021 |  | `8be2a0031d0a5d43e0a0565386c1434d` |
+| Qwen 3.8 Flash | `7b4085c566bd` | hist/b | correct | `397c427` | 164 | $0.078 |  | `e050b655a8654f073c252904d03b1d03` |
+| Qwen 3.8 Flash | `3fd5b81ea6a5` | hist/c | correct | `acf3b7d` | 84 | $0.042 |  | `497fd7ee121f98a8213f21079c6d5965` |
+| Qwen 3.8 Flash | `130ec8ed6488` | hist/d | correct_no_regression | – | 52 | $0.021 |  | `dc624bd40233c4305dcbd79e79a21a83` |
+| Qwen 3.8 Flash | `661cd6012df1` | hist/e | correct_no_regression | – | 52 | $0.020 |  | `76eace739469d1214407ab23902ebb70` |
+| Qwen 3.8 Flash | `706b51fa91d9` | hist/f | correct | `1777d44` | 188 | $0.082 | yes | `545d5e26c58ac904e4005759c57969f9`, `0be1c54de1303262ca59bbbead60ce94` |
+
+Resumed runs had stopped on the OpenRouter key's $10 limit (`infra_error`, nothing counted) and were resumed after it was raised. Their wall time includes the pause.
+
 ## Localise and fix on the real victim (hist/b, run `ff50e3620fdd`)
 
 | Stage | Result | Victim runs | Model calls | Cost |
@@ -71,6 +98,8 @@ Latency caveat: the planted "make it faster" commit didn't make the agent measur
 | 10 Oct, before 17:17 | GLM smoke run | RefundDesk `main` | `refund_small_order` × seed 0 | passed, 4 LLM calls, trace `1f030e85f50030b93391d1a90a669a69` | 1 | $0.0066 | 0 |
 | 10 Oct, before 17:17 | Hero visibility on GLM | `good-v1.0` vs `397c427` | 6 harder tasks × seeds 0–2 | **18/18 vs 0/18** | 36 | $0.134 | 0 |
 | 10 Oct, evening | Strength check (independent of Culprit's baselines) | `good-v1.0` vs heads of `hist/a`, `d`, `e` | 26 tasks × seeds 3–5 | **all four 78/78**, Fisher p = 1.00 for a, d, e: the planted changes are invisible to this suite on GLM 5.3 | 312 | $0.711 | 0 |
+| 11 Oct | Smoke runs, one per new model | `good-v1.0` | `refund_small_order` × seed 0 | all 3 passed: Qwen $0.00050, DeepSeek $0.00047, Gemini $0.00374 per run | 3 | $0.0047 | 0 |
+| 11 Oct | Strength checks, 3 new models (`evidence/models/*-strength.json`) | `good-v1.0` + all six `hist/*` heads | 26 tasks × seeds 3–5 | good 78/78 on all; visible bugs Qwen b, c, f; DeepSeek b, c, f; Gemini b, f (c: 75/78, p = 0.12) | 1,638 | $2.780 | 0 infra |
 
 ## Test suite
 

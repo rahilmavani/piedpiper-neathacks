@@ -19,6 +19,7 @@ Written Sat 10 Oct 2026, 21:30 IST, by the second builder's session, for whoever
 | Recovery from failed actions | Real SKIP of the planted broken install (`hist/b` `22a37db`, `hist/f` `2ad118e`); the Fixer's first attempt rejected and the second verified | report and replay output |
 | neatlogs | Every run traced and audited (`verify-trace` PASS × 12); a detection created (3,738 hits); Investigate run and assessed; 7 screenshots | `evidence/NEATLOGS.md`, `evidence/screenshots/` |
 | Entire | The "why" for the hero commit comes from checkpoint `01M4JM8P2C4NDS2AAQ0MPVR8YR` ("RefundDesk is too slow. Make it faster…"); Culprit's own commits are checkpointed | `evidence/reports/report-978624283c27.md` |
+| Victim-model comparison | Culprit is **6/6 on all four models** (GLM 5.3, Qwen 3.8 Flash, DeepSeek V4.1 Flash, Gemini 3.8 Flash; 24/24 bisects). Cost per bisect ranges from $0.040 (DeepSeek) to $0.413 (Gemini). Gemini can't see bug c. **Claude Sonnet 5.5 is yours to run:** `evidence/SONNET_RUN.md` (~$15–20, ask first) | `evidence/MODELS.md`, `evidence/models.json` |
 | cfo.ai | Business plan: pricing comparison, break-even and cash runway exports, built from measured cost per bisect ($0.252) | `business/cfo-plan.md`, `business/cfo-ai-*.xlsx` |
 | Tests | **156 pass** (`uv run pytest -q`, ~100 s, free, no network) | |
 

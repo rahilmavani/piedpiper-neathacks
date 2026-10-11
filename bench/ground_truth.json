@@ -32,7 +32,10 @@
         "claim": "API consistency (no latency, token or cost metric)"
       },
       "visible": {
-        "z-ai/glm-5.3": false
+        "z-ai/glm-5.3": false,
+        "qwen/qwen3.8-flash": false,
+        "deepseek/deepseek-v4.1-flash": false,
+        "google/gemini-3.8-flash": false
       }
     },
     "hist/b": {
@@ -68,7 +71,10 @@
       },
       "visible": {
         "z-ai/glm-5.3": true,
-        "claude-sonnet-5-5": true
+        "claude-sonnet-5-5": true,
+        "qwen/qwen3.8-flash": true,
+        "deepseek/deepseek-v4.1-flash": true,
+        "google/gemini-3.8-flash": true
       }
     },
     "hist/c": {
@@ -108,7 +114,11 @@
         "metric": "tokens",
         "claim": "fewer input tokens per model call"
       },
-      "visible": {}
+      "visible": {
+        "qwen/qwen3.8-flash": true,
+        "deepseek/deepseek-v4.1-flash": true,
+        "google/gemini-3.8-flash": false
+      }
     },
     "hist/d": {
       "bad_sha": "819d692b677eb4fde7d0af44f35dffd9fcdf3260",
@@ -132,7 +142,10 @@
         "claim": "shorter prompt, cheaper calls"
       },
       "visible": {
-        "z-ai/glm-5.3": false
+        "z-ai/glm-5.3": false,
+        "qwen/qwen3.8-flash": false,
+        "deepseek/deepseek-v4.1-flash": false,
+        "google/gemini-3.8-flash": false
       }
     },
     "hist/e": {
@@ -165,7 +178,10 @@
         "claim": "fewer rejected tool calls (no latency, token or cost metric)"
       },
       "visible": {
-        "z-ai/glm-5.3": false
+        "z-ai/glm-5.3": false,
+        "qwen/qwen3.8-flash": false,
+        "deepseek/deepseek-v4.1-flash": false,
+        "google/gemini-3.8-flash": false
       }
     },
     "hist/f": {
@@ -191,7 +207,11 @@
         "metric": "latency",
         "claim": "no time spent on retries"
       },
-      "visible": {}
+      "visible": {
+        "qwen/qwen3.8-flash": true,
+        "deepseek/deepseek-v4.1-flash": true,
+        "google/gemini-3.8-flash": true
+      }
     }
   }
 }

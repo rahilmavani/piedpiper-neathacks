@@ -1,0 +1,161 @@
+{
+  "tag": "deepseek-deepseek-v4.1-flash",
+  "mode": "scored existing runs from `/Volumes/DevSSD/Projects/piedpiper-neathacks/.culprit-models/deepseek-deepseek-v4.1-flash/ledger.sqlite`",
+  "culprit": "896fa64a46a92bfda231941c9ab83edeb452a786 + uncommitted changes",
+  "not_scored": [],
+  "accuracy": {
+    "correct": 6,
+    "scored": 6,
+    "unverified": 0,
+    "incomplete": 0
+  },
+  "rows": [
+    {
+      "run_id": "65ee52ef08c3",
+      "status": "no_regression",
+      "culprit_sha": null,
+      "suspects": [],
+      "good_sha": "0479c273fbd3ef476425f5136c95a002749e043b",
+      "bad_sha": "6a2f05ad5b5ccf030ead0d4af7676a3320105fb6",
+      "victim_model": "deepseek/deepseek-v4.1-flash",
+      "victim_runs": 52,
+      "cost_usd": 0.018681,
+      "wall_s": 148.0,
+      "skipped": [],
+      "confidence": null,
+      "summary": "No significant regression to bisect: good 26/26 vs bad 26/26, one-sided Fisher p=1.0000 \u2265 0.05",
+      "traces": [
+        "90479185e8c79606a813e2f1b3e3c51f"
+      ],
+      "scenario": "hist/a",
+      "outcome": "correct_no_regression",
+      "expected": "c4f24013472d39f3a27f927507b5d0dae61f20c7",
+      "note": ""
+    },
+    {
+      "run_id": "2797e84bcc15",
+      "status": "found",
+      "culprit_sha": "397c42743be8cd80ae1d1e30c058772c1bd16add",
+      "suspects": [
+        "397c42743be8cd80ae1d1e30c058772c1bd16add"
+      ],
+      "good_sha": "0479c273fbd3ef476425f5136c95a002749e043b",
+      "bad_sha": "f6511b8e6bb0d072abf653b995f59b51233ce479",
+      "victim_model": "deepseek/deepseek-v4.1-flash",
+      "victim_runs": 132,
+      "cost_usd": 0.060658000000000004,
+      "wall_s": 876.0,
+      "skipped": [
+        "22a37dbfff51e2eabf16123746963d5425a1f7a7"
+      ],
+      "confidence": "95% Wilson",
+      "summary": "Culprit: 397c42743be8cd80ae1d1e30c058772c1bd16add 'perf(agent): run tool calls in parallel and drop per-result validation' (confidence: 95% Wilson)",
+      "traces": [
+        "ab7ca70945db8f49e6e480be99c8b14e",
+        "0525ff4ee71c39e3036f72b350da63dd"
+      ],
+      "scenario": "hist/b",
+      "outcome": "correct",
+      "expected": "397c42743be8cd80ae1d1e30c058772c1bd16add",
+      "note": ""
+    },
+    {
+      "run_id": "8ace75bdc6fa",
+      "status": "found",
+      "culprit_sha": "acf3b7df9fb4bf83761787e5f16dbcebc6f004bd",
+      "suspects": [
+        "acf3b7df9fb4bf83761787e5f16dbcebc6f004bd"
+      ],
+      "good_sha": "0479c273fbd3ef476425f5136c95a002749e043b",
+      "bad_sha": "30960fe9d716e7fa16ac6b04f8ab92a5c57fbfa6",
+      "victim_model": "deepseek/deepseek-v4.1-flash",
+      "victim_runs": 84,
+      "cost_usd": 0.049912,
+      "wall_s": 629.0,
+      "skipped": [],
+      "confidence": "95% Wilson",
+      "summary": "Culprit: acf3b7df9fb4bf83761787e5f16dbcebc6f004bd 'perf(agent): shorten the history window to 6 messages' (confidence: 95% Wilson)",
+      "traces": [
+        "1ed9ecf5db5c9adc82a167879f00904b",
+        "00e5b5dd82cd18d09c2ca824d9d17e42"
+      ],
+      "scenario": "hist/c",
+      "outcome": "correct",
+      "expected": "acf3b7df9fb4bf83761787e5f16dbcebc6f004bd",
+      "note": ""
+    },
+    {
+      "run_id": "57052ac18acd",
+      "status": "no_regression",
+      "culprit_sha": null,
+      "suspects": [],
+      "good_sha": "0479c273fbd3ef476425f5136c95a002749e043b",
+      "bad_sha": "819d692b677eb4fde7d0af44f35dffd9fcdf3260",
+      "victim_model": "deepseek/deepseek-v4.1-flash",
+      "victim_runs": 52,
+      "cost_usd": 0.019888,
+      "wall_s": 764.0,
+      "skipped": [],
+      "confidence": null,
+      "summary": "No significant regression to bisect: good 26/26 vs bad 26/26, one-sided Fisher p=1.0000 \u2265 0.05",
+      "traces": [
+        "2ca268d78f103e7b4f459bca648e5c37",
+        "a4379b5a105e816407353eacb29fe152"
+      ],
+      "scenario": "hist/d",
+      "outcome": "correct_no_regression",
+      "expected": "441058ed36ba050b8be09182076977aefe648e29",
+      "note": ""
+    },
+    {
+      "run_id": "25ed0ebed07b",
+      "status": "no_regression",
+      "culprit_sha": null,
+      "suspects": [],
+      "good_sha": "0479c273fbd3ef476425f5136c95a002749e043b",
+      "bad_sha": "255f40c54e0ecc27de99ef6459171d94f7e3fc5f",
+      "victim_model": "deepseek/deepseek-v4.1-flash",
+      "victim_runs": 52,
+      "cost_usd": 0.018095,
+      "wall_s": 892.0,
+      "skipped": [],
+      "confidence": null,
+      "summary": "No significant regression to bisect: good 26/26 vs bad 26/26, one-sided Fisher p=1.0000 \u2265 0.05",
+      "traces": [
+        "9de99829157165820397dc596a9bb383",
+        "81744d53c39ad9bd4c04e1e76947aea2"
+      ],
+      "scenario": "hist/e",
+      "outcome": "correct_no_regression",
+      "expected": "8ae122d6ef08870b8663c98d009c54e3da5a4f41",
+      "note": ""
+    },
+    {
+      "run_id": "e2473ed6f0e9",
+      "status": "found",
+      "culprit_sha": "1777d44476fc5bfd298d96d296b9d97b6c80b258",
+      "suspects": [
+        "1777d44476fc5bfd298d96d296b9d97b6c80b258"
+      ],
+      "good_sha": "0479c273fbd3ef476425f5136c95a002749e043b",
+      "bad_sha": "3b0938b9da374a3045e588adfba25a7297a5624f",
+      "victim_model": "deepseek/deepseek-v4.1-flash",
+      "victim_runs": 164,
+      "cost_usd": 0.070362,
+      "wall_s": 1561.0,
+      "skipped": [
+        "2ad118e301a4d6ac2e63ebf081bbc8b3f0b4ffc0"
+      ],
+      "confidence": "95% Wilson",
+      "summary": "Culprit: 1777d44476fc5bfd298d96d296b9d97b6c80b258 'perf(agent): disable tool-call retries' (confidence: 95% Wilson)",
+      "traces": [
+        "2befe2af221e7cc25e6a6df87c5de430",
+        "240a1ce7064d085e7f619365ae255af0"
+      ],
+      "scenario": "hist/f",
+      "outcome": "correct",
+      "expected": "1777d44476fc5bfd298d96d296b9d97b6c80b258",
+      "note": ""
+    }
+  ]
+}

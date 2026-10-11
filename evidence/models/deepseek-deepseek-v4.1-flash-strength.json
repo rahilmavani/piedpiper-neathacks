@@ -1,0 +1,124 @@
+{
+  "model": "deepseek/deepseek-v4.1-flash",
+  "provider": "openrouter",
+  "suite_ref": "ba86ed0",
+  "suite_sha": "ba86ed06d3e5be7a1ffb5e8d93e3caa95efad90c",
+  "seeds": [
+    3,
+    5
+  ],
+  "tasks": 26,
+  "tag": "strength-deepseek-deepseek-v4.1-flash",
+  "refs": {
+    "good-v1.0": {
+      "sha": "0479c273fbd3ef476425f5136c95a002749e043b",
+      "passes": 78,
+      "n": 78,
+      "wilson": [
+        0.9531,
+        1.0
+      ],
+      "cost_usd": 0.031654,
+      "infra_errors": 0,
+      "failing_tasks": []
+    },
+    "origin/hist/a": {
+      "sha": "6a2f05ad5b5ccf030ead0d4af7676a3320105fb6",
+      "passes": 78,
+      "n": 78,
+      "wilson": [
+        0.9531,
+        1.0
+      ],
+      "cost_usd": 0.03228,
+      "infra_errors": 0,
+      "failing_tasks": [],
+      "fisher_p_vs_reference": 1.0
+    },
+    "origin/hist/b": {
+      "sha": "f6511b8e6bb0d072abf653b995f59b51233ce479",
+      "passes": 63,
+      "n": 78,
+      "wilson": [
+        0.7066,
+        0.8798
+      ],
+      "cost_usd": 0.034705,
+      "infra_errors": 0,
+      "failing_tasks": [
+        "email_failed_payload_three_times",
+        "escalate_failed_payload_three_times",
+        "multiturn_refund_and_email_failed_repeatedly",
+        "refund_failed_payload_three_times",
+        "refund_failed_payload_twice"
+      ],
+      "fisher_p_vs_reference": 1.4511771380856799e-05
+    },
+    "origin/hist/c": {
+      "sha": "30960fe9d716e7fa16ac6b04f8ab92a5c57fbfa6",
+      "passes": 72,
+      "n": 78,
+      "wilson": [
+        0.8422,
+        0.9643
+      ],
+      "cost_usd": 0.033204,
+      "infra_errors": 0,
+      "failing_tasks": [
+        "multiturn_email_from_turn1",
+        "multiturn_refund_and_email_failed_repeatedly"
+      ],
+      "fisher_p_vs_reference": 0.014142486731928404
+    },
+    "origin/hist/d": {
+      "sha": "819d692b677eb4fde7d0af44f35dffd9fcdf3260",
+      "passes": 78,
+      "n": 78,
+      "wilson": [
+        0.9531,
+        1.0
+      ],
+      "cost_usd": 0.030505,
+      "infra_errors": 0,
+      "failing_tasks": [],
+      "fisher_p_vs_reference": 1.0
+    },
+    "origin/hist/e": {
+      "sha": "255f40c54e0ecc27de99ef6459171d94f7e3fc5f",
+      "passes": 78,
+      "n": 78,
+      "wilson": [
+        0.9531,
+        1.0
+      ],
+      "cost_usd": 0.027895,
+      "infra_errors": 0,
+      "failing_tasks": [],
+      "fisher_p_vs_reference": 1.0
+    },
+    "origin/hist/f": {
+      "sha": "3b0938b9da374a3045e588adfba25a7297a5624f",
+      "passes": 52,
+      "n": 78,
+      "wilson": [
+        0.5564,
+        0.7613
+      ],
+      "cost_usd": 0.034905,
+      "infra_errors": 0,
+      "failing_tasks": [
+        "email_failed_payload_three_times",
+        "escalate_failed_payload_three_times",
+        "lookup_timeout_once_then_refund",
+        "multiturn_refund_and_email_failed_repeatedly",
+        "refund_failed_payload_once",
+        "refund_failed_payload_three_times",
+        "refund_failed_payload_twice",
+        "refund_timeout_once",
+        "seeded_lookup_timeouts_then_refund"
+      ],
+      "fisher_p_vs_reference": 1.2152706624056202e-09
+    }
+  },
+  "total_cost_usd": 0.225148
+}

@@ -1,0 +1,127 @@
+{
+  "model": "google/gemini-3.8-flash",
+  "provider": "openrouter",
+  "suite_ref": "ba86ed0",
+  "suite_sha": "ba86ed06d3e5be7a1ffb5e8d93e3caa95efad90c",
+  "seeds": [
+    3,
+    5
+  ],
+  "tasks": 26,
+  "tag": "strength-google-gemini-3.8-flash",
+  "refs": {
+    "good-v1.0": {
+      "sha": "0479c273fbd3ef476425f5136c95a002749e043b",
+      "passes": 78,
+      "n": 78,
+      "wilson": [
+        0.9531,
+        1.0
+      ],
+      "cost_usd": 0.34048,
+      "infra_errors": 0,
+      "failing_tasks": []
+    },
+    "origin/hist/a": {
+      "sha": "6a2f05ad5b5ccf030ead0d4af7676a3320105fb6",
+      "passes": 78,
+      "n": 78,
+      "wilson": [
+        0.9531,
+        1.0
+      ],
+      "cost_usd": 0.317006,
+      "infra_errors": 0,
+      "failing_tasks": [],
+      "fisher_p_vs_reference": 1.0
+    },
+    "origin/hist/b": {
+      "sha": "f6511b8e6bb0d072abf653b995f59b51233ce479",
+      "passes": 57,
+      "n": 78,
+      "wilson": [
+        0.6232,
+        0.8166
+      ],
+      "cost_usd": 0.364245,
+      "infra_errors": 0,
+      "failing_tasks": [
+        "email_failed_payload_three_times",
+        "escalate_failed_payload_three_times",
+        "escalate_failed_payload_twice",
+        "multiturn_refund_and_email_failed_repeatedly",
+        "refund_failed_payload_once",
+        "refund_failed_payload_three_times",
+        "refund_failed_payload_twice"
+      ],
+      "fisher_p_vs_reference": 1.0062670381069934e-07
+    },
+    "origin/hist/c": {
+      "sha": "30960fe9d716e7fa16ac6b04f8ab92a5c57fbfa6",
+      "passes": 75,
+      "n": 78,
+      "wilson": [
+        0.8929,
+        0.9868
+      ],
+      "cost_usd": 0.338498,
+      "infra_errors": 0,
+      "failing_tasks": [
+        "multiturn_email_from_turn1",
+        "multiturn_refund_and_email_failed_repeatedly"
+      ],
+      "fisher_p_vs_reference": 0.12258064516129032
+    },
+    "origin/hist/d": {
+      "sha": "819d692b677eb4fde7d0af44f35dffd9fcdf3260",
+      "passes": 78,
+      "n": 78,
+      "wilson": [
+        0.9531,
+        1.0
+      ],
+      "cost_usd": 0.277782,
+      "infra_errors": 0,
+      "failing_tasks": [],
+      "fisher_p_vs_reference": 1.0
+    },
+    "origin/hist/e": {
+      "sha": "255f40c54e0ecc27de99ef6459171d94f7e3fc5f",
+      "passes": 78,
+      "n": 78,
+      "wilson": [
+        0.9531,
+        1.0
+      ],
+      "cost_usd": 0.326731,
+      "infra_errors": 0,
+      "failing_tasks": [],
+      "fisher_p_vs_reference": 1.0
+    },
+    "origin/hist/f": {
+      "sha": "3b0938b9da374a3045e588adfba25a7297a5624f",
+      "passes": 50,
+      "n": 78,
+      "wilson": [
+        0.5303,
+        0.7385
+      ],
+      "cost_usd": 0.362556,
+      "infra_errors": 0,
+      "failing_tasks": [
+        "email_failed_payload_three_times",
+        "escalate_failed_payload_three_times",
+        "escalate_failed_payload_twice",
+        "lookup_timeout_once_then_refund",
+        "multiturn_refund_and_email_failed_repeatedly",
+        "refund_failed_payload_once",
+        "refund_failed_payload_three_times",
+        "refund_failed_payload_twice",
+        "refund_timeout_once",
+        "seeded_lookup_timeouts_then_refund"
+      ],
+      "fisher_p_vs_reference": 1.9218233731065624e-10
+    }
+  },
+  "total_cost_usd": 2.327298
+}

@@ -23,7 +23,11 @@ PRICES = {
     "claude-opus-5-5": (4.00, 20.00),
     "claude-sonnet-5-5": (2.00, 10.00),
     "claude-haiku-5-5": (0.10, 0.50),
-    "z-ai/glm-5.3": (0.039, 4.80),
+    "z-ai/glm-5.3": (0.039, 4.80),  # listing on 10 Oct; $0.07 input by 11 Oct (recorded GLM runs used $0.039)
+    # Victim-model comparison, OpenRouter listing on 11 Oct 2026
+    "qwen/qwen3.8-flash": (0.15, 0.47),
+    "deepseek/deepseek-v4.1-flash": (0.30, 1.20),
+    "google/gemini-3.8-flash": (0.75, 3.75),
 }
 
 

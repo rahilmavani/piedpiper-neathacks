@@ -1,0 +1,983 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-11T09:10:51+00:00",
+  "description": "Culprit across victim models on RefundDesk: which planted bugs each model's test suite can see (strength check, seeds 3-5), and Culprit's accuracy and cost finding them (6 bisects).",
+  "suite": {
+    "repo": "piedpiper-neathacks-refunddesk",
+    "ref": "ba86ed0",
+    "tasks": 26,
+    "k": 3
+  },
+  "visibility_rule": "one-sided Fisher exact p < 0.05, bad head vs good-v1.0",
+  "bugs": {
+    "a": {
+      "culprit_sha": "c4f24013472d39f3a27f927507b5d0dae61f20c7",
+      "subject": "refactor(tools): rename lookup_order parameter order_id to id",
+      "intended_gain": "API consistency (no latency, token or cost metric)"
+    },
+    "b": {
+      "culprit_sha": "397c42743be8cd80ae1d1e30c058772c1bd16add",
+      "subject": "perf(agent): run tool calls in parallel and drop per-result validation",
+      "intended_gain": "parallel tool calls; the fix must keep them"
+    },
+    "c": {
+      "culprit_sha": "acf3b7df9fb4bf83761787e5f16dbcebc6f004bd",
+      "subject": "perf(agent): shorten the history window to 6 messages",
+      "intended_gain": "fewer input tokens per model call"
+    },
+    "d": {
+      "culprit_sha": "441058ed36ba050b8be09182076977aefe648e29",
+      "subject": "refactor(agent): tighten the system prompt",
+      "intended_gain": "shorter prompt, cheaper calls"
+    },
+    "e": {
+      "culprit_sha": "8ae122d6ef08870b8663c98d009c54e3da5a4f41",
+      "subject": "feat(agent): fill missing tool arguments with defaults",
+      "intended_gain": "fewer rejected tool calls (no latency, token or cost metric)"
+    },
+    "f": {
+      "culprit_sha": "1777d44476fc5bfd298d96d296b9d97b6c80b258",
+      "subject": "perf(agent): disable tool-call retries",
+      "intended_gain": "no time spent on retries"
+    }
+  },
+  "models": [
+    {
+      "model": "z-ai/glm-5.3",
+      "label": "GLM 5.3",
+      "provider": "openrouter",
+      "price_per_mtok_usd": {
+        "input": 0.039,
+        "output": 4.8
+      },
+      "baseline_pass_rate": 1.0,
+      "visible_bugs": 3,
+      "strength": {
+        "seeds": [
+          3,
+          5
+        ],
+        "tasks": 26,
+        "good": {
+          "passes": 78,
+          "n": 78
+        },
+        "heads": {
+          "a": {
+            "passes": 78,
+            "n": 78
+          },
+          "d": {
+            "passes": 78,
+            "n": 78
+          },
+          "e": {
+            "passes": 78,
+            "n": 78
+          }
+        },
+        "note": "Independent full-suite check covered a, d, e only (evidence/strength-check-glm.jsonl)"
+      },
+      "visible": {
+        "a": {
+          "visible": false,
+          "source": "strength_check"
+        },
+        "b": {
+          "visible": true,
+          "source": "hero_check (6 harder tasks x seeds 0-2: 18/18 vs 0/18)"
+        },
+        "c": {
+          "visible": true,
+          "source": "culprit_baseline only (72/78 vs 78/78, Fisher p=0.014)"
+        },
+        "d": {
+          "visible": false,
+          "source": "strength_check"
+        },
+        "e": {
+          "visible": false,
+          "source": "strength_check"
+        },
+        "f": {
+          "visible": true,
+          "source": "culprit_baseline only (51/78 vs 78/78)"
+        }
+      },
+      "culprit": {
+        "method": "v2 staged baseline, --no-reuse, k=3",
+        "bench_file": "evidence/bench-v2.json",
+        "culprit_code": "e4a4add6c4f5f455a79e0f52390925dba0c2dcec",
+        "accuracy": {
+          "correct": 6,
+          "scored": 6,
+          "unverified": 0,
+          "incomplete": 0
+        },
+        "victim_runs": 588,
+        "cost_usd": 1.512301,
+        "wall_s": 1749.0,
+        "wall_s_comparable": true,
+        "victim_latency_sum_s": 4841.4,
+        "median_victim_run_latency_ms": 7718,
+        "cost_per_bisect_usd": 0.25205,
+        "cost_per_found_bisect_usd": 0.382453,
+        "cost_per_victim_run_usd": 0.002572,
+        "runs": [
+          {
+            "branch": "a",
+            "run_id": "e937df6dadbb",
+            "status": "no_regression",
+            "found": null,
+            "expected": "c4f24013472d39f3a27f927507b5d0dae61f20c7",
+            "outcome": "correct_no_regression",
+            "victim_runs": 52,
+            "cost_usd": 0.125702,
+            "wall_s": 129.0,
+            "resumed": false,
+            "skipped": [],
+            "traces": [
+              "051267132a5d2b6f3528dc050b8b5c9e"
+            ],
+            "victim_latency_sum_s": 362.3
+          },
+          {
+            "branch": "b",
+            "run_id": "978624283c27",
+            "status": "found",
+            "found": "397c42743be8cd80ae1d1e30c058772c1bd16add",
+            "expected": "397c42743be8cd80ae1d1e30c058772c1bd16add",
+            "outcome": "correct",
+            "victim_runs": 164,
+            "cost_usd": 0.455308,
+            "wall_s": 496.0,
+            "resumed": false,
+            "skipped": [
+              "22a37dbfff51e2eabf16123746963d5425a1f7a7"
+            ],
+            "traces": [
+              "a9ae3f8ce2b7283129b1e9074c3deac1"
+            ],
+            "victim_latency_sum_s": 1368.2
+          },
+          {
+            "branch": "c",
+            "run_id": "cd5641dd3a46",
+            "status": "found",
+            "found": "acf3b7df9fb4bf83761787e5f16dbcebc6f004bd",
+            "expected": "acf3b7df9fb4bf83761787e5f16dbcebc6f004bd",
+            "outcome": "correct",
+            "victim_runs": 84,
+            "cost_usd": 0.241557,
+            "wall_s": 283.0,
+            "resumed": false,
+            "skipped": [],
+            "traces": [
+              "0a44a8ea2d4e463983afaf56eaf6d6c9"
+            ],
+            "victim_latency_sum_s": 774.0
+          },
+          {
+            "branch": "d",
+            "run_id": "61217e8fb2ea",
+            "status": "no_regression",
+            "found": null,
+            "expected": "441058ed36ba050b8be09182076977aefe648e29",
+            "outcome": "correct_no_regression",
+            "victim_runs": 52,
+            "cost_usd": 0.116457,
+            "wall_s": 162.0,
+            "resumed": false,
+            "skipped": [],
+            "traces": [
+              "0d5cf2fae2214e6a4cf4c653c99a86a3"
+            ],
+            "victim_latency_sum_s": 435.0
+          },
+          {
+            "branch": "e",
+            "run_id": "57c1f7da7b61",
+            "status": "no_regression",
+            "found": null,
+            "expected": "8ae122d6ef08870b8663c98d009c54e3da5a4f41",
+            "outcome": "correct_no_regression",
+            "victim_runs": 52,
+            "cost_usd": 0.122784,
+            "wall_s": 169.0,
+            "resumed": false,
+            "skipped": [],
+            "traces": [
+              "7deea3d2d7aa0623fb9d417beab6e822"
+            ],
+            "victim_latency_sum_s": 423.7
+          },
+          {
+            "branch": "f",
+            "run_id": "7caf109c2b88",
+            "status": "found",
+            "found": "1777d44476fc5bfd298d96d296b9d97b6c80b258",
+            "expected": "1777d44476fc5bfd298d96d296b9d97b6c80b258",
+            "outcome": "correct",
+            "victim_runs": 184,
+            "cost_usd": 0.450493,
+            "wall_s": 510.0,
+            "resumed": false,
+            "skipped": [
+              "2ad118e301a4d6ac2e63ebf081bbc8b3f0b4ffc0"
+            ],
+            "traces": [
+              "e8a5d2e5f9519344aab44e0bbfb7ca38"
+            ],
+            "victim_latency_sum_s": 1478.2
+          }
+        ]
+      }
+    },
+    {
+      "model": "deepseek/deepseek-v4.1-flash",
+      "label": "DeepSeek V4.1 Flash",
+      "provider": "openrouter",
+      "price_per_mtok_usd": {
+        "input": 0.3,
+        "output": 1.2
+      },
+      "baseline_pass_rate": 1.0,
+      "visible_bugs": 3,
+      "strength": {
+        "seeds": [
+          3,
+          5
+        ],
+        "suite_sha": "ba86ed06d3e5be7a1ffb5e8d93e3caa95efad90c",
+        "tasks": 26,
+        "good": {
+          "passes": 78,
+          "n": 78,
+          "failing_tasks": []
+        },
+        "heads": {
+          "a": {
+            "passes": 78,
+            "n": 78,
+            "fisher_p": 1.0,
+            "failing_tasks": [],
+            "infra_errors": 0
+          },
+          "b": {
+            "passes": 63,
+            "n": 78,
+            "fisher_p": 1.4511771380856799e-05,
+            "failing_tasks": [
+              "email_failed_payload_three_times",
+              "escalate_failed_payload_three_times",
+              "multiturn_refund_and_email_failed_repeatedly",
+              "refund_failed_payload_three_times",
+              "refund_failed_payload_twice"
+            ],
+            "infra_errors": 0
+          },
+          "c": {
+            "passes": 72,
+            "n": 78,
+            "fisher_p": 0.014142486731928404,
+            "failing_tasks": [
+              "multiturn_email_from_turn1",
+              "multiturn_refund_and_email_failed_repeatedly"
+            ],
+            "infra_errors": 0
+          },
+          "d": {
+            "passes": 78,
+            "n": 78,
+            "fisher_p": 1.0,
+            "failing_tasks": [],
+            "infra_errors": 0
+          },
+          "e": {
+            "passes": 78,
+            "n": 78,
+            "fisher_p": 1.0,
+            "failing_tasks": [],
+            "infra_errors": 0
+          },
+          "f": {
+            "passes": 52,
+            "n": 78,
+            "fisher_p": 1.2152706624056202e-09,
+            "failing_tasks": [
+              "email_failed_payload_three_times",
+              "escalate_failed_payload_three_times",
+              "lookup_timeout_once_then_refund",
+              "multiturn_refund_and_email_failed_repeatedly",
+              "refund_failed_payload_once",
+              "refund_failed_payload_three_times",
+              "refund_failed_payload_twice",
+              "refund_timeout_once",
+              "seeded_lookup_timeouts_then_refund"
+            ],
+            "infra_errors": 0
+          }
+        },
+        "cost_usd": 0.225148
+      },
+      "visible": {
+        "a": {
+          "visible": false,
+          "source": "strength_check"
+        },
+        "b": {
+          "visible": true,
+          "source": "strength_check"
+        },
+        "c": {
+          "visible": true,
+          "source": "strength_check"
+        },
+        "d": {
+          "visible": false,
+          "source": "strength_check"
+        },
+        "e": {
+          "visible": false,
+          "source": "strength_check"
+        },
+        "f": {
+          "visible": true,
+          "source": "strength_check"
+        }
+      },
+      "culprit": {
+        "method": "v2 staged baseline, --no-reuse, k=3, suite ba86ed0",
+        "bench_file": "evidence/bench-deepseek-deepseek-v4.1-flash.json",
+        "culprit_code": "896fa64a46a92bfda231941c9ab83edeb452a786 + uncommitted changes",
+        "accuracy": {
+          "correct": 6,
+          "scored": 6,
+          "unverified": 0,
+          "incomplete": 0
+        },
+        "victim_runs": 536,
+        "cost_usd": 0.237596,
+        "wall_s": 4870.0,
+        "wall_s_comparable": false,
+        "victim_latency_sum_s": 4992.1,
+        "median_victim_run_latency_ms": 7522,
+        "cost_per_bisect_usd": 0.039599,
+        "cost_per_found_bisect_usd": 0.060311,
+        "cost_per_victim_run_usd": 0.000443,
+        "runs": [
+          {
+            "branch": "a",
+            "run_id": "65ee52ef08c3",
+            "status": "no_regression",
+            "found": null,
+            "expected": "c4f24013472d39f3a27f927507b5d0dae61f20c7",
+            "outcome": "correct_no_regression",
+            "victim_runs": 52,
+            "cost_usd": 0.018681,
+            "wall_s": 148.0,
+            "resumed": false,
+            "skipped": [],
+            "traces": [
+              "90479185e8c79606a813e2f1b3e3c51f"
+            ],
+            "victim_latency_sum_s": 346.1
+          },
+          {
+            "branch": "b",
+            "run_id": "2797e84bcc15",
+            "status": "found",
+            "found": "397c42743be8cd80ae1d1e30c058772c1bd16add",
+            "expected": "397c42743be8cd80ae1d1e30c058772c1bd16add",
+            "outcome": "correct",
+            "victim_runs": 132,
+            "cost_usd": 0.060658,
+            "wall_s": 876.0,
+            "resumed": true,
+            "skipped": [
+              "22a37dbfff51e2eabf16123746963d5425a1f7a7"
+            ],
+            "traces": [
+              "ab7ca70945db8f49e6e480be99c8b14e",
+              "0525ff4ee71c39e3036f72b350da63dd"
+            ],
+            "victim_latency_sum_s": 1562.2
+          },
+          {
+            "branch": "c",
+            "run_id": "8ace75bdc6fa",
+            "status": "found",
+            "found": "acf3b7df9fb4bf83761787e5f16dbcebc6f004bd",
+            "expected": "acf3b7df9fb4bf83761787e5f16dbcebc6f004bd",
+            "outcome": "correct",
+            "victim_runs": 84,
+            "cost_usd": 0.049912,
+            "wall_s": 629.0,
+            "resumed": true,
+            "skipped": [],
+            "traces": [
+              "1ed9ecf5db5c9adc82a167879f00904b",
+              "00e5b5dd82cd18d09c2ca824d9d17e42"
+            ],
+            "victim_latency_sum_s": 911.1
+          },
+          {
+            "branch": "d",
+            "run_id": "57052ac18acd",
+            "status": "no_regression",
+            "found": null,
+            "expected": "441058ed36ba050b8be09182076977aefe648e29",
+            "outcome": "correct_no_regression",
+            "victim_runs": 52,
+            "cost_usd": 0.019888,
+            "wall_s": 764.0,
+            "resumed": true,
+            "skipped": [],
+            "traces": [
+              "2ca268d78f103e7b4f459bca648e5c37",
+              "a4379b5a105e816407353eacb29fe152"
+            ],
+            "victim_latency_sum_s": 350.1
+          },
+          {
+            "branch": "e",
+            "run_id": "25ed0ebed07b",
+            "status": "no_regression",
+            "found": null,
+            "expected": "8ae122d6ef08870b8663c98d009c54e3da5a4f41",
+            "outcome": "correct_no_regression",
+            "victim_runs": 52,
+            "cost_usd": 0.018095,
+            "wall_s": 892.0,
+            "resumed": true,
+            "skipped": [],
+            "traces": [
+              "9de99829157165820397dc596a9bb383",
+              "81744d53c39ad9bd4c04e1e76947aea2"
+            ],
+            "victim_latency_sum_s": 338.5
+          },
+          {
+            "branch": "f",
+            "run_id": "e2473ed6f0e9",
+            "status": "found",
+            "found": "1777d44476fc5bfd298d96d296b9d97b6c80b258",
+            "expected": "1777d44476fc5bfd298d96d296b9d97b6c80b258",
+            "outcome": "correct",
+            "victim_runs": 164,
+            "cost_usd": 0.070362,
+            "wall_s": 1561.0,
+            "resumed": true,
+            "skipped": [
+              "2ad118e301a4d6ac2e63ebf081bbc8b3f0b4ffc0"
+            ],
+            "traces": [
+              "2befe2af221e7cc25e6a6df87c5de430",
+              "240a1ce7064d085e7f619365ae255af0"
+            ],
+            "victim_latency_sum_s": 1484.1
+          }
+        ]
+      }
+    },
+    {
+      "model": "google/gemini-3.8-flash",
+      "label": "Gemini 3.8 Flash",
+      "provider": "openrouter",
+      "price_per_mtok_usd": {
+        "input": 0.75,
+        "output": 3.75
+      },
+      "baseline_pass_rate": 1.0,
+      "visible_bugs": 2,
+      "strength": {
+        "seeds": [
+          3,
+          5
+        ],
+        "suite_sha": "ba86ed06d3e5be7a1ffb5e8d93e3caa95efad90c",
+        "tasks": 26,
+        "good": {
+          "passes": 78,
+          "n": 78,
+          "failing_tasks": []
+        },
+        "heads": {
+          "a": {
+            "passes": 78,
+            "n": 78,
+            "fisher_p": 1.0,
+            "failing_tasks": [],
+            "infra_errors": 0
+          },
+          "b": {
+            "passes": 57,
+            "n": 78,
+            "fisher_p": 1.0062670381069934e-07,
+            "failing_tasks": [
+              "email_failed_payload_three_times",
+              "escalate_failed_payload_three_times",
+              "escalate_failed_payload_twice",
+              "multiturn_refund_and_email_failed_repeatedly",
+              "refund_failed_payload_once",
+              "refund_failed_payload_three_times",
+              "refund_failed_payload_twice"
+            ],
+            "infra_errors": 0
+          },
+          "c": {
+            "passes": 75,
+            "n": 78,
+            "fisher_p": 0.12258064516129032,
+            "failing_tasks": [
+              "multiturn_email_from_turn1",
+              "multiturn_refund_and_email_failed_repeatedly"
+            ],
+            "infra_errors": 0
+          },
+          "d": {
+            "passes": 78,
+            "n": 78,
+            "fisher_p": 1.0,
+            "failing_tasks": [],
+            "infra_errors": 0
+          },
+          "e": {
+            "passes": 78,
+            "n": 78,
+            "fisher_p": 1.0,
+            "failing_tasks": [],
+            "infra_errors": 0
+          },
+          "f": {
+            "passes": 50,
+            "n": 78,
+            "fisher_p": 1.9218233731065624e-10,
+            "failing_tasks": [
+              "email_failed_payload_three_times",
+              "escalate_failed_payload_three_times",
+              "escalate_failed_payload_twice",
+              "lookup_timeout_once_then_refund",
+              "multiturn_refund_and_email_failed_repeatedly",
+              "refund_failed_payload_once",
+              "refund_failed_payload_three_times",
+              "refund_failed_payload_twice",
+              "refund_timeout_once",
+              "seeded_lookup_timeouts_then_refund"
+            ],
+            "infra_errors": 0
+          }
+        },
+        "cost_usd": 2.327298
+      },
+      "visible": {
+        "a": {
+          "visible": false,
+          "source": "strength_check"
+        },
+        "b": {
+          "visible": true,
+          "source": "strength_check"
+        },
+        "c": {
+          "visible": false,
+          "source": "strength_check"
+        },
+        "d": {
+          "visible": false,
+          "source": "strength_check"
+        },
+        "e": {
+          "visible": false,
+          "source": "strength_check"
+        },
+        "f": {
+          "visible": true,
+          "source": "strength_check"
+        }
+      },
+      "culprit": {
+        "method": "v2 staged baseline, --no-reuse, k=3, suite ba86ed0",
+        "bench_file": "evidence/bench-google-gemini-3.8-flash.json",
+        "culprit_code": "896fa64a46a92bfda231941c9ab83edeb452a786 + uncommitted changes",
+        "accuracy": {
+          "correct": 6,
+          "scored": 6,
+          "unverified": 0,
+          "incomplete": 0
+        },
+        "victim_runs": 560,
+        "cost_usd": 2.477421,
+        "wall_s": 6819.0,
+        "wall_s_comparable": false,
+        "victim_latency_sum_s": 6597.2,
+        "median_victim_run_latency_ms": 10728,
+        "cost_per_bisect_usd": 0.412904,
+        "cost_per_found_bisect_usd": 0.77757,
+        "cost_per_victim_run_usd": 0.004424,
+        "runs": [
+          {
+            "branch": "a",
+            "run_id": "60285a42358c",
+            "status": "no_regression",
+            "found": null,
+            "expected": "c4f24013472d39f3a27f927507b5d0dae61f20c7",
+            "outcome": "correct_no_regression",
+            "victim_runs": 52,
+            "cost_usd": 0.219764,
+            "wall_s": 229.0,
+            "resumed": false,
+            "skipped": [],
+            "traces": [
+              "9f3ceaf2c99784e7e3432096f8d64de2"
+            ],
+            "victim_latency_sum_s": 613.5
+          },
+          {
+            "branch": "b",
+            "run_id": "30e9f8e6a19f",
+            "status": "found",
+            "found": "397c42743be8cd80ae1d1e30c058772c1bd16add",
+            "expected": "397c42743be8cd80ae1d1e30c058772c1bd16add",
+            "outcome": "correct",
+            "victim_runs": 164,
+            "cost_usd": 0.754398,
+            "wall_s": 868.0,
+            "resumed": true,
+            "skipped": [
+              "22a37dbfff51e2eabf16123746963d5425a1f7a7"
+            ],
+            "traces": [
+              "746ca0b749797e297f5547e478ed0bd1",
+              "b39fa42d12e819f97458524f226cd8e7"
+            ],
+            "victim_latency_sum_s": 2009.1
+          },
+          {
+            "branch": "c",
+            "run_id": "41056dd52750",
+            "status": "no_regression",
+            "found": null,
+            "expected": "acf3b7df9fb4bf83761787e5f16dbcebc6f004bd",
+            "outcome": "correct_no_regression",
+            "victim_runs": 60,
+            "cost_usd": 0.27685,
+            "wall_s": 978.0,
+            "resumed": true,
+            "skipped": [],
+            "traces": [
+              "36809df50226a6e209ce0b5c55306df2",
+              "5dfedce15a4f595914697b13c04a1974"
+            ],
+            "victim_latency_sum_s": 672.8
+          },
+          {
+            "branch": "d",
+            "run_id": "0e6caa11ae4b",
+            "status": "no_regression",
+            "found": null,
+            "expected": "441058ed36ba050b8be09182076977aefe648e29",
+            "outcome": "correct_no_regression",
+            "victim_runs": 52,
+            "cost_usd": 0.209476,
+            "wall_s": 1221.0,
+            "resumed": true,
+            "skipped": [],
+            "traces": [
+              "5e6c179396ee175a9865068631fb57ef",
+              "fa3674d92725acdc0adf380ce173bc9e"
+            ],
+            "victim_latency_sum_s": 613.9
+          },
+          {
+            "branch": "e",
+            "run_id": "48f6b3ba137a",
+            "status": "no_regression",
+            "found": null,
+            "expected": "8ae122d6ef08870b8663c98d009c54e3da5a4f41",
+            "outcome": "correct_no_regression",
+            "victim_runs": 52,
+            "cost_usd": 0.216191,
+            "wall_s": 1405.0,
+            "resumed": true,
+            "skipped": [],
+            "traces": [
+              "30a6a5aa5cbe1b599e4789a8d4228e00",
+              "e21504878d16210d0197dbb0cc361a80"
+            ],
+            "victim_latency_sum_s": 533.3
+          },
+          {
+            "branch": "f",
+            "run_id": "9656aba229d2",
+            "status": "found",
+            "found": "1777d44476fc5bfd298d96d296b9d97b6c80b258",
+            "expected": "1777d44476fc5bfd298d96d296b9d97b6c80b258",
+            "outcome": "correct",
+            "victim_runs": 180,
+            "cost_usd": 0.800742,
+            "wall_s": 2118.0,
+            "resumed": true,
+            "skipped": [
+              "2ad118e301a4d6ac2e63ebf081bbc8b3f0b4ffc0"
+            ],
+            "traces": [
+              "8f37061827261bf09d3f4f77f84593d5",
+              "64fedbb69b7f7633fe0d233a8f854227"
+            ],
+            "victim_latency_sum_s": 2154.6
+          }
+        ]
+      }
+    },
+    {
+      "model": "qwen/qwen3.8-flash",
+      "label": "Qwen 3.8 Flash",
+      "provider": "openrouter",
+      "price_per_mtok_usd": {
+        "input": 0.15,
+        "output": 0.47
+      },
+      "baseline_pass_rate": 1.0,
+      "visible_bugs": 3,
+      "strength": {
+        "seeds": [
+          3,
+          5
+        ],
+        "suite_sha": "ba86ed06d3e5be7a1ffb5e8d93e3caa95efad90c",
+        "tasks": 26,
+        "good": {
+          "passes": 78,
+          "n": 78,
+          "failing_tasks": []
+        },
+        "heads": {
+          "a": {
+            "passes": 78,
+            "n": 78,
+            "fisher_p": 1.0,
+            "failing_tasks": [],
+            "infra_errors": 0
+          },
+          "b": {
+            "passes": 57,
+            "n": 78,
+            "fisher_p": 1.0062670381069934e-07,
+            "failing_tasks": [
+              "email_failed_payload_three_times",
+              "escalate_failed_payload_three_times",
+              "escalate_failed_payload_twice",
+              "multiturn_refund_and_email_failed_repeatedly",
+              "refund_failed_payload_once",
+              "refund_failed_payload_three_times",
+              "refund_failed_payload_twice"
+            ],
+            "infra_errors": 0
+          },
+          "c": {
+            "passes": 72,
+            "n": 78,
+            "fisher_p": 0.014142486731928404,
+            "failing_tasks": [
+              "multiturn_email_from_turn1",
+              "multiturn_refund_and_email_failed_repeatedly"
+            ],
+            "infra_errors": 0
+          },
+          "d": {
+            "passes": 77,
+            "n": 78,
+            "fisher_p": 0.5,
+            "failing_tasks": [
+              "refund_500_01_escalated"
+            ],
+            "infra_errors": 0
+          },
+          "e": {
+            "passes": 78,
+            "n": 78,
+            "fisher_p": 1.0,
+            "failing_tasks": [],
+            "infra_errors": 0
+          },
+          "f": {
+            "passes": 48,
+            "n": 78,
+            "fisher_p": 2.8964488583360466e-11,
+            "failing_tasks": [
+              "email_failed_payload_three_times",
+              "escalate_failed_payload_three_times",
+              "escalate_failed_payload_twice",
+              "lookup_timeout_once_then_refund",
+              "multiturn_refund_and_email_failed_repeatedly",
+              "refund_failed_payload_once",
+              "refund_failed_payload_three_times",
+              "refund_failed_payload_twice",
+              "refund_small_order",
+              "refund_timeout_once",
+              "seeded_lookup_timeouts_then_refund"
+            ],
+            "infra_errors": 0
+          }
+        },
+        "cost_usd": 0.227481
+      },
+      "visible": {
+        "a": {
+          "visible": false,
+          "source": "strength_check"
+        },
+        "b": {
+          "visible": true,
+          "source": "strength_check"
+        },
+        "c": {
+          "visible": true,
+          "source": "strength_check"
+        },
+        "d": {
+          "visible": false,
+          "source": "strength_check"
+        },
+        "e": {
+          "visible": false,
+          "source": "strength_check"
+        },
+        "f": {
+          "visible": true,
+          "source": "strength_check"
+        }
+      },
+      "culprit": {
+        "method": "v2 staged baseline, --no-reuse, k=3, suite ba86ed0",
+        "bench_file": "evidence/bench-qwen-qwen3.8-flash.json",
+        "culprit_code": "896fa64a46a92bfda231941c9ab83edeb452a786 + uncommitted changes",
+        "accuracy": {
+          "correct": 6,
+          "scored": 6,
+          "unverified": 0,
+          "incomplete": 0
+        },
+        "victim_runs": 592,
+        "cost_usd": 0.264611,
+        "wall_s": 3645.0,
+        "wall_s_comparable": false,
+        "victim_latency_sum_s": 9935.9,
+        "median_victim_run_latency_ms": 15596,
+        "cost_per_bisect_usd": 0.044102,
+        "cost_per_found_bisect_usd": 0.067366,
+        "cost_per_victim_run_usd": 0.000447,
+        "runs": [
+          {
+            "branch": "a",
+            "run_id": "aeb5eafc26cd",
+            "status": "no_regression",
+            "found": null,
+            "expected": "c4f24013472d39f3a27f927507b5d0dae61f20c7",
+            "outcome": "correct_no_regression",
+            "victim_runs": 52,
+            "cost_usd": 0.021067,
+            "wall_s": 317.0,
+            "resumed": false,
+            "skipped": [],
+            "traces": [
+              "8be2a0031d0a5d43e0a0565386c1434d"
+            ],
+            "victim_latency_sum_s": 889.9
+          },
+          {
+            "branch": "b",
+            "run_id": "7b4085c566bd",
+            "status": "found",
+            "found": "397c42743be8cd80ae1d1e30c058772c1bd16add",
+            "expected": "397c42743be8cd80ae1d1e30c058772c1bd16add",
+            "outcome": "correct",
+            "victim_runs": 164,
+            "cost_usd": 0.078281,
+            "wall_s": 1071.0,
+            "resumed": false,
+            "skipped": [
+              "22a37dbfff51e2eabf16123746963d5425a1f7a7"
+            ],
+            "traces": [
+              "e050b655a8654f073c252904d03b1d03"
+            ],
+            "victim_latency_sum_s": 3002.9
+          },
+          {
+            "branch": "c",
+            "run_id": "3fd5b81ea6a5",
+            "status": "found",
+            "found": "acf3b7df9fb4bf83761787e5f16dbcebc6f004bd",
+            "expected": "acf3b7df9fb4bf83761787e5f16dbcebc6f004bd",
+            "outcome": "correct",
+            "victim_runs": 84,
+            "cost_usd": 0.041582,
+            "wall_s": 602.0,
+            "resumed": false,
+            "skipped": [],
+            "traces": [
+              "497fd7ee121f98a8213f21079c6d5965"
+            ],
+            "victim_latency_sum_s": 1668.8
+          },
+          {
+            "branch": "d",
+            "run_id": "130ec8ed6488",
+            "status": "no_regression",
+            "found": null,
+            "expected": "441058ed36ba050b8be09182076977aefe648e29",
+            "outcome": "correct_no_regression",
+            "victim_runs": 52,
+            "cost_usd": 0.021077,
+            "wall_s": 261.0,
+            "resumed": false,
+            "skipped": [],
+            "traces": [
+              "dc624bd40233c4305dcbd79e79a21a83"
+            ],
+            "victim_latency_sum_s": 692.5
+          },
+          {
+            "branch": "e",
+            "run_id": "661cd6012df1",
+            "status": "no_regression",
+            "found": null,
+            "expected": "8ae122d6ef08870b8663c98d009c54e3da5a4f41",
+            "outcome": "correct_no_regression",
+            "victim_runs": 52,
+            "cost_usd": 0.020369,
+            "wall_s": 219.0,
+            "resumed": false,
+            "skipped": [],
+            "traces": [
+              "76eace739469d1214407ab23902ebb70"
+            ],
+            "victim_latency_sum_s": 633.9
+          },
+          {
+            "branch": "f",
+            "run_id": "706b51fa91d9",
+            "status": "found",
+            "found": "1777d44476fc5bfd298d96d296b9d97b6c80b258",
+            "expected": "1777d44476fc5bfd298d96d296b9d97b6c80b258",
+            "outcome": "correct",
+            "victim_runs": 188,
+            "cost_usd": 0.082235,
+            "wall_s": 1175.0,
+            "resumed": true,
+            "skipped": [
+              "2ad118e301a4d6ac2e63ebf081bbc8b3f0b4ffc0"
+            ],
+            "traces": [
+              "545d5e26c58ac904e4005759c57969f9",
+              "0be1c54de1303262ca59bbbead60ce94"
+            ],
+            "victim_latency_sum_s": 3047.9
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+yes
+
+---
+
+<task-notification>
+<summary>Commit security review found: untrusted-config-injection in src/culprit/cli.py</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<summary>Commit security review found: incomplete-fix / credential exfiltration via repo .env in src/culprit/llm.py</summary>
+</task-notification>
+
+---
+
+Running from a clone of our repo still loads that repo's own .env in full, as before. - what does this mean?
+
+also, the NEATLOG_API_KEY and al the stuff should be set during the cli setup right. Why are you making it so confusing. If people want to overwrite the setup keys then the .env or the shell. Can we do that?

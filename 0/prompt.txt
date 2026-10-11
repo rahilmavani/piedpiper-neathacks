@@ -1,0 +1,7 @@
+yes
+
+---
+
+<task-notification>
+<summary>Commit security review found: untrusted-config-injection in src/culprit/cli.py</summary>
+</task-notification>

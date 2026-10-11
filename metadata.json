@@ -1,0 +1,32 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4N7FT60M1CF249SJB7YNS00",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 4,
+  "files_touched": [
+    "bench/clinicdesk/ground_truth.json",
+    "bench/clinicdesk/scenarios.yaml",
+    "bench/opsdesk/ground_truth.json",
+    "bench/opsdesk/scenarios.yaml",
+    "scripts/import_answer_key.py",
+    "src/culprit/providers.py",
+    "tests/test_providers.py"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 42,
+    "cache_creation_tokens": 39966,
+    "cache_read_tokens": 16640909,
+    "output_tokens": 23658,
+    "api_call_count": 20
+  }
+}

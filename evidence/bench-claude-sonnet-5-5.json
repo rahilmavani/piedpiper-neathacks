@@ -1,0 +1,156 @@
+{
+  "tag": "claude-sonnet-5-5",
+  "mode": "scored existing runs from `/Users/rahilmavani/RAHIL MAVANI/Personal Projects/Hackathons/neathack/piedpiper-neathacks/.culprit/ledger.sqlite`",
+  "culprit": "e0d80c9a9a0fc129813d911279f6a89ded3aa926 + uncommitted changes",
+  "not_scored": [],
+  "accuracy": {
+    "correct": 6,
+    "scored": 6,
+    "unverified": 0,
+    "incomplete": 0
+  },
+  "rows": [
+    {
+      "run_id": "0df8e0ab7965",
+      "status": "no_regression",
+      "culprit_sha": null,
+      "suspects": [],
+      "good_sha": "0479c273fbd3ef476425f5136c95a002749e043b",
+      "bad_sha": "6a2f05ad5b5ccf030ead0d4af7676a3320105fb6",
+      "victim_model": "claude-sonnet-5-5",
+      "victim_runs": 52,
+      "cost_usd": 0.850592,
+      "wall_s": 150.0,
+      "skipped": [],
+      "confidence": null,
+      "summary": "No significant regression to bisect: good 26/26 vs bad 26/26, one-sided Fisher p=1.0000 \u2265 0.05",
+      "traces": [
+        "c1ad36130eb55a7ed870fbee36196a67"
+      ],
+      "scenario": "hist/a",
+      "outcome": "correct_no_regression",
+      "expected": "c4f24013472d39f3a27f927507b5d0dae61f20c7",
+      "note": ""
+    },
+    {
+      "run_id": "fa6964ed6234",
+      "status": "found",
+      "culprit_sha": "397c42743be8cd80ae1d1e30c058772c1bd16add",
+      "suspects": [
+        "397c42743be8cd80ae1d1e30c058772c1bd16add"
+      ],
+      "good_sha": "0479c273fbd3ef476425f5136c95a002749e043b",
+      "bad_sha": "f6511b8e6bb0d072abf653b995f59b51233ce479",
+      "victim_model": "claude-sonnet-5-5",
+      "victim_runs": 164,
+      "cost_usd": 2.9914519999999998,
+      "wall_s": 505.0,
+      "skipped": [
+        "22a37dbfff51e2eabf16123746963d5425a1f7a7"
+      ],
+      "confidence": "95% Wilson",
+      "summary": "Culprit: 397c42743be8cd80ae1d1e30c058772c1bd16add 'perf(agent): run tool calls in parallel and drop per-result validation' (confidence: 95% Wilson)",
+      "traces": [
+        "e398e17d55bbdc845e5d75176c340ad8"
+      ],
+      "scenario": "hist/b",
+      "outcome": "correct",
+      "expected": "397c42743be8cd80ae1d1e30c058772c1bd16add",
+      "note": ""
+    },
+    {
+      "run_id": "fe716a4fb735",
+      "status": "found",
+      "culprit_sha": "acf3b7df9fb4bf83761787e5f16dbcebc6f004bd",
+      "suspects": [
+        "acf3b7df9fb4bf83761787e5f16dbcebc6f004bd"
+      ],
+      "good_sha": "0479c273fbd3ef476425f5136c95a002749e043b",
+      "bad_sha": "30960fe9d716e7fa16ac6b04f8ab92a5c57fbfa6",
+      "victim_model": "claude-sonnet-5-5",
+      "victim_runs": 84,
+      "cost_usd": 1.681316,
+      "wall_s": 306.0,
+      "skipped": [],
+      "confidence": "95% Wilson",
+      "summary": "Culprit: acf3b7df9fb4bf83761787e5f16dbcebc6f004bd 'perf(agent): shorten the history window to 6 messages' (confidence: 95% Wilson)",
+      "traces": [
+        "6dd58a42b95a87c5cea0df1bb5f975fe"
+      ],
+      "scenario": "hist/c",
+      "outcome": "correct",
+      "expected": "acf3b7df9fb4bf83761787e5f16dbcebc6f004bd",
+      "note": ""
+    },
+    {
+      "run_id": "2cb364e47630",
+      "status": "no_regression",
+      "culprit_sha": null,
+      "suspects": [],
+      "good_sha": "0479c273fbd3ef476425f5136c95a002749e043b",
+      "bad_sha": "819d692b677eb4fde7d0af44f35dffd9fcdf3260",
+      "victim_model": "claude-sonnet-5-5",
+      "victim_runs": 52,
+      "cost_usd": 0.802264,
+      "wall_s": 145.0,
+      "skipped": [],
+      "confidence": null,
+      "summary": "No significant regression to bisect: good 26/26 vs bad 26/26, one-sided Fisher p=1.0000 \u2265 0.05",
+      "traces": [
+        "87cfc7234621ba30ac9612acd70ef078"
+      ],
+      "scenario": "hist/d",
+      "outcome": "correct_no_regression",
+      "expected": "441058ed36ba050b8be09182076977aefe648e29",
+      "note": ""
+    },
+    {
+      "run_id": "2a5037a4c2d7",
+      "status": "no_regression",
+      "culprit_sha": null,
+      "suspects": [],
+      "good_sha": "0479c273fbd3ef476425f5136c95a002749e043b",
+      "bad_sha": "255f40c54e0ecc27de99ef6459171d94f7e3fc5f",
+      "victim_model": "claude-sonnet-5-5",
+      "victim_runs": 52,
+      "cost_usd": 0.84998,
+      "wall_s": 135.0,
+      "skipped": [],
+      "confidence": null,
+      "summary": "No significant regression to bisect: good 26/26 vs bad 26/26, one-sided Fisher p=1.0000 \u2265 0.05",
+      "traces": [
+        "9cde87347e46c361f18c1fa3f4cc8fbe"
+      ],
+      "scenario": "hist/e",
+      "outcome": "correct_no_regression",
+      "expected": "8ae122d6ef08870b8663c98d009c54e3da5a4f41",
+      "note": ""
+    },
+    {
+      "run_id": "bbdd1db92beb",
+      "status": "found",
+      "culprit_sha": "1777d44476fc5bfd298d96d296b9d97b6c80b258",
+      "suspects": [
+        "1777d44476fc5bfd298d96d296b9d97b6c80b258"
+      ],
+      "good_sha": "0479c273fbd3ef476425f5136c95a002749e043b",
+      "bad_sha": "3b0938b9da374a3045e588adfba25a7297a5624f",
+      "victim_model": "claude-sonnet-5-5",
+      "victim_runs": 180,
+      "cost_usd": 3.248168,
+      "wall_s": 514.0,
+      "skipped": [
+        "2ad118e301a4d6ac2e63ebf081bbc8b3f0b4ffc0"
+      ],
+      "confidence": "95% Wilson",
+      "summary": "Culprit: 1777d44476fc5bfd298d96d296b9d97b6c80b258 'perf(agent): disable tool-call retries' (confidence: 95% Wilson)",
+      "traces": [
+        "90096fa1d66c482656a80c10a9ca70f2"
+      ],
+      "scenario": "hist/f",
+      "outcome": "correct",
+      "expected": "1777d44476fc5bfd298d96d296b9d97b6c80b258",
+      "note": ""
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-10-11T09:10:51+00:00",
+  "generated_at": "2026-10-11T15:36:58+00:00",
   "description": "Culprit across victim models on RefundDesk: which planted bugs each model's test suite can see (strength check, seeds 3-5), and Culprit's accuracy and cost finding them (6 bisects).",
   "suite": {
     "repo": "piedpiper-neathacks-refunddesk",
@@ -47,7 +47,7 @@
       "label": "GLM 5.3",
       "provider": "openrouter",
       "price_per_mtok_usd": {
-        "input": 0.039,
+        "input": 0.07,
         "output": 4.8
       },
       "baseline_pass_rate": 1.0,
@@ -229,6 +229,251 @@
               "e8a5d2e5f9519344aab44e0bbfb7ca38"
             ],
             "victim_latency_sum_s": 1478.2
+          }
+        ]
+      }
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "label": "Claude Sonnet 5.5",
+      "provider": "anthropic",
+      "price_per_mtok_usd": {
+        "input": 2.0,
+        "output": 10.0
+      },
+      "baseline_pass_rate": 1.0,
+      "visible_bugs": 3,
+      "strength": {
+        "seeds": [
+          3,
+          5
+        ],
+        "suite_sha": "ba86ed06d3e5be7a1ffb5e8d93e3caa95efad90c",
+        "tasks": 26,
+        "good": {
+          "passes": 78,
+          "n": 78,
+          "failing_tasks": []
+        },
+        "heads": {
+          "a": {
+            "passes": 78,
+            "n": 78,
+            "fisher_p": 1.0,
+            "failing_tasks": [],
+            "infra_errors": 0
+          },
+          "b": {
+            "passes": 57,
+            "n": 78,
+            "fisher_p": 1.0062670381069934e-07,
+            "failing_tasks": [
+              "email_failed_payload_three_times",
+              "escalate_failed_payload_three_times",
+              "escalate_failed_payload_twice",
+              "multiturn_refund_and_email_failed_repeatedly",
+              "refund_failed_payload_once",
+              "refund_failed_payload_three_times",
+              "refund_failed_payload_twice"
+            ],
+            "infra_errors": 0
+          },
+          "c": {
+            "passes": 72,
+            "n": 78,
+            "fisher_p": 0.014142486731928404,
+            "failing_tasks": [
+              "multiturn_email_from_turn1",
+              "multiturn_refund_and_email_failed_repeatedly"
+            ],
+            "infra_errors": 0
+          },
+          "d": {
+            "passes": 78,
+            "n": 78,
+            "fisher_p": 1.0,
+            "failing_tasks": [],
+            "infra_errors": 0
+          },
+          "e": {
+            "passes": 78,
+            "n": 78,
+            "fisher_p": 1.0,
+            "failing_tasks": [],
+            "infra_errors": 0
+          },
+          "f": {
+            "passes": 51,
+            "n": 78,
+            "fisher_p": 4.861082649622481e-10,
+            "failing_tasks": [
+              "email_failed_payload_three_times",
+              "escalate_failed_payload_three_times",
+              "escalate_failed_payload_twice",
+              "lookup_timeout_once_then_refund",
+              "multiturn_refund_and_email_failed_repeatedly",
+              "refund_failed_payload_once",
+              "refund_failed_payload_three_times",
+              "refund_failed_payload_twice",
+              "refund_timeout_once",
+              "seeded_lookup_timeouts_then_refund"
+            ],
+            "infra_errors": 0
+          }
+        },
+        "cost_usd": 9.074954
+      },
+      "visible": {
+        "a": {
+          "visible": false,
+          "source": "strength_check"
+        },
+        "b": {
+          "visible": true,
+          "source": "strength_check"
+        },
+        "c": {
+          "visible": true,
+          "source": "strength_check"
+        },
+        "d": {
+          "visible": false,
+          "source": "strength_check"
+        },
+        "e": {
+          "visible": false,
+          "source": "strength_check"
+        },
+        "f": {
+          "visible": true,
+          "source": "strength_check"
+        }
+      },
+      "culprit": {
+        "method": "v2 staged baseline, --no-reuse, k=3, suite ba86ed0",
+        "bench_file": "evidence/bench-claude-sonnet-5-5.json",
+        "culprit_code": "e0d80c9a9a0fc129813d911279f6a89ded3aa926 + uncommitted changes",
+        "accuracy": {
+          "correct": 6,
+          "scored": 6,
+          "unverified": 0,
+          "incomplete": 0
+        },
+        "victim_runs": 584,
+        "cost_usd": 10.423772,
+        "wall_s": 1755.0,
+        "wall_s_comparable": true,
+        "victim_latency_sum_s": 5035.1,
+        "median_victim_run_latency_ms": 7983,
+        "cost_per_bisect_usd": 1.737295,
+        "cost_per_found_bisect_usd": 2.640312,
+        "cost_per_victim_run_usd": 0.017849,
+        "runs": [
+          {
+            "branch": "a",
+            "run_id": "0df8e0ab7965",
+            "status": "no_regression",
+            "found": null,
+            "expected": "c4f24013472d39f3a27f927507b5d0dae61f20c7",
+            "outcome": "correct_no_regression",
+            "victim_runs": 52,
+            "cost_usd": 0.850592,
+            "wall_s": 150.0,
+            "resumed": false,
+            "skipped": [],
+            "traces": [
+              "c1ad36130eb55a7ed870fbee36196a67"
+            ],
+            "victim_latency_sum_s": 425.4
+          },
+          {
+            "branch": "b",
+            "run_id": "fa6964ed6234",
+            "status": "found",
+            "found": "397c42743be8cd80ae1d1e30c058772c1bd16add",
+            "expected": "397c42743be8cd80ae1d1e30c058772c1bd16add",
+            "outcome": "correct",
+            "victim_runs": 164,
+            "cost_usd": 2.991452,
+            "wall_s": 505.0,
+            "resumed": false,
+            "skipped": [
+              "22a37dbfff51e2eabf16123746963d5425a1f7a7"
+            ],
+            "traces": [
+              "e398e17d55bbdc845e5d75176c340ad8"
+            ],
+            "victim_latency_sum_s": 1458.5
+          },
+          {
+            "branch": "c",
+            "run_id": "fe716a4fb735",
+            "status": "found",
+            "found": "acf3b7df9fb4bf83761787e5f16dbcebc6f004bd",
+            "expected": "acf3b7df9fb4bf83761787e5f16dbcebc6f004bd",
+            "outcome": "correct",
+            "victim_runs": 84,
+            "cost_usd": 1.681316,
+            "wall_s": 306.0,
+            "resumed": false,
+            "skipped": [],
+            "traces": [
+              "6dd58a42b95a87c5cea0df1bb5f975fe"
+            ],
+            "victim_latency_sum_s": 843.1
+          },
+          {
+            "branch": "d",
+            "run_id": "2cb364e47630",
+            "status": "no_regression",
+            "found": null,
+            "expected": "441058ed36ba050b8be09182076977aefe648e29",
+            "outcome": "correct_no_regression",
+            "victim_runs": 52,
+            "cost_usd": 0.802264,
+            "wall_s": 145.0,
+            "resumed": false,
+            "skipped": [],
+            "traces": [
+              "87cfc7234621ba30ac9612acd70ef078"
+            ],
+            "victim_latency_sum_s": 412.1
+          },
+          {
+            "branch": "e",
+            "run_id": "2a5037a4c2d7",
+            "status": "no_regression",
+            "found": null,
+            "expected": "8ae122d6ef08870b8663c98d009c54e3da5a4f41",
+            "outcome": "correct_no_regression",
+            "victim_runs": 52,
+            "cost_usd": 0.84998,
+            "wall_s": 135.0,
+            "resumed": false,
+            "skipped": [],
+            "traces": [
+              "9cde87347e46c361f18c1fa3f4cc8fbe"
+            ],
+            "victim_latency_sum_s": 380.0
+          },
+          {
+            "branch": "f",
+            "run_id": "bbdd1db92beb",
+            "status": "found",
+            "found": "1777d44476fc5bfd298d96d296b9d97b6c80b258",
+            "expected": "1777d44476fc5bfd298d96d296b9d97b6c80b258",
+            "outcome": "correct",
+            "victim_runs": 180,
+            "cost_usd": 3.248168,
+            "wall_s": 514.0,
+            "resumed": false,
+            "skipped": [
+              "2ad118e301a4d6ac2e63ebf081bbc8b3f0b4ffc0"
+            ],
+            "traces": [
+              "90096fa1d66c482656a80c10a9ca70f2"
+            ],
+            "victim_latency_sum_s": 1516.0
           }
         ]
       }

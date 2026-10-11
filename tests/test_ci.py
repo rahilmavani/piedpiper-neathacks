@@ -81,3 +81,19 @@ def test_comment_command_renders_from_the_ledger_alone(env, tmp_path):
     assert db.read_bytes() == before  # read-only
     missing = CliRunner().invoke(app, ["comment", "nope", "--db", str(db)])
     assert missing.exit_code == 2
+
+
+def test_eval_module_option_reaches_the_victim(env, monkeypatch):
+    """--eval-module (or CULPRIT_EVAL_MODULE) is what Culprit imports and runs in each worktree."""
+    import json
+
+    from culprit.cli import app
+
+    repo, db, _ = env
+    monkeypatch.setenv("OPENROUTER_API_KEY", "not-a-key")  # the CLI picks a victim model; nothing is called
+    out = CliRunner().invoke(app, ["run", "--repo", str(repo), "--good", "good-v1.0", "--bad", "main",
+                                   "--db", str(db), "--eval-module", "nosuchpkg.eval"])
+    assert out.exit_code == 1  # neither end imports nosuchpkg.eval, so there is nothing to compare
+    row = Ledger(db).conn.execute("SELECT config_json, status FROM runs").fetchone()
+    assert json.loads(row[0])["eval_module"] == "nosuchpkg.eval"
+    assert row[1] == "error"

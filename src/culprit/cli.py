@@ -14,6 +14,8 @@ from culprit.ledger import Ledger
 from culprit.orchestrator import Orchestrator
 
 app = typer.Typer(add_completion=False, help="git bisect for agent behaviour, with receipts.")
+EVAL_MODULE_OPTION = typer.Option("refunddesk.eval", "--eval-module", envvar="CULPRIT_EVAL_MODULE",
+                                  help="The victim's eval runner module (python -m <module> --task <id> --seed <n>)")
 
 
 @app.command()
@@ -31,6 +33,7 @@ def run(
     workers: int = typer.Option(4, help="Parallel victim task runs"),
     reuse: bool = typer.Option(True, help="Reuse matching baseline results from earlier runs in the ledger"),
     staged: bool = typer.Option(True, help="Screen every task ×1 before running the full k on the ends"),
+    eval_module: str = EVAL_MODULE_OPTION,
 ) -> None:
     """Find the commit between GOOD and BAD that broke the agent. `--no-reuse --no-staged` is v1."""
     try:
@@ -40,7 +43,7 @@ def run(
         raise typer.Exit(2) from exc
     cfg = Config(repo=str(repo.resolve()), good_ref=good, bad_ref=bad, suite=suite, suite_ref=suite_ref, k=k,
                  budget_usd=budget_usd, victim_provider=victim.name, victim_model=victim.model,
-                 reuse_baselines=reuse, staged_baseline=staged)
+                 reuse_baselines=reuse, staged_baseline=staged, eval_module=eval_module)
     orch = Orchestrator(Ledger(db), cfg, log=typer.echo, workers=workers)
     run_id = orch.start()
     typer.echo(f"run_id {run_id}")
@@ -85,6 +88,7 @@ def bench(
     db: Path = typer.Option(DEFAULT_DB, help="Ledger path"),
     workers: int = typer.Option(4, help="Parallel victim task runs"),
     out_dir: Path = typer.Option(PROJECT_ROOT / "evidence", help="Where bench-<tag>.md/.json are written"),
+    eval_module: str = EVAL_MODULE_OPTION,
 ) -> None:
     """Run each scenario through Culprit and score it against ground truth (or score existing runs)."""
     from culprit import bench as b
@@ -118,7 +122,7 @@ def bench(
                        f"cap ${budget_usd:.2f} each")
             run_ids = b.run_scenarios(ledger, repo, selected, log=typer.echo, workers=workers, k=k,
                                       budget_usd=budget_usd, victim_provider=victim.name,
-                                      victim_model=victim.model)
+                                      victim_model=victim.model, eval_module=eval_module)
             mode = "fresh runs (`culprit bench`)"
         rows = b.score_runs(ledger, repo, truth, {s.name: run_ids[s.name] for s in selected if s.name in run_ids})
     except (b.BenchError, providers.ProviderError, KeyError) as exc:
@@ -267,11 +271,12 @@ def drift(
     budget_usd: float = typer.Option(2.00, help="Hard cost cap for the check"),
     db: Path = typer.Option(DEFAULT_DB, help="Ledger path"),
     workers: int = typer.Option(4, help="Parallel victim task runs"),
+    eval_module: str = EVAL_MODULE_OPTION,
 ) -> None:
     """Did we break it, or did the world change? Re-run a known-good ref now and compare it with its record."""
     from culprit.drift import DriftError, drift_run
 
-    cfg = _victim_config(repo, ref, "evals", "main", k, budget_usd)
+    cfg = _victim_config(repo, ref, "evals", "main", k, budget_usd, eval_module=eval_module)
     try:
         result = drift_run(Ledger(db), cfg, ref, log=typer.echo, workers=workers, against=against)
     except DriftError as exc:
@@ -296,6 +301,7 @@ def audit(
     list_operators: bool = typer.Option(False, "--list", help="List the mutation operators and exit"),
     db: Path = typer.Option(DEFAULT_DB, help="Ledger path"),
     workers: int = typer.Option(4, help="Parallel victim task runs"),
+    eval_module: str = EVAL_MODULE_OPTION,
 ) -> None:
     """Which realistic regressions would your eval suite miss? Mutation testing for agents."""
     from culprit import audit as a
@@ -304,7 +310,7 @@ def audit(
         for op in a.OPERATORS:
             typer.echo(f"{op.name:24} {op.title}: {op.instruction}")
         raise typer.Exit(0)
-    cfg = _victim_config(repo, ref, suite, suite_ref, k, budget_usd)
+    cfg = _victim_config(repo, ref, suite, suite_ref, k, budget_usd, eval_module=eval_module)
     try:
         result = a.audit_run(Ledger(db), cfg, ref, log=typer.echo, workers=workers,
                              operators=operators.split(",") if operators else None, patches=patches, run_id=run_id)
@@ -333,11 +339,13 @@ def ci(
     comment_file: Path = typer.Option(Path("culprit-comment.md"), "--comment-file", help="PR comment (markdown)"),
     db: Path = typer.Option(DEFAULT_DB, help="Ledger path"),
     workers: int = typer.Option(4, help="Parallel victim task runs"),
+    eval_module: str = EVAL_MODULE_OPTION,
 ) -> None:
     """Regression gate for a pull request. Exit 0 clean, 1 regression (comment names the culprit), 2 stopped."""
     from culprit.ci import ci_run
 
-    cfg = replace(_victim_config(repo, base, suite, suite_ref, k, budget_usd), good_ref=base, bad_ref=head)
+    cfg = replace(_victim_config(repo, base, suite, suite_ref, k, budget_usd, eval_module=eval_module),
+                  good_ref=base, bad_ref=head)
     result = ci_run(Ledger(db), cfg, log=typer.echo, workers=workers, localise=localise, fix=fix)
     comment_file.write_text(result.comment)
     typer.echo(f"{result.status}: comment → {comment_file}")

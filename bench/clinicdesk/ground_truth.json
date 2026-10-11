@@ -1,0 +1,274 @@
+{
+  "_about": "Answer key for the clinicdesk victim, converted by scripts/import_answer_key.py from the repo's own calibration (kept outside the victim repo). `visible` is the calibration's measurement on the public suite (one-sided Fisher p < 0.05 vs good-v1.0; seeds [0, 1]), separate from Culprit's runs; `calibration` holds the counts.",
+  "good_sha": "b753586e77438e3740342622e8f60247b4a06316",
+  "scenarios": {
+    "hist/a": {
+      "bad_sha": "3e722395f3adb5af9038db40f949a3320ed85c8d",
+      "commits": 13,
+      "culprit_sha": "cd35228cae410fbb4eaa9f886e93b7b39fdcc9c2",
+      "position": 3,
+      "subject": "perf: reduce service retry latency",
+      "uninstallable": [],
+      "hunks": [
+        {
+          "file": "clinicdesk/tools.py",
+          "what": "Reduce transient tool retries from three to zero."
+        }
+      ],
+      "what_changed": "Reduce transient tool retries from three to zero.",
+      "intended_gain": {},
+      "visible": {
+        "z-ai/glm-5.3": true,
+        "meta-llama/llama-3.1-8b-instruct": true
+      },
+      "calibration": {
+        "z-ai/glm-5.3": {
+          "good": [
+            60,
+            60
+          ],
+          "bad": [
+            50,
+            60
+          ],
+          "p": 0.00065
+        },
+        "meta-llama/llama-3.1-8b-instruct": {
+          "good": [
+            47,
+            60
+          ],
+          "bad": [
+            36,
+            60
+          ],
+          "p": 0.023655
+        }
+      }
+    },
+    "hist/b": {
+      "bad_sha": "ac5205fd2ba5e87e301de2805cc1bd073dd3b7a6",
+      "commits": 15,
+      "culprit_sha": "72bdad2290d0b187f53fa95ae1d52e1cd6268d69",
+      "position": 8,
+      "subject": "perf: bound conversation context per request",
+      "uninstallable": [
+        "b8f90ebda891efc1872da1c1e413ef6883839e85"
+      ],
+      "hunks": [
+        {
+          "file": "clinicdesk/agent.py",
+          "what": "Retain only the latest conversation turn rather than twelve turns."
+        }
+      ],
+      "what_changed": "Retain only the latest conversation turn rather than twelve turns.",
+      "intended_gain": {},
+      "visible": {
+        "z-ai/glm-5.3": true,
+        "meta-llama/llama-3.1-8b-instruct": true
+      },
+      "calibration": {
+        "z-ai/glm-5.3": {
+          "good": [
+            60,
+            60
+          ],
+          "bad": [
+            52,
+            60
+          ],
+          "p": 0.003045
+        },
+        "meta-llama/llama-3.1-8b-instruct": {
+          "good": [
+            47,
+            60
+          ],
+          "bad": [
+            35,
+            60
+          ],
+          "p": 0.015092
+        }
+      }
+    },
+    "hist/c": {
+      "bad_sha": "b08aa7ea5c22b58250a23149ca7a453847350a49",
+      "commits": 13,
+      "culprit_sha": "c972a0aac725ea8c90ed514f79414a7011fd746a",
+      "position": 9,
+      "subject": "refactor: streamline symptom keyword matching",
+      "uninstallable": [],
+      "hunks": [
+        {
+          "file": "clinicdesk/safety.py",
+          "what": "Reduce the red-flag synonym detector to four literal symptom terms."
+        }
+      ],
+      "what_changed": "Reduce the red-flag synonym detector to four literal symptom terms.",
+      "intended_gain": {},
+      "visible": {
+        "z-ai/glm-5.3": false,
+        "meta-llama/llama-3.1-8b-instruct": true
+      },
+      "calibration": {
+        "z-ai/glm-5.3": {
+          "good": [
+            60,
+            60
+          ],
+          "bad": [
+            59,
+            60
+          ],
+          "p": 0.5
+        },
+        "meta-llama/llama-3.1-8b-instruct": {
+          "good": [
+            47,
+            60
+          ],
+          "bad": [
+            30,
+            60
+          ],
+          "p": 0.001068
+        }
+      }
+    },
+    "hist/d": {
+      "bad_sha": "17811020b1a25b33a3dc7b12710dcb9b6a8f8977",
+      "commits": 13,
+      "culprit_sha": "d82a9403607703bfce0bb881dd7ef82648c600c5",
+      "position": 12,
+      "subject": "refactor: centralize scheduling policy in the desk planner",
+      "uninstallable": [],
+      "hunks": [
+        {
+          "file": "clinicdesk/tools.py",
+          "what": "Remove the booking guard call, bypassing identity, urgent-symptom, requested-time and conflict checks."
+        }
+      ],
+      "what_changed": "Remove the booking guard call, bypassing identity, urgent-symptom, requested-time and conflict checks.",
+      "intended_gain": {},
+      "visible": {
+        "z-ai/glm-5.3": false,
+        "meta-llama/llama-3.1-8b-instruct": true
+      },
+      "calibration": {
+        "z-ai/glm-5.3": {
+          "good": [
+            60,
+            60
+          ],
+          "bad": [
+            58,
+            60
+          ],
+          "p": 0.247899
+        },
+        "meta-llama/llama-3.1-8b-instruct": {
+          "good": [
+            47,
+            60
+          ],
+          "bad": [
+            27,
+            60
+          ],
+          "p": 0.000156
+        }
+      }
+    },
+    "hist/e": {
+      "bad_sha": "81bf118cfe16b895fe6f27e7a5e8c28d3f62ec75",
+      "commits": 15,
+      "culprit_sha": "8b6efe30803fd20f880ac6c68513320c8485b113",
+      "position": 4,
+      "subject": "refactor: preserve service response fields for downstream consumers",
+      "uninstallable": [
+        "203ae34012403dc6440a430e51ef4d49f6414a85"
+      ],
+      "hunks": [
+        {
+          "file": "clinicdesk/tools.py",
+          "what": "Copy raw tool results instead of applying the patient privacy filter."
+        }
+      ],
+      "what_changed": "Copy raw tool results instead of applying the patient privacy filter.",
+      "intended_gain": {},
+      "visible": {
+        "z-ai/glm-5.3": false,
+        "meta-llama/llama-3.1-8b-instruct": false
+      },
+      "calibration": {
+        "z-ai/glm-5.3": {
+          "good": [
+            60,
+            60
+          ],
+          "bad": [
+            60,
+            60
+          ],
+          "p": 1.0
+        },
+        "meta-llama/llama-3.1-8b-instruct": {
+          "good": [
+            47,
+            60
+          ],
+          "bad": [
+            40,
+            60
+          ],
+          "p": 0.109832
+        }
+      }
+    },
+    "hist/f": {
+      "bad_sha": "4e5dc63f9b90a67c6cabebfb5d5363208efd6b1d",
+      "commits": 13,
+      "culprit_sha": "4e0d36c9da3cb37f55883677eb303bba9c645539",
+      "position": 10,
+      "subject": "refactor: normalize export filenames",
+      "uninstallable": [],
+      "hunks": [
+        {
+          "file": "clinicdesk/store.py",
+          "what": "Lowercase case-sensitive patient identifiers in manual export filenames; no task invokes manual export."
+        }
+      ],
+      "what_changed": "Lowercase case-sensitive patient identifiers in manual export filenames; no task invokes manual export.",
+      "intended_gain": {},
+      "visible": {
+        "z-ai/glm-5.3": false,
+        "meta-llama/llama-3.1-8b-instruct": false
+      },
+      "calibration": {
+        "z-ai/glm-5.3": {
+          "good": [
+            60,
+            60
+          ],
+          "bad": [
+            60,
+            60
+          ],
+          "p": 1.0
+        },
+        "meta-llama/llama-3.1-8b-instruct": {
+          "good": [
+            47,
+            60
+          ],
+          "bad": [
+            42,
+            60
+          ],
+          "p": 0.202218
+        }
+      }
+    }
+  }
+}

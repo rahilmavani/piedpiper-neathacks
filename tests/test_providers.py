@@ -51,7 +51,7 @@ def test_model_override_must_match_the_provider(monkeypatch):
 
 def test_costs_use_the_price_table():
     assert providers.Provider("anthropic", "claude-sonnet-5-5").cost(1_000_000, 100_000) == pytest.approx(3.0)
-    assert providers.Provider("openrouter", "z-ai/glm-5.3").cost(1_000_000, 1_000_000) == pytest.approx(4.839)
+    assert providers.Provider("openrouter", "z-ai/glm-5.3").cost(1_000_000, 1_000_000) == pytest.approx(4.87)
     assert providers.Provider("openrouter", "vendor/unknown").cost(10, 10) is None
 
 
@@ -60,7 +60,7 @@ def test_victim_env_overrides_the_victims_own_env_file(tmp_path: Path):
     env = victim_env(tmp_path, providers.Provider("openrouter", "z-ai/glm-5.3"))
     assert env["LLM_PROVIDER"] == "openrouter"
     assert env["VICTIM_MODEL"] == "z-ai/glm-5.3"
-    assert (env["VICTIM_PRICE_IN"], env["VICTIM_PRICE_OUT"]) == ("0.039", "4.8")
+    assert (env["VICTIM_PRICE_IN"], env["VICTIM_PRICE_OUT"]) == ("0.07", "4.8")
     assert victim_env(tmp_path)["VICTIM_MODEL"] == "claude-sonnet-5-5"  # no provider: the victim's own
 
 

@@ -1,0 +1,21 @@
+# clinicdesk: benchmark scenarios for `culprit bench`, one per history branch.
+# Run with --repo <path to clinicdesk> --eval-module clinicdesk.eval. Answers in ground_truth.json.
+scenarios:
+  - name: hist/a
+    good: good-v1.0
+    bad: hist/a
+  - name: hist/b
+    good: good-v1.0
+    bad: hist/b
+  - name: hist/c
+    good: good-v1.0
+    bad: hist/c
+  - name: hist/d
+    good: good-v1.0
+    bad: hist/d
+  - name: hist/e
+    good: good-v1.0
+    bad: hist/e
+  - name: hist/f
+    good: good-v1.0
+    bad: hist/f

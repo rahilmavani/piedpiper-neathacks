@@ -1,0 +1,244 @@
+{
+  "_about": "Answer key for the opsdesk victim, converted by scripts/import_answer_key.py from the repo's own calibration (kept outside the victim repo). `visible` is the calibration's measurement on the public suite (one-sided Fisher p < 0.05 vs good-v1.0; seeds [0, 1]), separate from Culprit's runs; `calibration` holds the counts.",
+  "good_sha": "6c09d9762d435f33d6b27660efcb6a3f01858a15",
+  "scenarios": {
+    "hist/a": {
+      "bad_sha": "d90fcb4cc216907186de3c1ffbe7360180615802",
+      "commits": 15,
+      "culprit_sha": "95eca63dc4fd5bfa498bafe36392c6000801ee47",
+      "position": 4,
+      "subject": "perf: reduce tool dispatch latency",
+      "uninstallable": [
+        "387d69a45c7999638cf4f0b01829f1a539dc8143"
+      ],
+      "hunks": [],
+      "what_changed": "Disable tool-result retries (MAX_RETRIES 3 -> 0). Read or mutation faults no longer recover.",
+      "intended_gain": {},
+      "visible": {
+        "z-ai/glm-5.3": true,
+        "meta-llama/llama-3.1-8b-instruct": true
+      },
+      "calibration": {
+        "z-ai/glm-5.3": {
+          "good": [
+            60,
+            60
+          ],
+          "bad": [
+            52,
+            60
+          ],
+          "p": 0.003045
+        },
+        "meta-llama/llama-3.1-8b-instruct": {
+          "good": [
+            60,
+            60
+          ],
+          "bad": [
+            50,
+            60
+          ],
+          "p": 0.00065
+        }
+      }
+    },
+    "hist/b": {
+      "bad_sha": "d6cd7886a31d4dc08966f2e0ad11bd8bbe89434c",
+      "commits": 13,
+      "culprit_sha": "5a54888ae805bec8b0003be1b3a137431cbe18f8",
+      "position": 9,
+      "subject": "refactor: streamline tool dispatch checks",
+      "uninstallable": [],
+      "hunks": [],
+      "what_changed": "Skip the policy guard before tool dispatch. Database aliases and informational turns lose their hard guard.",
+      "intended_gain": {},
+      "visible": {
+        "z-ai/glm-5.3": false,
+        "meta-llama/llama-3.1-8b-instruct": true
+      },
+      "calibration": {
+        "z-ai/glm-5.3": {
+          "good": [
+            60,
+            60
+          ],
+          "bad": [
+            60,
+            60
+          ],
+          "p": 1.0
+        },
+        "meta-llama/llama-3.1-8b-instruct": {
+          "good": [
+            60,
+            60
+          ],
+          "bad": [
+            43,
+            60
+          ],
+          "p": 2e-06
+        }
+      }
+    },
+    "hist/c": {
+      "bad_sha": "0b902b9b7fd1fa866c04991aa97a4986ab73b084",
+      "commits": 13,
+      "culprit_sha": "3262e8316a6e2ea0354b9d0df85d07c7f862efd3",
+      "position": 12,
+      "subject": "perf: bound incident prompt size",
+      "uninstallable": [],
+      "hunks": [],
+      "what_changed": "Reduce the non-system conversation window from 16 messages to 1, discarding earlier handoffs.",
+      "intended_gain": {},
+      "visible": {
+        "z-ai/glm-5.3": true,
+        "meta-llama/llama-3.1-8b-instruct": true
+      },
+      "calibration": {
+        "z-ai/glm-5.3": {
+          "good": [
+            60,
+            60
+          ],
+          "bad": [
+            48,
+            60
+          ],
+          "p": 0.000133
+        },
+        "meta-llama/llama-3.1-8b-instruct": {
+          "good": [
+            60,
+            60
+          ],
+          "bad": [
+            48,
+            60
+          ],
+          "p": 0.000133
+        }
+      }
+    },
+    "hist/d": {
+      "bad_sha": "b8f648cb7fe20c112f526744ac96f6df1e642133",
+      "commits": 15,
+      "culprit_sha": "55599763178f8e5441a9d7ae4315a50549253550",
+      "position": 2,
+      "subject": "refactor: accept numeric values at the tool boundary",
+      "uninstallable": [
+        "289bfb7ab97a13ca29bc13daf1b9e952954dbd9c"
+      ],
+      "hunks": [],
+      "what_changed": "Coerce scale replica arguments through numeric conversion, including a fallback of 1 for null/false, instead of strict JSON scalar validation.",
+      "intended_gain": {},
+      "visible": {
+        "z-ai/glm-5.3": false,
+        "meta-llama/llama-3.1-8b-instruct": true
+      },
+      "calibration": {
+        "z-ai/glm-5.3": {
+          "good": [
+            60,
+            60
+          ],
+          "bad": [
+            60,
+            60
+          ],
+          "p": 1.0
+        },
+        "meta-llama/llama-3.1-8b-instruct": {
+          "good": [
+            60,
+            60
+          ],
+          "bad": [
+            52,
+            60
+          ],
+          "p": 0.003045
+        }
+      }
+    },
+    "hist/e": {
+      "bad_sha": "1ab4311604ba45cd5a041e51125cc1b91b51c2e5",
+      "commits": 13,
+      "culprit_sha": "afa31438c16e22238d66e2ddc4bc88164542647f",
+      "position": 7,
+      "subject": "refactor: simplify telemetry context assembly",
+      "uninstallable": [],
+      "hunks": [],
+      "what_changed": "Remove deterministic CPU/deployment facts from telemetry context. The planner and execution loop lose the derived precondition checks.",
+      "intended_gain": {},
+      "visible": {
+        "z-ai/glm-5.3": false,
+        "meta-llama/llama-3.1-8b-instruct": true
+      },
+      "calibration": {
+        "z-ai/glm-5.3": {
+          "good": [
+            60,
+            60
+          ],
+          "bad": [
+            60,
+            60
+          ],
+          "p": 1.0
+        },
+        "meta-llama/llama-3.1-8b-instruct": {
+          "good": [
+            60,
+            60
+          ],
+          "bad": [
+            46,
+            60
+          ],
+          "p": 2.6e-05
+        }
+      }
+    },
+    "hist/f": {
+      "bad_sha": "2739ba933e72d52d186680c038106e66a1b83d7c",
+      "commits": 13,
+      "culprit_sha": "142e5fba53f00194e1066ed868085c8f4a860305",
+      "position": 11,
+      "subject": "refactor: narrow persisted store metadata",
+      "uninstallable": [],
+      "hunks": [],
+      "what_changed": "Omit aliases when saving a store snapshot. Live evals never call the snapshot-save API, so this persistence error is not exercised.",
+      "intended_gain": {},
+      "visible": {
+        "z-ai/glm-5.3": false,
+        "meta-llama/llama-3.1-8b-instruct": false
+      },
+      "calibration": {
+        "z-ai/glm-5.3": {
+          "good": [
+            60,
+            60
+          ],
+          "bad": [
+            60,
+            60
+          ],
+          "p": 1.0
+        },
+        "meta-llama/llama-3.1-8b-instruct": {
+          "good": [
+            60,
+            60
+          ],
+          "bad": [
+            59,
+            60
+          ],
+          "p": 0.5
+        }
+      }
+    }
+  }
+}

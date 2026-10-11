@@ -74,3 +74,5 @@ You pay your model provider for your agent's runs and Culprit's own model calls.
 is a hard cap; a run stops there and can be resumed.
 
 More: https://culprit-site.vercel.app
+
+Licensed under the Apache License, Version 2.0.

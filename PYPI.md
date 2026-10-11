@@ -11,9 +11,10 @@ You bring your own model key. Culprit runs on your machine and only creates git 
 ## Install
 
 ```bash
-uvx culprit-cli --help          # run without installing
-uv tool install culprit-cli     # or install the `culprit` command
+uv tool install culprit-cli     # puts the `culprit` command on your PATH
 ```
+
+Just trying it? `uvx culprit-cli init` runs it without installing.
 
 Needs Python 3.12+, [uv](https://docs.astral.sh/uv/) and git.
 
@@ -73,6 +74,6 @@ You pay your model provider for your agent's runs and Culprit's own model calls.
 (26 tasks, 3 runs each) a bisect cost between $0.04 and $0.41 depending on the model. `--budget-usd`
 is a hard cap; a run stops there and can be resumed.
 
-More: https://culprit-site.vercel.app
+Documentation: https://culprit-site.vercel.app/docs/
 
 Licensed under the Apache License, Version 2.0.

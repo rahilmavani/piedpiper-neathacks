@@ -1,0 +1,7 @@
+<task-notification>
+<task-id>btpmob45i</task-id>
+<tool-use-id>toolu_01GT5STorpHjjvaQLo7VhB1u</tool-use-id>
+<output-file>/private/tmp/claude-501/-Volumes-DevSSD-Projects-piedpiper-neathacks/4ac0b432-44fe-4e72-9e87-270092b3ca58/tasks/btpmob45i.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait until the benchmark session pushes evidence/models.json to main" completed (exit code 0)</summary>
+</task-notification>

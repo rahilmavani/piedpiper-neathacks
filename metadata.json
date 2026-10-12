@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4QNBG0DQY462TP5Q1DZ9EMV",
   "strategy": "manual-commit",
   "branch": "chore/open-source",
-  "checkpoints_count": 3,
+  "checkpoints_count": 5,
   "files_touched": [
     "DEMO.md"
   ],
@@ -14,13 +14,20 @@
       "compact_transcript": "/0/transcript.jsonl",
       "content_hash": "/0/content_hash.txt",
       "prompt": "/0/prompt.txt"
+    },
+    {
+      "metadata": "/1/metadata.json",
+      "transcript": "/1/full.jsonl",
+      "compact_transcript": "/1/transcript.jsonl",
+      "content_hash": "/1/content_hash.txt",
+      "prompt": ""
     }
   ],
   "token_usage": {
-    "input_tokens": 40,
-    "cache_creation_tokens": 22933,
-    "cache_read_tokens": 11564176,
-    "output_tokens": 17029,
-    "api_call_count": 19
+    "input_tokens": 1166,
+    "cache_creation_tokens": 3270926,
+    "cache_read_tokens": 277155598,
+    "output_tokens": 556646,
+    "api_call_count": 574
   }
 }

@@ -128,7 +128,7 @@ or a budget cap stops the run cleanly, and `culprit resume` continues it.
 All results come from three agents we wrote for testing, each with six planted regressions, so every
 verdict can be checked against a known answer. Every number is in [`evidence/`](evidence/).
 
-- **54 scored bisects across 3 agents and 5 victim models: 51 correct, 3 missed, 0 wrong commits.**
+- **60 scored bisects across 3 agents and 6 victim models: 57 correct, 3 missed, 0 wrong commits.**
   The 3 misses are ClinicDesk on Llama 3.1 8B, which passed only 46% of its suite even on the good
   version; there, the gate didn't call a regression.
   ([`evidence/MODELS.md`](evidence/MODELS.md), [`evidence/DOMAINS.md`](evidence/DOMAINS.md))
@@ -140,8 +140,8 @@ verdict can be checked against a known answer. Every number is in [`evidence/`](
   $1.13. ([`evidence/RUNS.md`](evidence/RUNS.md), [report](evidence/reports/report-978624283c27.md))
 - **v1 → v2:** staged baselines cut agent runs by 48% and cost by 44%, with the same 6/6 accuracy.
   ([`evidence/bench-v1.md`](evidence/bench-v1.md), [`evidence/bench-v2.md`](evidence/bench-v2.md))
-- **Cost per bisect** on a 26-task suite with 3 runs per task: $0.04 (DeepSeek V4.1 Flash) to $0.41
-  (Gemini 3.8 Flash).
+- **Cost per bisect** on a 26-task suite with 3 runs per task: $0.04 (DeepSeek V4.1 Flash) to $1.74
+  (Claude Sonnet 5.5), with the same 6/6 accuracy on all five models tested on it.
 - **`culprit drift`** on the known-good release: STABLE, 78/78 then 78/78, for $0.19.
 - **`culprit audit`:** the suite catches 4 of 8 realistic regressions, and each miss comes with a
   task that would catch it. ([report](evidence/audit-refunddesk-glm.md))

@@ -71,7 +71,7 @@ its test suite would.
 ## Cost
 
 You pay your model provider for your agent's runs and Culprit's own model calls. On our test agent
-(26 tasks, 3 runs each) a bisect cost between $0.04 and $0.41 depending on the model. `--budget-usd`
+(26 tasks, 3 runs each) a bisect cost between $0.04 and $1.74 depending on the model. `--budget-usd`
 is a hard cap; a run stops there and can be resumed.
 
 Documentation: https://culprit-site.vercel.app/docs/

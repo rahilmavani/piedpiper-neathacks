@@ -167,3 +167,16 @@ def test_settings_from_a_repo_env_are_announced(tmp_path, monkeypatch, capsys):
     with pytest.raises(SystemExit):
         cli.main()
     assert f"culprit: using NEATLOGS_API_KEY from {tmp_path / '.env'}" in capsys.readouterr().err
+
+
+def test_a_variable_blanked_in_the_shell_stays_blank(tmp_path, monkeypatch):
+    """`NEATLOGS_API_KEY= culprit …` turns tracing off even when the repo's .env or the saved setup has a key."""
+    import os
+
+    from culprit import providers
+
+    (tmp_path / ".env").write_text("NEATLOGS_API_KEY=from-repo\nOPENROUTER_API_KEY=from-repo\n")
+    monkeypatch.setenv("NEATLOGS_API_KEY", "")
+    monkeypatch.setenv("OPENROUTER_API_KEY", "")
+    providers.load_settings(tmp_path)
+    assert os.environ["NEATLOGS_API_KEY"] == "" and os.environ["OPENROUTER_API_KEY"] == ""

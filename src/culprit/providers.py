@@ -65,7 +65,7 @@ def _load(path: Path, source: str) -> None:
 
     values = dotenv_values(path)
     for name in SETTING_VARS:
-        if values.get(name) and not os.environ.get(name):
+        if values.get(name) and name not in os.environ:  # set in the shell, even to "", wins
             os.environ[name] = values[name]
             _loaded[name] = (source, values[name])
 

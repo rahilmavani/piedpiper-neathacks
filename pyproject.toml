@@ -1,6 +1,6 @@
 [project]
 name = "culprit-cli"
-version = "0.1.0"
+version = "0.1.1"
 description = "git bisect for AI agent behaviour: find the commit that made your agent worse, with statistics, and verify a fix."
 readme = "PYPI.md"
 license = "Apache-2.0"

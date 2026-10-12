@@ -29,7 +29,14 @@ def init() -> None:
     global _enabled
     if _enabled or not os.environ.get("NEATLOGS_API_KEY"):
         return
+    # neatlogs logs INFO lines to stdout, which would end up inside `culprit comment` or `export-costs`
+    # output. Only warnings, unless the user asks for more.
+    os.environ.setdefault("NEATLOGS_LOG_LEVEL", "WARNING")
+    import logging
+
     import neatlogs
+
+    logging.getLogger("neatlogs").setLevel(os.environ["NEATLOGS_LOG_LEVEL"].upper())
     from opentelemetry.sdk.resources import Resource
     from opentelemetry.sdk.trace import SpanProcessor, TracerProvider
 

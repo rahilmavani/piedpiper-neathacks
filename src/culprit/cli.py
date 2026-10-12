@@ -15,7 +15,59 @@ from culprit.orchestrator import Orchestrator
 from culprit.project import ProjectError, Settings
 from culprit.project import resolve as resolve_project
 
-app = typer.Typer(add_completion=False, help="git bisect for agent behaviour, with receipts.")
+app = typer.Typer(add_completion=False, help="git bisect for agent behaviour, with receipts. "
+                  "Run `culprit help` for the commands in the order you use them.")
+
+GUIDE = """Culprit: git bisect for agent behaviour.
+
+Set up (once per repo)
+  culprit init                            Save your keys and set up this repo
+
+Find and fix a regression, in order
+  1. culprit run --good REF --bad REF     Find the commit that made the agent worse
+  2. culprit localise RUN_ID              Find the responsible lines
+  3. culprit fix RUN_ID                   Write and verify a minimal fix
+  4. culprit report RUN_ID                Write the report (markdown and HTML)
+
+More commands
+  culprit ci --base REF --head REF        Regression gate for a pull request
+  culprit drift --ref REF                 Has the same code got worse over time?
+  culprit audit                           Which regressions would your evals miss?
+  culprit resume RUN_ID                   Continue a stopped run
+  culprit comment RUN_ID                  Print a run's pull-request comment
+  culprit export-costs                    Costs of every run, as CSV
+  culprit verify-trace RUN_ID             Check a run's neatlogs traces
+
+Options for any command:  culprit help <command>   (or culprit <command> --help)
+Docs:                     https://culprit-site.vercel.app/docs/
+"""
+
+
+@app.callback(invoke_without_command=True)
+def _root(ctx: typer.Context) -> None:
+    """Bare `culprit` prints the guide rather than an error."""
+    if ctx.invoked_subcommand is None:
+        typer.echo(GUIDE, nl=False)
+
+
+@app.command("help")
+def help_(command: str | None = typer.Argument(None, help="A command to explain, e.g. run")) -> None:
+    """Show the commands in the order you use them, or one command's options."""
+    if command is None:
+        typer.echo(GUIDE, nl=False)
+        return
+    from typer.main import get_command
+
+    group = get_command(app)
+    root = group.make_context("culprit", [], resilient_parsing=True)
+    sub = group.get_command(root, command)
+    if sub is None or getattr(sub, "hidden", False):
+        known = ", ".join(n for n in group.list_commands(root) if not getattr(group.get_command(root, n), "hidden", False))
+        typer.echo(f"error: no command {command!r}. Commands: {known}", err=True)
+        raise typer.Exit(2)
+    text = sub.get_help(sub.make_context(command, [], parent=root, resilient_parsing=True))
+    if text:
+        typer.echo(text)
 EVAL_MODULE_OPTION = typer.Option(None, "--eval-module", envvar="CULPRIT_EVAL_MODULE", show_default=False,
                                   help="The victim's eval runner module (python -m <module> --task <id> --seed <n>) "
                                   "(default: from culprit.toml)")
@@ -53,7 +105,7 @@ def run(
     staged: bool = typer.Option(True, help="Screen every task ×1 before running the full k on the ends"),
     eval_module: str | None = EVAL_MODULE_OPTION,
 ) -> None:
-    """Find the commit between GOOD and BAD that broke the agent. `--no-reuse --no-staged` is v1."""
+    """Find the commit between GOOD and BAD that made the agent worse."""
     project = _settings(repo, eval_module, suite, suite_ref)
     try:
         victim = providers.select("VICTIM_MODEL")
@@ -90,7 +142,7 @@ def resume(
     raise typer.Exit(0 if outcome.status in {"found", "no_regression"} else 1)
 
 
-@app.command()
+@app.command(hidden=True)
 def bench(
     tag: str = typer.Option(..., help="Label for this benchmark (e.g. v1, v2); names evidence/bench-<tag>.md"),
     scenarios: Path = typer.Option(PROJECT_ROOT / "bench" / "scenarios.yaml", help="Scenario list"),
@@ -170,7 +222,7 @@ def localise(
     replay: bool = typer.Option(False, help="Only replay what the ledger holds: no key, model call or victim run; "
                                 "fails if anything else is needed"),
 ) -> None:
-    """Find which hunk of a found run's culprit commit is responsible (PRD §8.3). Re-running resumes."""
+    """Find which hunks of a found run's culprit commit are responsible. Running it again resumes."""
     from culprit import localise as loc
     from culprit.finished import StageError
 
@@ -194,7 +246,7 @@ def fix(
     replay: bool = typer.Option(False, help="Only replay what the ledger holds: no key, model call or victim run; "
                                 "fails if anything else is needed"),
 ) -> None:
-    """Write and verify a minimal fix for a localised run (PRD §8.4, §10). Re-running resumes."""
+    """Write and verify a minimal fix for a localised run. Running it again resumes."""
     from culprit import fix as fixer
     from culprit.finished import StageError
 
@@ -251,7 +303,7 @@ def export_costs(
     db: Path = typer.Option(DEFAULT_DB, help="Ledger path"),
     out: Path | None = typer.Option(None, help="Write to this file instead of stdout"),
 ) -> None:
-    """Per-run cost, victim runs and wall time for every run in the ledger (input for cfo.ai)."""
+    """Cost, agent runs and wall time for every run in the ledger, as CSV."""
     import sys
 
     from culprit.costs import all_runs, write_csv

@@ -1,0 +1,85 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "01M4QNWB8D6RXSBP78VNTKQTZF",
+  "session_id": "179c65aa-dbd8-480c-9eaf-5901c7708be7",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-12T09:07:46.71994Z",
+  "branch": "chore/open-source",
+  "checkpoints_count": 1,
+  "save_step_count": 1,
+  "files_touched": [],
+  "agent": "Claude Code",
+  "model": "claude-opus-5-5",
+  "turn_id": "d3b5c1158189",
+  "checkpoint_transcript_start": 3597,
+  "transcript_lines_at_start": 3597,
+  "compact_transcript_start": 676,
+  "token_usage": {
+    "input_tokens": 4,
+    "cache_creation_tokens": 1552,
+    "cache_read_tokens": 651780,
+    "output_tokens": 1189,
+    "api_call_count": 2
+  },
+  "skill_events_version": 1,
+  "skill_events": [
+    {
+      "id": "claude-skill-toolu_01SRSgEDBJ5manoRB72AH3XN",
+      "event_type": "tool_invocation",
+      "skill": {
+        "name": "claude-api"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "skill_tool_use",
+        "confidence": "explicit"
+      },
+      "turn_id": "32d11c511a56",
+      "transcript_anchor": {
+        "unit": "line",
+        "start": 68,
+        "end": 69,
+        "entry_ids": [
+          "a77921ef-bcb2-4b50-bd9f-e43ae93e7fa3"
+        ],
+        "tool_use_id": "toolu_01SRSgEDBJ5manoRB72AH3XN"
+      },
+      "native": {
+        "tool_name": "Skill",
+        "tool_use_id": "toolu_01SRSgEDBJ5manoRB72AH3XN"
+      },
+      "collapse": {
+        "target": "tool_pair",
+        "label": "Skill: claude-api",
+        "default_collapsed": true
+      }
+    }
+  ],
+  "session_metrics": {
+    "turn_count": 3
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 59,
+      "user_lines_removed": 8,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "pyproject.toml": 2,
+        "src/culprit/cli.py": 1,
+        "src/culprit/onboard.py": 5,
+        "src/culprit/sandbox.py": 11,
+        "tests/test_onboard.py": 11,
+        "uv.lock": 29
+      },
+      "user_removed_per_file": {
+        "pyproject.toml": 1,
+        "src/culprit/cli.py": 1,
+        "src/culprit/onboard.py": 4,
+        "src/culprit/sandbox.py": 1,
+        "uv.lock": 1
+      }
+    }
+  ]
+}

@@ -66,3 +66,7 @@ Now make me the script for the demo video - I can shoot, we need to show whateve
 ---
 
 I want adobe after effects level motion design. I will speak manually.
+
+---
+
+no no no. Dont commit anything related to demo.md. Also from repo remove any prompt related things or demo from github as in the evening we are about to make the repo public as this is apache 2.0. And also, improve the readme and you can add a contribution guide. Basically whatever everything is already there in open source apache 2.0 repos. Currently another claude session is adding culprit help command and other stuff.

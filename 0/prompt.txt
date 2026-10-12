@@ -1,0 +1,9 @@
+<task-notification>
+<task-type>artifact-watch-lifecycle</task-type>
+<summary>Stopped watching Artifact: "Culprit Casefile" (made room for a newer watch)</summary>
+<event>Watch on https://claude.ai/artifact/4BK8KaC9i7EjT9PZbsGvA8 ended — this session reached its limit of 10 artifact watches and made room to watch a newer one; it was auto-replying to comments, and that stops until its next publish. This session no longer keeps track of new versions of it; do not watch it again unless the user asks.</event>
+</task-notification>
+
+---
+
+you publish naa

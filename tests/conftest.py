@@ -6,6 +6,8 @@ raise, and so does finding the neatlogs CLI, so a test that needs a model reply 
 install its own fake.
 """
 
+import os
+
 import pytest
 
 from culprit import llm, readback, tracing
@@ -29,3 +31,13 @@ def no_trace_export_or_model_calls(monkeypatch: pytest.MonkeyPatch, tmp_path_fac
     monkeypatch.setattr(llm, "_complete_anthropic", _no_model_calls)
     monkeypatch.setattr(llm, "_complete_openrouter", _no_model_calls)
     monkeypatch.setattr(readback, "cli_binary", _no_readback)
+
+
+@pytest.fixture(autouse=True)
+def restore_environment():
+    """Undo every environment change a test makes, including ones Culprit makes itself (loading a .env
+    or saved keys sets os.environ directly, which monkeypatch can't track)."""
+    saved = dict(os.environ)
+    yield
+    os.environ.clear()
+    os.environ.update(saved)

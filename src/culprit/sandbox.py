@@ -23,6 +23,16 @@ class Install:
     log: str
 
 
+def uv_bin() -> str:
+    """The uv that installs and runs the agent: the one shipped with Culprit, else the one on PATH."""
+    try:
+        from uv import find_uv_bin
+
+        return find_uv_bin()
+    except (ImportError, FileNotFoundError):
+        return shutil.which("uv") or "uv"
+
+
 def clean_env() -> dict[str, str]:
     """Environment for victim subprocesses, without Culprit's own virtualenv leaking in."""
     return {k: v for k, v in os.environ.items() if k not in {"VIRTUAL_ENV", "UV_PROJECT_ENVIRONMENT", "PYTHONPATH"}}
@@ -66,7 +76,7 @@ def install(worktree: Path, import_module: str, timeout_s: int) -> Install:
     env = clean_env()
     logs: list[str] = []
     try:
-        sync = subprocess.run(["uv", "sync", "--locked"], cwd=worktree, env=env, capture_output=True,
+        sync = subprocess.run([uv_bin(), "sync", "--locked"], cwd=worktree, env=env, capture_output=True,
                               text=True, timeout=timeout_s)
     except subprocess.TimeoutExpired:
         return Install(False, worktree, f"uv sync --locked timed out after {timeout_s}s")

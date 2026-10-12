@@ -11,6 +11,7 @@ from pathlib import Path
 
 from culprit.evalrunner import _parse_output, discover_tasks, victim_env
 from culprit.providers import Provider
+from culprit.sandbox import uv_bin
 
 KEY_NAMES = {"anthropic": "ANTHROPIC_API_KEY", "openrouter": "OPENROUTER_API_KEY"}
 SKIP_DIRS = {".git", ".venv", "venv", ".culprit", "node_modules", "__pycache__", ".tox", "build", "dist"}
@@ -82,18 +83,18 @@ class Check:
 def check_eval(repo: Path, eval_module: str, task: str, victim: Provider | None, timeout_s: int = 300) -> Check:
     """Run one task the way a bisect step does and check its last line is a JSON object with `passed`."""
     env = victim_env(repo, victim)
-    cmd = ["uv", "run", "--locked", "python", "-m", eval_module, "--task", task, "--seed", "0"]
+    cmd = [uv_bin(), "run", "--locked", "python", "-m", eval_module, "--task", task, "--seed", "0"]
     try:
         proc = subprocess.run(cmd, cwd=repo, env=env, capture_output=True, text=True, timeout=timeout_s)
     except FileNotFoundError:
-        return Check(False, "uv isn't installed; see https://docs.astral.sh/uv/")
+        return Check(False, "uv wasn't found; reinstall culprit-cli, which includes it")
     except subprocess.TimeoutExpired:
-        return Check(False, f"`{' '.join(cmd)}` didn't finish within {timeout_s}s")
+        return Check(False, f"`uv run python -m {eval_module} --task {task}` didn't finish within {timeout_s}s")
     tail = (proc.stderr or proc.stdout).strip()[-600:]
     try:
         out = _parse_output(proc.stdout)
     except ValueError:
-        return Check(False, f"`{' '.join(cmd)}` exited {proc.returncode} without printing a JSON line.\n{tail}")
+        return Check(False, f"`uv run python -m {eval_module} --task {task}` exited {proc.returncode} without printing a JSON line.\n{tail}")
     if not isinstance(out, dict) or "passed" not in out:
         return Check(False, f"the JSON line has no \"passed\" field: {out}")
     extras = ", ".join(f"{k}={out[k]}" for k in ("cost", "latency_ms", "error") if out.get(k) is not None)

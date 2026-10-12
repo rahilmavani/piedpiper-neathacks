@@ -469,7 +469,7 @@ def init(
     typer.echo(f"Setting up {root}")
     if not (root / "uv.lock").is_file():
         typer.echo("  warning: no uv.lock. Culprit installs each commit with `uv sync --locked`, so commit a "
-                   "uv.lock (run `uv lock`) or every commit will be skipped.")
+                   "uv.lock (run `uv lock`, or `python -m uv lock`) or every commit will be skipped.")
 
     providers.load_settings(root)
     model_keys = [name for name in onboard.KEY_NAMES.values() if providers.source(name)]

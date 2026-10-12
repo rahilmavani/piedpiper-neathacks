@@ -180,3 +180,14 @@ def test_a_variable_blanked_in_the_shell_stays_blank(tmp_path, monkeypatch):
     monkeypatch.setenv("OPENROUTER_API_KEY", "")
     providers.load_settings(tmp_path)
     assert os.environ["NEATLOGS_API_KEY"] == "" and os.environ["OPENROUTER_API_KEY"] == ""
+
+
+def test_culprit_uses_the_uv_it_ships_with(monkeypatch):
+    """`pip install culprit-cli` brings uv along, so installs work even when uv isn't on PATH."""
+    import os
+
+    from culprit.sandbox import uv_bin
+
+    monkeypatch.setenv("PATH", "/nonexistent")
+    path = uv_bin()
+    assert os.path.isfile(path) and os.access(path, os.X_OK)

@@ -35,7 +35,8 @@
         "z-ai/glm-5.3": false,
         "qwen/qwen3.8-flash": false,
         "deepseek/deepseek-v4.1-flash": false,
-        "google/gemini-3.8-flash": false
+        "google/gemini-3.8-flash": false,
+        "claude-sonnet-5-5": false
       }
     },
     "hist/b": {
@@ -117,7 +118,8 @@
       "visible": {
         "qwen/qwen3.8-flash": true,
         "deepseek/deepseek-v4.1-flash": true,
-        "google/gemini-3.8-flash": false
+        "google/gemini-3.8-flash": false,
+        "claude-sonnet-5-5": true
       }
     },
     "hist/d": {
@@ -145,7 +147,8 @@
         "z-ai/glm-5.3": false,
         "qwen/qwen3.8-flash": false,
         "deepseek/deepseek-v4.1-flash": false,
-        "google/gemini-3.8-flash": false
+        "google/gemini-3.8-flash": false,
+        "claude-sonnet-5-5": false
       }
     },
     "hist/e": {
@@ -181,7 +184,8 @@
         "z-ai/glm-5.3": false,
         "qwen/qwen3.8-flash": false,
         "deepseek/deepseek-v4.1-flash": false,
-        "google/gemini-3.8-flash": false
+        "google/gemini-3.8-flash": false,
+        "claude-sonnet-5-5": false
       }
     },
     "hist/f": {
@@ -210,7 +214,8 @@
       "visible": {
         "qwen/qwen3.8-flash": true,
         "deepseek/deepseek-v4.1-flash": true,
-        "google/gemini-3.8-flash": true
+        "google/gemini-3.8-flash": true,
+        "claude-sonnet-5-5": true
       }
     }
   }

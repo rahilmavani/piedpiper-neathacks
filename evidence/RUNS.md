@@ -82,6 +82,25 @@ Full write-up: `evidence/MODELS.md`. Data for the charts: `evidence/models.json`
 
 Resumed runs had stopped on the OpenRouter key's $10 limit (`infra_error`, nothing counted) and were resumed after it was raised. Their wall time includes the pause.
 
+### Claude Sonnet 5.5 (11 Oct 20:15–21:06 IST; Anthropic API directly; Culprit `e0d80c9`)
+
+Run with the same commands as `scripts/bench_model.sh`, with `BUDGET=6`. It ran on a separate machine, with one state folder and no parallel models. Scored with `culprit bench --tag claude-sonnet-5-5`: **6/6**.
+
+| Model | Run | Branch | Outcome | Found | Victim runs | Cost | Resumed | Culprit trace |
+|---|---|---|---|---|---:|---:|---|---|
+| Claude Sonnet 5.5 | `0df8e0ab7965` | hist/a | correct_no_regression | – | 52 | $0.851 |  | `c1ad36130eb55a7ed870fbee36196a67` |
+| Claude Sonnet 5.5 | `fa6964ed6234` | hist/b | correct | `397c427` | 164 | $2.991 |  | `e398e17d55bbdc845e5d75176c340ad8` |
+| Claude Sonnet 5.5 | `fe716a4fb735` | hist/c | correct | `acf3b7d` | 84 | $1.681 |  | `6dd58a42b95a87c5cea0df1bb5f975fe` |
+| Claude Sonnet 5.5 | `2cb364e47630` | hist/d | correct_no_regression | – | 52 | $0.802 |  | `87cfc7234621ba30ac9612acd70ef078` |
+| Claude Sonnet 5.5 | `2a5037a4c2d7` | hist/e | correct_no_regression | – | 52 | $0.850 |  | `9cde87347e46c361f18c1fa3f4cc8fbe` |
+| Claude Sonnet 5.5 | `bbdd1db92beb` | hist/f | correct | `1777d44` | 180 | $3.248 |  | `90096fa1d66c482656a80c10a9ca70f2` |
+| | | **Total** | | **6/6 correct** | **584** | **$10.42** | | |
+
+- `hist/b` and `hist/f` both skipped their uninstallable commit (`22a37db`, `2ad118e`).
+- No run hit its $6 cap, none stopped with `infra_error`, and none was resumed.
+- The strength check before the bisects (546 runs, seeds 3–5) cost $9.07, and the smoke run $0.017. Total Sonnet spend: **$19.50**.
+- Costs use the agent's price table ($2/$10 per MTok, Anthropic list price), not neatlogs' $3/$15.
+
 ## Localise and fix on the real victim (hist/b, run `ff50e3620fdd`)
 
 | Stage | Result | Victim runs | Model calls | Cost |

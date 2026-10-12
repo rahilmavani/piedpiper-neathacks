@@ -1,8 +1,15 @@
 """`culprit help` and bare `culprit`: the commands in the order you use them."""
 
+import re
+
 from typer.testing import CliRunner
 
 from culprit.cli import GUIDE, app
+
+
+def plain(text: str) -> str:
+    """Help is colored when the environment asks for it (GitHub Actions does); compare the text only."""
+    return re.sub(r"\x1b\[[0-9;]*m", "", text)
 
 
 def test_help_and_bare_culprit_print_the_guide():
@@ -17,7 +24,7 @@ def test_help_and_bare_culprit_print_the_guide():
 def test_help_for_one_command_shows_its_options():
     out = CliRunner().invoke(app, ["help", "run"])
     assert out.exit_code == 0
-    assert "--good" in out.output and "--budget-usd" in out.output
+    assert "--good" in plain(out.output) and "--budget-usd" in plain(out.output)
 
 
 def test_help_for_an_unknown_or_hidden_command_lists_the_real_ones():
@@ -28,7 +35,7 @@ def test_help_for_an_unknown_or_hidden_command_lists_the_real_ones():
 
 
 def test_every_listed_command_exists():
-    out = CliRunner().invoke(app, ["--help"]).output
+    out = plain(CliRunner().invoke(app, ["--help"]).output)
     for line in GUIDE.splitlines():
         if "culprit " in line and "help <command>" not in line:
             command = line.split("culprit ", 1)[1].split()[0]

@@ -11,12 +11,12 @@ You bring your own model key. Culprit runs on your machine and only creates git 
 ## Install
 
 ```bash
-uv tool install culprit-cli     # puts the `culprit` command on your PATH
+pip install culprit-cli
 ```
 
-Just trying it? `uvx culprit-cli init` runs it without installing.
-
-Needs Python 3.12+, [uv](https://docs.astral.sh/uv/) and git.
+Needs Python 3.12+ and git. Culprit brings its own copy of [uv](https://docs.astral.sh/uv/), which it
+uses to install your agent at each commit. Prefer an isolated install? `uv tool install culprit-cli`
+or `pipx install culprit-cli`. Run `culprit help` to see the commands in the order you use them.
 
 ## What your agent's repo needs
 

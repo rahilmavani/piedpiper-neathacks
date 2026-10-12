@@ -1,0 +1,20 @@
+name: Feature request
+description: Suggest an improvement or a new use for Culprit
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to do, and what gets in the way today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you'd like Culprit to do
+  - type: textarea
+    id: context
+    attributes:
+      label: Anything else
+      description: Your agent setup, eval suite size, model, or examples that would help.

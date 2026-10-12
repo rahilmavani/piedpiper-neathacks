@@ -1,4 +1,4 @@
-"""Localiser (PRD §8.3): hunk splitting, LLM ranking behind a fake, the revert search, and fixture runs."""
+"""Localiser: hunk splitting, LLM ranking behind a fake, the revert search, and fixture runs."""
 
 import importlib
 import json

@@ -1,4 +1,4 @@
-"""Fixer and Verifier (PRD §8.4, §10): edits → patch, the three gates, and `culprit fix` on the fixture."""
+"""Fixer and Verifier: edits → patch, the three gates, and `culprit fix` on the fixture."""
 
 import importlib
 import json
@@ -63,7 +63,7 @@ def test_gates_catch_lost_gain_lost_quality_and_new_failures():
     broken = gates(GOOD, bad, runs({"a": [False] * 3, "b": [False] * 3, "c": [True, False, False]}, 50.0), "none", 0.1)
     assert not broken.quality and broken.gain is None and broken.new_failures == ["a", "b"]
     assert any("always fail: a, b" in f for f in broken.failures())
-    # The quality gate is PRD §10's: the fix's interval only has to reach the good one's, so 4/9 vs 8/9 passes.
+    # The quality gate: the fix's interval only has to reach the good one's, so 4/9 vs 8/9 passes.
     lenient = gates(GOOD, bad, runs({"a": [False] * 3, "b": [True, False, False], "c": [True] * 3}), "none", 0.1)
     assert lenient.quality and lenient.new_failures == ["a"] and not lenient.verified
 

@@ -1,4 +1,4 @@
-"""Wilson score interval and the deterministic GOOD / BAD / INCONCLUSIVE rule (PRD §8.2)."""
+"""Wilson score interval and the deterministic GOOD / BAD / INCONCLUSIVE rule."""
 
 from __future__ import annotations
 

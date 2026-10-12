@@ -11,3 +11,9 @@ __pycache__/
 *.swp
 .culprit-models/
 dist/
+
+# Local-only notes and agent settings (kept out of the public repo)
+DEMO.md
+PROMPTS.md
+HANDOVER.md
+.claude/

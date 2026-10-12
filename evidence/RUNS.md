@@ -1,6 +1,6 @@
 # Run register
 
-Every paid run against the real victim (RefundDesk), plus the free checks that back a claim. Numbers come from the Culprit ledger (`.culprit/ledger.sqlite`) or from the check's own log, never estimates. Costs use our price table (GLM 5.3 via OpenRouter: $0.039/$4.80 per MTok), not neatlogs' figures (see `BLOCKERS.md`).
+Every paid run against the real victim (RefundDesk), plus the free checks that back a claim. Numbers come from the Culprit ledger (`.culprit/ledger.sqlite`) or from the check's own log, never estimates. Costs use our price table (GLM 5.3 via OpenRouter: $0.039/$4.80 per MTok), not neatlogs' figures (see `evidence/neatlogs-cost-discrepancy.md`).
 
 - **Culprit traces** (workflow `culprit`): the neatlogs session ID is the run ID.
 - **Victim traces** (workflow `refunddesk-eval`): tagged with `culprit_run_id`, `commit_sha`, `task_id` and `repetition`.

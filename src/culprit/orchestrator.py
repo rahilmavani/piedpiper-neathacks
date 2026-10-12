@@ -1,4 +1,4 @@
-"""Culprit's run loop: baselines → discriminating tasks → noise-aware bisect → intent (PRD §7, §8).
+"""Culprit's run loop: baselines → discriminating tasks → noise-aware bisect → intent.
 
 The loop is deterministic and memoised in the ledger, so running it again for an existing
 run_id resumes it: completed steps and task runs are reused, never re-executed.
@@ -80,7 +80,7 @@ class Baselines:
     bad: StepResult
 
     def threshold(self, runs: list[TaskRun]) -> float:
-        """Midpoint of the good and bad pass rates over the same task mix as `runs` (PRD §8.1 step 2)."""
+        """Midpoint of the good and bad pass rates over the same task mix as `runs`."""
         g, b = self.good.task_rates(), self.bad.task_rates()
         return sum((g[r.task_id] + b[r.task_id]) / 2 for r in runs) / len(runs)
 
@@ -196,7 +196,7 @@ class Orchestrator:
                 if errors:
                     raise errors[0]
 
-    # noise-aware classification (PRD §8.1 step 4, §8.2) ------------------------------
+    # noise-aware classification ------------------------------
     def classify(self, run_id: str, sha: str, base: Baselines, subset: list[str], ranked: list[str],
                  prefix: str = "") -> Verdict:
         """Wilson decision on D × k; INCONCLUSIVE → k more repetitions, then more tasks, up to the cap.

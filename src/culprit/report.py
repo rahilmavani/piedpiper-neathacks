@@ -1,4 +1,4 @@
-"""`culprit report <run_id>`: a run's receipts as markdown and a static HTML page (PRD M6).
+"""`culprit report <run_id>`: a run's receipts as markdown and a static HTML page.
 
 Everything comes from the ledger: verdict, baselines and the regression gate, the bisect timeline
 with each commit's Wilson interval against its threshold, skipped commits, the culprit's intent and

@@ -6,7 +6,7 @@
 # Run from piedpiper-neathacks. The victim repo is $CULPRIT_VICTIM_REPO (default ../refunddesk).
 # The suite is pinned at RefundDesk ba86ed0, like every recorded run. Bisects use --no-reuse, as the GLM v2
 # benchmark did. Afterwards: visibility_from_strength.py, then `culprit bench --tag <slug> --score-runs ...`,
-# then models_json.py. See evidence/SONNET_RUN.md.
+# then models_json.py. Results are summarised in evidence/MODELS.md.
 set -u
 MODEL="$1"; SLUG="${MODEL//\//-}"; BUDGET="${BUDGET:-3}"
 VICTIM="${CULPRIT_VICTIM_REPO:-../refunddesk}"

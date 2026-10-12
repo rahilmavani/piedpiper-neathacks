@@ -1,4 +1,4 @@
-"""Fixer and Verifier (PRD §8.4, §10): `culprit fix <run_id>` on a localised run.
+"""Fixer and Verifier: `culprit fix <run_id>` on a localised run.
 
 The Fixer (one structured LLM call per attempt) sees the responsible hunks, the commit's leak-filtered
 intent, the telling tasks' results and the affected files at the bad head. It names the gain the
@@ -7,7 +7,7 @@ restore the lost behaviour without reverting the commit. Edits may touch only th
 hunks' files, never the suite.
 
 The Verifier applies the patch at the bad head and runs the full suite plus the held-out tasks × k.
-A fix is verified only if all three gates hold (PRD §10):
+A fix is verified only if all three gates hold:
 1. quality: its Wilson interval reaches the good baseline's (upper bound ≥ good's lower bound);
 2. intended gain kept: the named metric is no worse than at bad by more than the tolerance;
 3. no new failures: no task that passes every repetition at good fails every repetition with the fix.

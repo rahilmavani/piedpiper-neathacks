@@ -1,4 +1,4 @@
-"""Run configuration. Every field is recorded in the ledger with the run (PRD §8.2)."""
+"""Run configuration. Every field is recorded in the ledger with the run."""
 
 from __future__ import annotations
 

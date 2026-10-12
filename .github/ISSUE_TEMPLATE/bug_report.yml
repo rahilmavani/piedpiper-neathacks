@@ -1,0 +1,46 @@
+name: Bug report
+description: Something in Culprit doesn't work as documented
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Please remove API keys, private paths and private code from anything you paste.
+        For a security issue, don't use this form: see SECURITY.md.
+  - type: textarea
+    id: command
+    attributes:
+      label: Command
+      description: The exact command you ran.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened
+      description: Output, error messages, and the run ID if there is one. `culprit report <run_id>` output helps.
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: Culprit (`uv tool list` or `pip show culprit-cli`), Python, and OS.
+      placeholder: culprit-cli 0.1.1, Python 3.12.11, macOS 26
+    validations:
+      required: true
+  - type: dropdown
+    id: provider
+    attributes:
+      label: Model provider
+      options:
+        - Anthropic
+        - OpenRouter
+        - None (fixture or no model calls)

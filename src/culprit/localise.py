@@ -1,4 +1,4 @@
-"""Localiser: which hunk of the culprit commit is responsible (PRD §8.3).
+"""Localiser: which hunk of the culprit commit is responsible.
 
 1. Split the culprit diff into hunks.
 2. An LLM ranks them from the diff, the commit's (leak-filtered) intent and the failing tasks.

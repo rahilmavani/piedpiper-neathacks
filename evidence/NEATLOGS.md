@@ -18,7 +18,7 @@ Created 10 Oct via the neatlogs MCP server (`create_detection`, after `preview_d
 - **Limit found:** the rule we wanted, one that fires only when a failed result *reaches the model*, isn't expressible.
   - A regex on LLM span **input** matched 0 spans with two different patterns.
   - Yet the full LLM input payload of a failing hero trace (`4482c66d66f01ec1d28104e99dfc15d0`, read back with `neatlogs traces payload`) contains `"status":"failed"`.
-  - So the regex doesn't seem to scan the full LLM input. Cross-span sequences ("failed, then the model acts") aren't supported either (`BLOCKERS.md`).
+  - So the regex doesn't seem to scan the full LLM input. Cross-span sequences ("failed, then the model acts") aren't supported either.
   - The detection therefore fires on injected faults at good and bad commits alike. It documents the failure mode; it does not discriminate the regression. Culprit's statistics do that.
 - **Result after the 14-day backfill:** **3,738 hits** on 10 Oct (`get_detection_trend`). The dashboard shows the badge on the hero run's victim traces (`screenshots/1-detection-firing-in-hero-run.png`, `2-trace-failed-tool-spans.png`).
 
@@ -46,4 +46,4 @@ From the trace view, "Ask neat AI → Investigate the trace" ran **15 steps in a
 
 ## 5. Cost discrepancy
 
-neatlogs prices `claude-sonnet-5-5` at $3/$15 per MTok against Anthropic's $2/$10 list price. Culprit's own price table is the only cost source used (`BLOCKERS.md`, `evidence/neatlogs-cost-discrepancy.md`).
+neatlogs prices `claude-sonnet-5-5` at $3/$15 per MTok against Anthropic's $2/$10 list price. Culprit's own price table is the only cost source used (`evidence/neatlogs-cost-discrepancy.md`).

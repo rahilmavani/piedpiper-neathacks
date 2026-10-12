@@ -11,7 +11,7 @@
 | `good-v1.0` | 18/18 | $0.055 |
 | `397c427` (planted commit) | 0/18 | $0.078 |
 
-**Visible.** The same result was measured earlier on Claude Sonnet 5.5 (see `hackathon.md`).
+**Visible.** The same result was measured earlier on Claude Sonnet 5.5.
 
 ### hist/a, hist/d, hist/e: full-suite check
 

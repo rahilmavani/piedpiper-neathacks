@@ -1,4 +1,4 @@
-"""Per-commit worktree sandbox: `git worktree add` + `uv sync --locked` (PRD §8.1).
+"""Per-commit worktree sandbox: `git worktree add` + `uv sync --locked`.
 
 `--locked` is deliberate: plain `uv sync` would silently re-resolve a broken pin, and
 `--frozen` would ignore it. An install or import failure means the commit is SKIPped.

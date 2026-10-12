@@ -1,7 +1,7 @@
 """Point a copied ledger at the victim repos' paths on this machine.
 
 The ledger records each run's victim repo as an absolute path (`runs.repo` and `config_json.repo`).
-On another machine, replays (`culprit localise/fix --replay`, `scripts/demo_replay.sh`) need those
+On another machine, replays (`culprit localise/fix --replay`) need those
 paths. Runs are matched to a new path by victim: RefundDesk runs (any repo whose folder name
 contains "refunddesk") go to the first path; other victims by folder name, e.g. opsdesk=PATH.
 

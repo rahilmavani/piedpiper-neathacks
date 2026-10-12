@@ -22,7 +22,7 @@ KEY_VARS = {ANTHROPIC: "ANTHROPIC_API_KEY", OPENROUTER: "OPENROUTER_API_KEY"}
 
 # USD per million tokens (input, output). Anthropic first-party list prices as of 2026-10-06; OpenRouter
 # prices from its /api/v1/models listing on 2026-10-10. An unknown model reports cost as None, not a guess.
-# neatlogs prices claude-sonnet-5-5 at $3/$15; see BLOCKERS.md.
+# neatlogs prices claude-sonnet-5-5 at $3/$15; see evidence/neatlogs-cost-discrepancy.md.
 PRICES = {
     "claude-opus-5-5": (4.00, 20.00),
     "claude-sonnet-5-5": (2.00, 10.00),

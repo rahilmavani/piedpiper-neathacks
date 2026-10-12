@@ -1,4 +1,4 @@
-"""`culprit bench`: run scenarios through the orchestrator and score them against ground truth (PRD §10, §13).
+"""`culprit bench`: run scenarios through the orchestrator and score them against ground truth.
 
 Leakage guard: the orchestrator only ever receives a scenario's good and bad SHAs, never its name
 or its answer. The ground truth is read for scoring after the runs, and must live outside the victim repo.

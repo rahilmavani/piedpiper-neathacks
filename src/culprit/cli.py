@@ -1,4 +1,4 @@
-"""`culprit` command line (PRD §13)."""
+"""`culprit` command line."""
 
 from __future__ import annotations
 

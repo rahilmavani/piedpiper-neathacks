@@ -29,7 +29,7 @@ SDK `neatlogs` 1.4.26 (Python 3.12), CLI `neatlogs-cli` 0.2.0. SDK Doctor `--loc
 
 ## Known differences
 
-- **Cost:** neatlogs reported $0.000663 for 131 in / 18 out on `claude-sonnet-5-5`, which matches $3/$15 per MTok. Culprit's ledger uses Anthropic's $2/$10 list price, which is the source of truth for all cost numbers and cfo.ai; neatlogs' cost figures are not used (see `BLOCKERS.md`).
+- **Cost:** neatlogs reported $0.000663 for 131 in / 18 out on `claude-sonnet-5-5`, which matches $3/$15 per MTok. Culprit's ledger uses Anthropic's $2/$10 list price, which is the source of truth for all cost numbers and cfo.ai; neatlogs' cost figures are not used (see `evidence/neatlogs-cost-discrepancy.md`).
 - **Root output fill-in:** when a root span has no output (for example after an exception, before the fix), the backend showed a child span's output in its place.
 
 - **SIGKILL:** a killed process cannot flush, so its trace never finalizes. The ledger still resumes it correctly (tested), and the resume gets its own finalized trace.

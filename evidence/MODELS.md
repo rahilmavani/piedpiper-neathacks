@@ -1,6 +1,6 @@
 # Culprit across victim models
 
-Does Culprit still find the culprit when the agent under test runs on a different model? We re-ran the full RefundDesk benchmark with the agent on three more models through OpenRouter (11 Oct 2026), next to GLM 5.3 from 10 Oct. The comparison covers these **four models**. A Claude Sonnet 5.5 run is optional and not planned for now; instructions are kept in `evidence/SONNET_RUN.md` if it's wanted later.
+Does Culprit still find the culprit when the agent under test runs on a different model? We re-ran the full RefundDesk benchmark with the agent on three more models through OpenRouter (11 Oct 2026), next to GLM 5.3 from 10 Oct. The comparison covers these **four models**.
 
 Machine-readable data for the charts: [`models.json`](models.json), built by `scripts/models_json.py` from the files listed below.
 

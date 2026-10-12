@@ -6,4 +6,4 @@
 | neatlogs `costUsd` on the LLM span (not used) | $3 / $15 (implied) | $0.000663 |
 
 - **Trace:** `ffdf497989747bf30856935f187e6013` (span `claude-sonnet-5-5`, type LLM), read back with `scripts/nl-read --json traces spans list ffdf497989747bf30856935f187e6013 --type LLM`.
-- **Rule:** all cost numbers in Culprit (ledger, reports, `export-costs`, cfo.ai) use the list price. See `BLOCKERS.md`.
+- **Rule:** all cost numbers in Culprit (ledger, reports, `export-costs`, cfo.ai) use the list price.

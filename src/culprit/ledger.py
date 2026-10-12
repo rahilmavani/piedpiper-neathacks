@@ -1,4 +1,4 @@
-"""SQLite run ledger (PRD §12).
+"""SQLite run ledger.
 
 Every write is idempotent: steps are unique per (run_id, kind, commit_sha) and task runs per
 (step_id, task_id, repetition). Resume works by replaying the deterministic controller, which

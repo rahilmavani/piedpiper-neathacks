@@ -1,4 +1,4 @@
-# Benchmark scenarios for `culprit bench` (PRD §10, §13). One per victim history branch.
+# Benchmark scenarios for `culprit bench`. One per victim history branch.
 # The victim repo comes from --repo / CULPRIT_VICTIM_REPO. Refs are resolved to SHAs before a run
 # starts, and only those SHAs reach the orchestrator. The answers live in ground_truth.json.
 scenarios:

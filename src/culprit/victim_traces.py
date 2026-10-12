@@ -1,4 +1,4 @@
-"""Failing victim runs' tool-call sequences, read back from neatlogs for the Localiser (PRD §8.3).
+"""Failing victim runs' tool-call sequences, read back from neatlogs for the Localiser.
 
 Every victim run is one neatlogs trace (its ID is in the ledger), and each tool attempt is a TOOL
 span named after the tool, with the arguments as input and the result as output. The Localiser's

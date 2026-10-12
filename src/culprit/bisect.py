@@ -1,4 +1,4 @@
-"""Deterministic bisect controller with `git bisect skip` semantics (PRD §8.1).
+"""Deterministic bisect controller with `git bisect skip` semantics.
 
 The controller knows nothing about evals: it asks `classify(sha)` for GOOD, BAD or SKIP and
 narrows the range. `good` is implicitly GOOD and the last candidate (`bad`) is implicitly BAD.

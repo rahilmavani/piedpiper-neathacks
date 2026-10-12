@@ -1,0 +1,76 @@
+now I have branched the convo. SO lets continue with the website and other conversations. First research top 20 website designs for products like me and then I will choose something similar to what I want. Then you create 5 different designs for my preference then i will choose and tweak those.
+
+---
+
+Bro I dont want to copy the hackathon sponsors and all related companies like langfuse. Do check others
+
+---
+
+You comination rec is perfect.
+
+---
+
+I like the culprit range. ALso, once this is done I would like to make an npm package or something so that people can use this using BYOK and setting up via their terminals. But first make the site.
+
+---
+
+Also, make a seperate repo for website. We will host it seperately.
+
+---
+
+yes create it under my account
+Vercel
+Dont put Github repo for now(today)
+
+Also, make a docs/ on the website once our npm package is done and made.
+
+---
+
+ran the commands.
+
+---
+
+<pasted_content id="4397">
+Last login: Sat Oct 10 20:47:07 on ttys013
+➜  ~ ! cd /Volumes/DevSSD/Projects/culprit-site && gh repo create ayushgml/culprit-site --private --source . --push
+➜  culprit-site git:(main) ! cd /Volumes/DevSSD/Projects/culprit-site && vercel --prod
+➜  culprit-site git:(main) ! cd /Volumes/DevSSD/Projects/culprit-site && gh repo create ayushgml/culprit-site --private --source . --push
+➜  culprit-site git:(main) ! cd /Volumes/DevSSD/Projects/culprit-site && vercel --prod
+➜  culprit-site git:(main)
+</pasted_content id="4397">
+
+---
+
+done and deployed
+
+---
+
+yes
+
+---
+
+I have updated the site too and made the package culprit-cli on pypi
+
+---
+
+We were looking at your traces while you were building your agents. We have a feature that lets you look at your critical incidents, and you need to show how it helped indentify and solve these incidents.
+
+Meanwhile, for your overall demo video submission, in ONE video, you should talk about:
+
+the problem your agent solves
+how cfo.ai and entire were part of the project
+how neatlogs was used to identify and resolve the incidents your agent ran into
+
+Now make me the script for the demo video - I can shoot, we need to show whatever things they want. ALl the screenshots or report or stuff you already have to make this happen. Think deeply
+
+---
+
+I want adobe after effects level motion design. I will speak manually.
+
+---
+
+no no no. Dont commit anything related to demo.md. Also from repo remove any prompt related things or demo from github as in the evening we are about to make the repo public as this is apache 2.0. And also, improve the readme and you can add a contribution guide. Basically whatever everything is already there in open source apache 2.0 repos. Currently another claude session is adding culprit help command and other stuff.
+
+---
+
+Yeah so add the sonnet benchmark on the website too as its there. We have added for other models too naa
